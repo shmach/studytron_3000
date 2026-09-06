@@ -2,6 +2,11 @@ version = 1
 revision = 3
 requires-python = ">=3.13"
 
+[manifest]
+members = [
+    "course-parser",
+]
+
 [[package]]
 name = "annotated-types"
 version = "0.8.0"
@@ -14,7 +19,7 @@ wheels = [
 [[package]]
 name = "course-parser"
 version = "0.1.0"
-source = { editable = "." }
+source = { editable = "packages/course-parser" }
 dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
