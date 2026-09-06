@@ -41,3 +41,31 @@ class Course(BaseModel):
     language: str
     overview: str
     modules: list[Module]
+
+
+class Lesson(BaseModel):
+    course: str
+    topic: str
+    title: str
+    generated: date
+    covers: list[str]
+    content: str
+
+
+class ExerciseSet(BaseModel):
+    course: str
+    topic: str
+    generated: date
+    difficulty_target: int
+    content: str
+
+
+class Attempt(BaseModel):
+    course: str
+    topic: str
+    attempt: int
+    date: date
+    score: str
+    result: Literal['good', 'mixed', 'weak']
+    weak_points: list[str] = []
+    content: str
