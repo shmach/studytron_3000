@@ -7,7 +7,10 @@ authors = [
     { name = "shmach", email = "mmachado0222@gmail.com" }
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "pydantic>=2.13.5",
+    "pyyaml>=6.0.3",
+]
 
 [project.scripts]
 course-parser = "course_parser:main"
