@@ -110,7 +110,7 @@ ficam marcados como stretch.
 
 ### Feature 1 — `course-parser` (fundação)
 - [X] Setup do pacote com `uv`, `ruff`, `pytest`.
-- [ ] Models Pydantic: `Course`, `Module`, `Topic` (com `topic-meta`),
+- [X] Models Pydantic: `Course`, `Module`, `Topic` (com `topic-meta`),
       `Subtopic`, `Lesson`, `ExerciseSet`, `Attempt`.
 - [ ] Parser de `00-curriculum.md` → `Course` (front matter + blocos
       `topic-meta` + checkboxes de subtópico).
