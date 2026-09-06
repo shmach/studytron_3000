@@ -160,6 +160,21 @@ ficam marcados como stretch.
 - [ ] Empacotamento Tauri.
 - [ ] Publicar `course-parser` no PyPI como pacote independente.
 
+## Setup do ambiente
+
+- Lint/format de Python: `ruff`, configurado em `packages/course-parser/pyproject.toml`
+  (`[tool.ruff]`) e aplicado via `.pre-commit-config.yaml` na raiz
+  (`astral-sh/ruff-pre-commit`).
+- O hook de pre-commit **não é versionado** (`.git/hooks/` fica fora do repo) —
+  qualquer pessoa clonando o projeto precisa rodar, uma vez:
+
+  ```sh
+  uv tool install pre-commit   # instala o CLI globalmente via uv
+  pre-commit install           # registra o hook em .git/hooks/pre-commit
+  ```
+
+  Sem isso, o commit ainda funciona, mas sem o lint automático.
+
 ## Convenções gerais
 - Comentários e nomes de variáveis em código: inglês, sempre.
 - Toda escrita em Markdown gerada (pela skill ou pelo app) precisa continuar
