@@ -112,10 +112,10 @@ ficam marcados como stretch.
 - [X] Setup do pacote com `uv`, `ruff`, `pytest`.
 - [X] Models Pydantic: `Course`, `Module`, `Topic` (com `topic-meta`),
       `Subtopic`, `Lesson`, `ExerciseSet`, `Attempt`.
-- [ ] Parser de `00-curriculum.md` → `Course` (front matter + blocos
+- [X] Parser de `00-curriculum.md` → `Course` (front matter + blocos
       `topic-meta` + checkboxes de subtópico).
-- [ ] Parser de arquivos de aula e de exercício/tentativa.
-- [ ] Testes com o curso de exemplo da Feature 0 como fixture.
+- [X] Parser de arquivos de aula e de exercício/tentativa.
+- [X] Testes com o curso de exemplo da Feature 0 como fixture.
 - **Entrega:** `course-parser` convertendo o vault real em JSON estruturado
   via um script de linha de comando simples (sem servidor ainda).
 

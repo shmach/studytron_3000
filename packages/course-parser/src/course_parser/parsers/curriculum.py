@@ -9,7 +9,7 @@ MODULE_HEADING = re.compile(r'^## Module \d+ — (.+)$')
 TOPIC_HEADING = re.compile(r'^### ([\d.]+) (.+)$')
 TOPIC_META_FENCE = '```topic-meta'
 FENCE_END = '```'
-SUBTOPIC_START = re.compile(r'^- \[( |x)\] \*\*([\d.]+) (.+?)\*\* — (.+)$')
+SUBTOPIC_START = re.compile(r'^- \[( |x)\] \*\*([\d.]+) (.+?)\*\* —(?: (.*))?$')
 
 
 def parse_curriculum(text: str) -> Course:
@@ -27,6 +27,11 @@ def parse_curriculum(text: str) -> Course:
         nonlocal current_topic
         if current_topic is None:
             return
+
+        if not current_topic['meta_lines']:
+            raise ValueError(
+                f'topic {current_topic["heading_id"]!r} is missing its topic-meta block'
+            )
 
         meta_dict = yaml.safe_load('\n'.join(current_topic['meta_lines'])) or {}
         meta = TopicMeta(**meta_dict)
@@ -106,7 +111,7 @@ def parse_curriculum(text: str) -> Course:
                     'completed': subtopic_match.group(1) == 'x',
                     'id': subtopic_match.group(2),
                     'title': subtopic_match.group(3).strip(),
-                    'description_parts': [subtopic_match.group(4).strip()],
+                    'description_parts': [(subtopic_match.group(4) or '').strip()],
                 }
             )
             continue

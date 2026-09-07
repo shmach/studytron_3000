@@ -69,3 +69,12 @@ class Attempt(BaseModel):
     result: Literal['good', 'mixed', 'weak']
     weak_points: list[str] = []
     content: str
+
+
+class CourseBundle(BaseModel):
+    """Everything the vault holds for one course: curriculum plus generated content."""
+
+    course: Course
+    lessons: list[Lesson] = []
+    exercise_sets: list[ExerciseSet] = []
+    attempts: list[Attempt] = []
