@@ -120,8 +120,8 @@ ficam marcados como stretch.
   via um script de linha de comando simples (sem servidor ainda).
 
 ### Feature 2 — `local-server` (API mínima)
-- [ ] Setup do FastAPI importando `course-parser`.
-- [ ] `GET /courses` — lista cursos no `storage.root` configurado.
+- [X] Setup do FastAPI importando `course-parser`.
+- [X] `GET /courses` — lista cursos no `storage.root` configurado.
 - [ ] `GET /courses/{slug}` — cronograma completo estruturado.
 - [ ] `GET /courses/{slug}/lessons/{topic_id}` e
       `GET /courses/{slug}/exercises/{topic_id}` — conteúdo bruto (Markdown)
