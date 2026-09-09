@@ -1,5 +1,6 @@
 [tool.uv.workspace]
-members = ["packages/*", "apps/*"]
+# Python members only: apps/web is a Node project and must stay out of the uv workspace.
+members = ["packages/*", "apps/local-server"]
 
 [dependency-groups]
 dev = [

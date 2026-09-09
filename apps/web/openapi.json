@@ -1,0 +1,636 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "course-builder local server",
+    "description": "Serves the course-builder vault (Markdown files) as structured JSON.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/vault/config": {
+      "get": {
+        "tags": [
+          "vault"
+        ],
+        "summary": "Get Content Path",
+        "operationId": "get_vault_config",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Get Vault Config"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courses": {
+      "get": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "List Courses",
+        "operationId": "list_courses",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CourseBundle"
+                  },
+                  "type": "array",
+                  "title": "Response List Courses"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courses/{slug}": {
+      "get": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Get Course By Slug",
+        "operationId": "get_course",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseBundle"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courses/{slug}/lessons/{topic_id}": {
+      "get": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Get Lesson By Topic",
+        "operationId": "get_lesson",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Lesson"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courses/{slug}/exercises/{topic_id}": {
+      "get": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Get Exercise By Topic",
+        "operationId": "get_exercise_set",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExerciseSet"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Attempt": {
+        "properties": {
+          "course": {
+            "type": "string",
+            "title": "Course"
+          },
+          "topic": {
+            "type": "string",
+            "title": "Topic"
+          },
+          "attempt": {
+            "type": "integer",
+            "title": "Attempt"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "score": {
+            "type": "string",
+            "title": "Score"
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "good",
+              "mixed",
+              "weak"
+            ],
+            "title": "Result"
+          },
+          "weak_points": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Weak Points",
+            "default": []
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "course",
+          "topic",
+          "attempt",
+          "date",
+          "score",
+          "result",
+          "content"
+        ],
+        "title": "Attempt"
+      },
+      "Course": {
+        "properties": {
+          "course": {
+            "type": "string",
+            "title": "Course"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "created": {
+            "type": "string",
+            "format": "date",
+            "title": "Created"
+          },
+          "depth": {
+            "type": "string",
+            "enum": [
+              "quick",
+              "standard",
+              "deep"
+            ],
+            "title": "Depth"
+          },
+          "level": {
+            "type": "string",
+            "title": "Level"
+          },
+          "goal": {
+            "type": "string",
+            "title": "Goal"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "overview": {
+            "type": "string",
+            "title": "Overview"
+          },
+          "modules": {
+            "items": {
+              "$ref": "#/components/schemas/Module"
+            },
+            "type": "array",
+            "title": "Modules"
+          }
+        },
+        "type": "object",
+        "required": [
+          "course",
+          "slug",
+          "created",
+          "depth",
+          "level",
+          "goal",
+          "language",
+          "overview",
+          "modules"
+        ],
+        "title": "Course"
+      },
+      "CourseBundle": {
+        "properties": {
+          "course": {
+            "$ref": "#/components/schemas/Course"
+          },
+          "lessons": {
+            "items": {
+              "$ref": "#/components/schemas/Lesson"
+            },
+            "type": "array",
+            "title": "Lessons",
+            "default": []
+          },
+          "exercise_sets": {
+            "items": {
+              "$ref": "#/components/schemas/ExerciseSet"
+            },
+            "type": "array",
+            "title": "Exercise Sets",
+            "default": []
+          },
+          "attempts": {
+            "items": {
+              "$ref": "#/components/schemas/Attempt"
+            },
+            "type": "array",
+            "title": "Attempts",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "course"
+        ],
+        "title": "CourseBundle",
+        "description": "Everything the vault holds for one course: curriculum plus generated content."
+      },
+      "ExerciseSet": {
+        "properties": {
+          "course": {
+            "type": "string",
+            "title": "Course"
+          },
+          "topic": {
+            "type": "string",
+            "title": "Topic"
+          },
+          "generated": {
+            "type": "string",
+            "format": "date",
+            "title": "Generated"
+          },
+          "difficulty_target": {
+            "type": "integer",
+            "title": "Difficulty Target"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "course",
+          "topic",
+          "generated",
+          "difficulty_target",
+          "content"
+        ],
+        "title": "ExerciseSet"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Lesson": {
+        "properties": {
+          "course": {
+            "type": "string",
+            "title": "Course"
+          },
+          "topic": {
+            "type": "string",
+            "title": "Topic"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "generated": {
+            "type": "string",
+            "format": "date",
+            "title": "Generated"
+          },
+          "covers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Covers"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "course",
+          "topic",
+          "title",
+          "generated",
+          "covers",
+          "content"
+        ],
+        "title": "Lesson"
+      },
+      "Module": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "topics": {
+            "items": {
+              "$ref": "#/components/schemas/Topic"
+            },
+            "type": "array",
+            "title": "Topics"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "description",
+          "topics"
+        ],
+        "title": "Module"
+      },
+      "Subtopic": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "completed": {
+            "type": "boolean",
+            "title": "Completed",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "description"
+        ],
+        "title": "Subtopic"
+      },
+      "Topic": {
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/TopicMeta"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "subtopics": {
+            "items": {
+              "$ref": "#/components/schemas/Subtopic"
+            },
+            "type": "array",
+            "title": "Subtopics"
+          }
+        },
+        "type": "object",
+        "required": [
+          "meta",
+          "title",
+          "subtopics"
+        ],
+        "title": "Topic"
+      },
+      "TopicMeta": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in_progress",
+              "completed",
+              "review"
+            ],
+            "title": "Status",
+            "default": "pending"
+          },
+          "perceived_difficulty": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "easy",
+                  "ok",
+                  "hard"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Perceived Difficulty"
+          },
+          "weak_points": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Weak Points",
+            "default": []
+          },
+          "last_reviewed": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Reviewed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "TopicMeta"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

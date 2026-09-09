@@ -1,16 +1,5 @@
-from dotenv import load_dotenv
+"""Entry point for `uv run fastapi dev apps/local-server/main.py`."""
 
-load_dotenv()
+from local_server.app import app
 
-from fastapi import FastAPI
-from local_server.routes import courses, vault
-
-app = FastAPI()
-
-app.include_router(router=vault.router)
-app.include_router(router=courses.router)
-
-
-@app.get("/")
-def hello_world():
-    return {"Hello": "World"}
+__all__ = ["app"]
