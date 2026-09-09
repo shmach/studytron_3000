@@ -122,11 +122,11 @@ ficam marcados como stretch.
 ### Feature 2 — `local-server` (API mínima)
 - [X] Setup do FastAPI importando `course-parser`.
 - [X] `GET /courses` — lista cursos no `storage.root` configurado.
-- [ ] `GET /courses/{slug}` — cronograma completo estruturado.
-- [ ] `GET /courses/{slug}/lessons/{topic_id}` e
+- [X] `GET /courses/{slug}` — cronograma completo estruturado.
+- [X] `GET /courses/{slug}/lessons/{topic_id}` e
       `GET /courses/{slug}/exercises/{topic_id}` — conteúdo bruto (Markdown)
       + metadados.
-- [ ] Config simples (`.env` ou arquivo) apontando para o vault.
+- [X] Config simples (`.env` ou arquivo) apontando para o vault.
 - **Entrega:** API rodando em `localhost`, testável via Swagger UI do
   próprio FastAPI, servindo os dados do curso de exemplo.
 

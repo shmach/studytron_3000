@@ -397,12 +397,14 @@ source = { editable = "apps/local-server" }
 dependencies = [
     { name = "course-parser" },
     { name = "fastapi", extra = ["standard"] },
+    { name = "python-dotenv" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "course-parser", editable = "packages/course-parser" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.141.1" },
+    { name = "python-dotenv", specifier = ">=1.0.1" },
 ]
 
 [[package]]
