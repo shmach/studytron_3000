@@ -8,6 +8,6 @@ load_dotenv()
 router = APIRouter(prefix="/vault", tags=["vault"])
 
 
-@router.get("/config")
+@router.get("/config", operation_id="get_vault_config")
 def get_content_path() -> str | None:
     return os.getenv("VAULT_PATH")

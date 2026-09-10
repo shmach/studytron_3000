@@ -90,7 +90,7 @@ course-builder/
     course-parser/            <- Python: Markdown -> Pydantic models
   apps/
     local-server/             <- FastAPI, contrato da API sobre o vault local
-    web/                      <- React + Vite + TS
+    web/                      <- React + Vite + TS (Tailwind + shadcn/ui, TanStack Query)
   CLAUDE.md                   <- este arquivo
 ```
 
@@ -131,10 +131,11 @@ ficam marcados como stretch.
   próprio FastAPI, servindo os dados do curso de exemplo.
 
 ### Feature 3 — Esqueleto do frontend
-- [ ] Setup Vite + React + TS + Tailwind + shadcn/ui.
-- [ ] Geração dos tipos TS a partir do OpenAPI do `local-server`.
-- [ ] TanStack Query configurado, hooks básicos (`useCourses`, `useCourse`).
-- [ ] Roteamento básico: lista de cursos → página do curso.
+- [X] Setup Vite + React + TS + Tailwind + shadcn/ui.
+- [X] Geração dos tipos TS a partir do OpenAPI do `local-server`
+      (`npm run generate:types` em `apps/web`; `schema.d.ts` é versionado).
+- [X] TanStack Query configurado, hooks básicos (`useCourses`, `useCourse`).
+- [X] Roteamento básico: lista de cursos → página do curso.
 - **Entrega:** app rodando, mostrando a lista de cursos vinda da API (sem
   trilha visual ainda — só prova que a ponta a ponta funciona).
 
@@ -174,6 +175,10 @@ ficam marcados como stretch.
   ```
 
   Sem isso, o commit ainda funciona, mas sem o lint automático.
+- Frontend (`apps/web`): Node 22+, `npm install` dentro de `apps/web`. Não
+  faz parte do workspace `uv` (o `pyproject.toml` da raiz lista só os membros
+  Python). Detalhes de execução em `apps/web/README.md` e
+  `apps/local-server/README.md`.
 
 ## Convenções gerais
 - Comentários e nomes de variáveis em código: inglês, sempre.
