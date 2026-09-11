@@ -1,0 +1,18 @@
+# course-builder configuration
+# Global file lives at <courses_root>/config.yaml.
+# A course folder may contain its own config.yaml overriding any of these.
+
+storage:
+  adapter: local          # local | remote (remote reserved for the hosted SaaS)
+  root: ""                # e.g. C:\Users\me\vault\Courses
+  remote:
+    base_url: ""
+    api_key_env: COURSE_BUILDER_API_KEY   # env var NAME, never the key itself
+
+defaults:
+  language: pt-BR         # output language for lessons and exercises
+  depth: standard         # quick | standard | deep
+  tone: informal          # formal | informal
+  analogies: true         # allow analogies/metaphors in lessons
+  code_style:
+    identifiers_language: en   # variable names and comments in code samples
