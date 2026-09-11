@@ -1,20 +1,26 @@
-import { ArrowLeft } from 'lucide-react'
-import { Link, useParams } from 'react-router'
+import { ArrowLeft } from 'lucide-react';
+import { Link, useParams } from 'react-router';
 
-import type { CourseBundle, Module, Topic } from '@/api/client'
-import { ErrorState } from '@/components/error-state'
-import { StatusBadge } from '@/components/status-badge'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useCourse } from '@/hooks/useCourse'
-import { computeProgress } from '@/lib/progress'
-import { ProgressBar } from '@/pages/courses-page'
+import type { CourseBundle, Module, Topic } from '@app/api/client';
+import { ErrorState } from '@ui/components/error-state';
+import { StatusBadge } from '@ui/components/status-badge';
+import { Badge } from '@ui/components/ui/badge';
+import { Button } from '@ui/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@ui/components/ui/card';
+import { Skeleton } from '@ui/components/ui/skeleton';
+import { useCourse } from '@app/hooks/useCourse';
+import { computeProgress } from '@app/lib/progress';
+import { ProgressBar } from '@ui/pages/courses-page';
 
 export function CoursePage() {
-  const { slug } = useParams<{ slug: string }>()
-  const { data, isPending, isError, error, refetch } = useCourse(slug)
+  const { slug } = useParams<{ slug: string }>();
+  const { data, isPending, isError, error, refetch } = useCourse(slug);
 
   return (
     <div className="space-y-6">
@@ -29,20 +35,22 @@ export function CoursePage() {
       {isError && <ErrorState error={error} onRetry={() => void refetch()} />}
       {data && <CourseDetail bundle={data} />}
     </div>
-  )
+  );
 }
 
 function CourseDetail({ bundle }: { bundle: CourseBundle }) {
-  const { course, lessons, exercise_sets: exerciseSets, attempts } = bundle
-  const progress = computeProgress(course)
+  const { course, lessons, exercise_sets: exerciseSets, attempts } = bundle;
+  const progress = computeProgress(course);
   // Topic ids that already have generated content, so the curriculum can show it.
-  const lessonTopics = new Set(lessons.map((lesson) => lesson.topic))
-  const exerciseTopics = new Set(exerciseSets.map((set) => set.topic))
+  const lessonTopics = new Set(lessons.map((lesson) => lesson.topic));
+  const exerciseTopics = new Set(exerciseSets.map((set) => set.topic));
 
   return (
     <>
       <header className="space-y-3">
-        <h1 className="text-3xl font-semibold tracking-tight">{course.course}</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">
+          {course.course}
+        </h1>
         <p className="text-muted-foreground">{course.goal}</p>
         <div className="flex flex-wrap gap-2">
           <Badge variant="secondary">{course.level}</Badge>
@@ -56,22 +64,26 @@ function CourseDetail({ bundle }: { bundle: CourseBundle }) {
         <CardHeader>
           <CardTitle>Progress</CardTitle>
           <CardDescription>
-            {progress.completedTopics} of {progress.totalTopics} topics completed ·{' '}
-            {lessons.length} lessons · {exerciseSets.length} exercise sets · {attempts.length}{' '}
-            attempts
+            {progress.completedTopics} of {progress.totalTopics} topics
+            completed · {lessons.length} lessons · {exerciseSets.length}{' '}
+            exercise sets · {attempts.length} attempts
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <ProgressBar percent={progress.percent} />
           <div className="flex flex-wrap gap-3 text-sm">
-            {(Object.keys(progress.byStatus) as Array<keyof typeof progress.byStatus>).map(
-              (status) => (
-                <span key={status} className="flex items-center gap-1.5">
-                  <StatusBadge status={status} />
-                  <span className="text-muted-foreground">{progress.byStatus[status]}</span>
+            {(
+              Object.keys(progress.byStatus) as Array<
+                keyof typeof progress.byStatus
+              >
+            ).map((status) => (
+              <span key={status} className="flex items-center gap-1.5">
+                <StatusBadge status={status} />
+                <span className="text-muted-foreground">
+                  {progress.byStatus[status]}
                 </span>
-              ),
-            )}
+              </span>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -100,24 +112,31 @@ function CourseDetail({ bundle }: { bundle: CourseBundle }) {
         ))}
       </section>
     </>
-  )
+  );
 }
 
 interface ModuleCardProps {
-  index: number
-  module: Module
-  lessonTopics: Set<string>
-  exerciseTopics: Set<string>
+  index: number;
+  module: Module;
+  lessonTopics: Set<string>;
+  exerciseTopics: Set<string>;
 }
 
-function ModuleCard({ index, module, lessonTopics, exerciseTopics }: ModuleCardProps) {
+function ModuleCard({
+  index,
+  module,
+  lessonTopics,
+  exerciseTopics,
+}: ModuleCardProps) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>
           Module {index} · {module.title}
         </CardTitle>
-        {module.description && <CardDescription>{module.description}</CardDescription>}
+        {module.description && (
+          <CardDescription>{module.description}</CardDescription>
+        )}
       </CardHeader>
       <CardContent>
         <ol className="divide-y">
@@ -132,22 +151,24 @@ function ModuleCard({ index, module, lessonTopics, exerciseTopics }: ModuleCardP
         </ol>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 interface TopicRowProps {
-  topic: Topic
-  hasLesson: boolean
-  hasExercises: boolean
+  topic: Topic;
+  hasLesson: boolean;
+  hasExercises: boolean;
 }
 
 function TopicRow({ topic, hasLesson, hasExercises }: TopicRowProps) {
-  const done = topic.subtopics.filter((subtopic) => subtopic.completed).length
+  const done = topic.subtopics.filter((subtopic) => subtopic.completed).length;
 
   return (
     <li className="space-y-2 py-3 first:pt-0 last:pb-0">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-muted-foreground font-mono text-xs">{topic.meta.id}</span>
+        <span className="text-muted-foreground font-mono text-xs">
+          {topic.meta.id}
+        </span>
         <span className="font-medium">{topic.title}</span>
         <StatusBadge status={topic.meta.status} />
         {topic.meta.perceived_difficulty && (
@@ -175,18 +196,25 @@ function TopicRow({ topic, hasLesson, hasExercises }: TopicRowProps) {
               className="mt-1 size-3.5 accent-primary"
             />
             <span>
-              <span className={subtopic.completed ? 'text-muted-foreground line-through' : ''}>
+              <span
+                className={
+                  subtopic.completed ? 'text-muted-foreground line-through' : ''
+                }
+              >
                 {subtopic.title}
               </span>
               {subtopic.description && (
-                <span className="text-muted-foreground"> — {subtopic.description}</span>
+                <span className="text-muted-foreground">
+                  {' '}
+                  — {subtopic.description}
+                </span>
               )}
             </span>
           </li>
         ))}
       </ul>
     </li>
-  )
+  );
 }
 
 function CourseSkeleton() {
@@ -217,5 +245,5 @@ function CourseSkeleton() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

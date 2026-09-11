@@ -1,11 +1,11 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query';
 
-import { courseDetailQuery } from '@/api/queries'
+import { courseDetailQuery } from '@app/api/queries';
 
 /** One course by slug. Disabled while `slug` is empty (e.g. before the route param resolves). */
 export function useCourse(slug: string | undefined) {
   return useQuery({
     ...courseDetailQuery(slug ?? ''),
     enabled: Boolean(slug),
-  })
+  });
 }

@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query'
+import { QueryClient } from '@tanstack/react-query';
 
 /**
  * The vault only changes when the skill (or the user, in Obsidian) writes to it,
@@ -12,4 +12,4 @@ export const queryClient = new QueryClient({
       retry: 1,
     },
   },
-})
+});

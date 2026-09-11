@@ -1,6 +1,6 @@
-import { Link } from 'react-router'
+import { Link } from 'react-router';
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@ui/components/ui/button';
 
 export function NotFoundPage() {
   return (
@@ -10,5 +10,5 @@ export function NotFoundPage() {
         <Link to="/">Back to courses</Link>
       </Button>
     </div>
-  )
+  );
 }

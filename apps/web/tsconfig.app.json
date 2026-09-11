@@ -20,8 +20,14 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "paths": {
-      "@/*": [
-        "./src/*"
+      "@app/*": [
+        "./src/app/*"
+      ],
+      "@ui/*": [
+        "./src/ui/*"
+      ],
+      "@router/*": [
+        "./src/router/*"
       ]
     },
     /* Linting */

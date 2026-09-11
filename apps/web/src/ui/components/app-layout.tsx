@@ -1,7 +1,6 @@
-import { BookOpen } from 'lucide-react'
-import { Link, Outlet, ScrollRestoration } from 'react-router'
+import { BookOpen } from 'lucide-react';
+import { Link, Outlet, ScrollRestoration } from 'react-router';
 
-/** Page chrome shared by every route: header with home link and a centered content column. */
 export function AppLayout() {
   return (
     <div className="min-h-svh bg-background">
@@ -18,5 +17,5 @@ export function AppLayout() {
       </main>
       <ScrollRestoration />
     </div>
-  )
+  );
 }

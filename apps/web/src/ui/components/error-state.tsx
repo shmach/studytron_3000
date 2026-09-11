@@ -1,23 +1,28 @@
-import { AlertTriangle, RefreshCw } from 'lucide-react'
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
-import { API_BASE_URL, ApiError } from '@/api/client'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { API_BASE_URL, ApiError } from '@app/api/client';
+import { Button } from '@ui/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@ui/components/ui/card';
 
 interface ErrorStateProps {
-  error: unknown
-  onRetry?: () => void
+  error: unknown;
+  onRetry?: () => void;
 }
 
-/** Friendly error panel. Network failures get a hint about the local server not running. */
 export function ErrorState({ error, onRetry }: ErrorStateProps) {
-  const isNetworkError = error instanceof TypeError
+  const isNetworkError = error instanceof TypeError;
   const message =
     error instanceof ApiError
       ? `${error.status}: ${error.message}`
       : error instanceof Error
         ? error.message
-        : 'Unknown error'
+        : 'Unknown error';
 
   return (
     <Card className="border-destructive/40">
@@ -29,8 +34,8 @@ export function ErrorState({ error, onRetry }: ErrorStateProps) {
         <CardDescription>
           {isNetworkError ? (
             <>
-              The API at <code className="font-mono">{API_BASE_URL}</code> did not answer. Is the
-              local server running?
+              The API at <code className="font-mono">{API_BASE_URL}</code> did
+              not answer. Is the local server running?
             </>
           ) : (
             message
@@ -46,5 +51,5 @@ export function ErrorState({ error, onRetry }: ErrorStateProps) {
         </CardContent>
       )}
     </Card>
-  )
+  );
 }
