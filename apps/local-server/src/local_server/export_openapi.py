@@ -19,7 +19,6 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    # Imported lazily so `--help` works without loading FastAPI or reading .env.
     from local_server.app import app
 
     args.out.parent.mkdir(parents=True, exist_ok=True)

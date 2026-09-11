@@ -14,8 +14,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from local_server.routes import courses, vault
 
-# Origins the Vite dev server may be reached from. The browser only calls this API
-# cross-origin during local development, so localhost is all we need for now.
 DEV_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",

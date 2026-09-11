@@ -1,0 +1,2 @@
+pre-commit run
+cd apps/web && npx lint-staged

@@ -16,7 +16,6 @@ def _load_course_or_404(slug: str) -> CourseBundle:
     """Resolve `slug` inside the vault, translating filesystem errors into HTTP ones."""
     if not vault_path:
         raise HTTPException(500, "VAULT_PATH is not configured")
-    # A slug is a single folder name; refuse anything that could escape the vault.
     if slug in ("", ".", "..") or "/" in slug or "\\" in slug:
         raise HTTPException(404, "Course not found")
 
