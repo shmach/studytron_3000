@@ -5,7 +5,7 @@ import type { CourseBundle, Module, Topic } from '@app/api/client';
 import { ErrorState } from '@ui/components/error-state';
 import { StatusBadge } from '@ui/components/status-badge';
 import { Badge } from '@ui/components/ui/badge';
-import { Button } from '@ui/components/ui/button';
+import { Button } from '@ui/components/ui/Button';
 import {
   Card,
   CardContent,
@@ -16,7 +16,7 @@ import {
 import { Skeleton } from '@ui/components/ui/skeleton';
 import { useCourse } from '@app/hooks/useCourse';
 import { computeProgress } from '@app/lib/progress';
-import { ProgressBar } from '@ui/pages/courses-page';
+import { ProgressBar } from '@ui/pages/CoursesPage';
 
 export function CoursePage() {
   const { slug } = useParams<{ slug: string }>();

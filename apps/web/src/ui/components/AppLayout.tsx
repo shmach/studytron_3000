@@ -8,11 +8,11 @@ export function AppLayout() {
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4">
           <Link to="/" className="flex items-center gap-2 font-semibold">
             <BookOpen className="size-5" />
-            course-builder
+            StudyTRON 3000
           </Link>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-8">
+      <main className="mx-auto max-w-5xl min-h-full flex flex-col grow px-4 py-8">
         <Outlet />
       </main>
       <ScrollRestoration />

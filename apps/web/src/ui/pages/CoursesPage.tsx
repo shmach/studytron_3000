@@ -13,12 +13,37 @@ import {
 import { Skeleton } from '@ui/components/ui/skeleton';
 import { useCourses } from '@app/hooks/useCourses';
 import { computeProgress } from '@app/lib/progress';
+import { useState } from 'react';
+import { ArrowBigUp, FilePlus, Plus } from 'lucide-react';
+import { useIsMobile } from '@app/hooks/useIsMobile';
+import { Button } from '@ui/components/ui/Button';
 
 export function CoursesPage() {
   const { data, isPending, isError, error, refetch } = useCourses();
+  const isMobile = useIsMobile();
+
+  const [prompt, setPrompt] = useState<string>('');
+
+  async function handleSubmitOnKeyDown(
+    e: React.KeyboardEvent<HTMLFormElement>,
+  ) {
+    if (isMobile) return;
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      e.currentTarget.requestSubmit();
+    }
+  }
+
+  async function handleSubmitNewCourse(e: React.SubmitEvent<HTMLFormElement>) {
+    e.preventDefault();
+    console.log('Submit');
+  }
 
   return (
-    <div className="space-y-6">
+    <div
+      className="space-y-6 h-full flex flex-col
+    grow"
+    >
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Courses</h1>
         <p className="text-muted-foreground text-sm">
@@ -26,18 +51,48 @@ export function CoursesPage() {
         </p>
       </div>
 
-      {isPending && <CourseListSkeleton />}
-      {isError && <ErrorState error={error} onRetry={() => void refetch()} />}
-      {data && data.length === 0 && <EmptyState />}
-      {data && data.length > 0 && (
-        <ul className="grid gap-4 sm:grid-cols-2">
-          {data.map((bundle) => (
-            <li key={bundle.course.slug}>
-              <CourseCard bundle={bundle} />
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="min-w-full min-h-full flex flex-col grow">
+        {isPending && <CourseListSkeleton />}
+        {isError && <ErrorState error={error} onRetry={() => void refetch()} />}
+        {data && data.length === 0 && <EmptyState />}
+        {data && data.length > 0 && (
+          <ul className="h-3/4 grid gap-4 sm:grid-cols-2">
+            {data.map((bundle) => (
+              <li key={bundle.course.slug}>
+                <CourseCard bundle={bundle} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <form
+        className="w-full flex flex-col gap-2 border rounded-lg p-3"
+        onSubmit={(e) => handleSubmitNewCourse(e)}
+        onKeyDown={(e) => handleSubmitOnKeyDown(e)}
+      >
+        <textarea
+          placeholder="O que você deseja aprender hoje?"
+          aria-label="O que você deseja aprender hoje"
+          rows={1}
+          className="block min-h-14 max-h-fit w-full resize-none bg-transparent text-[15px] leading-6 outline-none placeholder:text-zinc-500"
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+        />
+        <div className="w-full h-fit flex justify-between items-center">
+          <div>
+            <Button type="button" size={'icon'} variant={'ghost'}>
+              <Plus />
+            </Button>
+            <Button type="button" size={'icon'} variant={'ghost'}>
+              <FilePlus />
+            </Button>
+          </div>
+          <Button type="submit" size={'icon'}>
+            <ArrowBigUp />
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }

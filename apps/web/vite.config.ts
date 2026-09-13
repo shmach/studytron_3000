@@ -8,9 +8,12 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      '@app': path.resolve(__dirname, './src/app'),
-      '@ui': path.resolve(__dirname, './src/ui'),
-      '@router': path.resolve(__dirname, './src/router'),
+      '@app': path.resolve(import.meta.dirname, './src/app'),
+      '@ui': path.resolve(import.meta.dirname, './src/ui'),
+      '@router': path.resolve(import.meta.dirname, './src/router'),
     },
+  },
+  server: {
+    port: 3000,
   },
 });

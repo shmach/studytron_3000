@@ -1,8 +1,8 @@
 import { createBrowserRouter } from 'react-router';
 
-import { AppLayout } from '@ui/components/app-layout';
+import { AppLayout } from '@ui/components/AppLayout';
 import { CoursePage } from '@ui/pages/course-page';
-import { CoursesPage } from '@ui/pages/courses-page';
+import { CoursesPage } from '@ui/pages/CoursesPage';
 import { NotFoundPage } from '@ui/pages/not-found-page';
 
 export const router = createBrowserRouter([

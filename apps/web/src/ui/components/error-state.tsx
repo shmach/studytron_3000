@@ -1,7 +1,7 @@
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 import { API_BASE_URL, ApiError } from '@app/api/client';
-import { Button } from '@ui/components/ui/button';
+import { Button } from '@ui/components/ui/Button';
 import {
   Card,
   CardContent,
