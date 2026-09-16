@@ -24,6 +24,7 @@ export type Subtopic = components['schemas']['Subtopic'];
 export type Lesson = components['schemas']['Lesson'];
 export type ExerciseSet = components['schemas']['ExerciseSet'];
 export type Attempt = components['schemas']['Attempt'];
+export type CourseCreationJob = components['schemas']['CourseCreationJob'];
 
 /** Error thrown by the hooks when the API answers with a non-2xx status. */
 export class ApiError extends Error {

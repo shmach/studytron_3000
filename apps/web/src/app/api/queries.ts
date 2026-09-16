@@ -51,3 +51,26 @@ export const courseDetailQuery = (slug: string) =>
         }),
       ),
   });
+
+export const courseJobQuery = (jobId: string) =>
+  queryOptions({
+    queryKey: ['courses', 'job', jobId] as const,
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/courses/jobs/{job_id}', {
+          params: { path: { job_id: jobId } },
+        }),
+      ),
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === 'done' || status === 'error' ? false : 2000;
+    },
+  });
+
+export async function createCourseJob(userPrompt: string) {
+  return unwrap(
+    await api.POST('/courses', {
+      params: { query: { user_prompt: userPrompt } },
+    }),
+  );
+}

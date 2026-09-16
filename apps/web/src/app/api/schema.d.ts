@@ -31,7 +31,8 @@ export interface paths {
     /** List Courses */
     get: operations['list_courses'];
     put?: never;
-    post?: never;
+    /** Create Course */
+    post: operations['create_course'];
     delete?: never;
     options?: never;
     head?: never;
@@ -81,6 +82,23 @@ export interface paths {
     };
     /** Get Exercise By Topic */
     get: operations['get_exercise_set'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/courses/jobs/{job_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Course Creation Job */
+    get: operations['get_course_creation_job'];
     put?: never;
     post?: never;
     delete?: never;
@@ -170,6 +188,16 @@ export interface components {
        */
       attempts: components['schemas']['Attempt'][];
     };
+    /** CourseCreationJob */
+    CourseCreationJob: {
+      /** Id */
+      id: string;
+      status: components['schemas']['JobStatus'];
+      /** Slug */
+      slug?: string | null;
+      /** Error */
+      error?: string | null;
+    };
     /** ExerciseSet */
     ExerciseSet: {
       /** Course */
@@ -191,6 +219,11 @@ export interface components {
       /** Detail */
       detail?: components['schemas']['ValidationError'][];
     };
+    /**
+     * JobStatus
+     * @enum {string}
+     */
+    JobStatus: 'pending' | 'running' | 'done' | 'error';
     /** Lesson */
     Lesson: {
       /** Course */
@@ -322,6 +355,37 @@ export interface operations {
       };
     };
   };
+  create_course: {
+    parameters: {
+      query: {
+        user_prompt: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CourseCreationJob'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   get_course: {
     parameters: {
       query?: never;
@@ -404,6 +468,37 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['ExerciseSet'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_course_creation_job: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        job_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CourseCreationJob'];
         };
       };
       /** @description Validation Error */

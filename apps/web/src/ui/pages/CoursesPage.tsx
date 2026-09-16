@@ -13,16 +13,39 @@ import {
 import { Skeleton } from '@ui/components/ui/skeleton';
 import { useCourses } from '@app/hooks/useCourses';
 import { computeProgress } from '@app/lib/progress';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowBigUp, FilePlus, Plus } from 'lucide-react';
 import { useIsMobile } from '@app/hooks/useIsMobile';
 import { Button } from '@ui/components/ui/Button';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCreateCourse } from '@app/hooks/useCreateCourse';
+import { useCourseJob } from '@app/hooks/useCourseJob';
+import { courseKeys } from '@app/api/queries';
 
 export function CoursesPage() {
+  const queryClient = useQueryClient();
   const { data, isPending, isError, error, refetch } = useCourses();
+  const { mutateAsync: createCourse } = useCreateCourse();
   const isMobile = useIsMobile();
 
   const [prompt, setPrompt] = useState<string>('');
+  const [jobId, setJobId] = useState<string | null>(null);
+  const { data: job } = useCourseJob(jobId);
+
+  useEffect(() => {
+    if (!job) return;
+    console.log(job);
+
+    if (job.status === 'done') {
+      // Void is used to "fire and forget" - not need to await a promise that we don't need to.
+      void queryClient.invalidateQueries({ queryKey: courseKeys.list() });
+      setJobId(null);
+      setPrompt('');
+    } else if (job.status === 'error') {
+      setJobId(null);
+      // TODO: Show error on screen
+    }
+  }, [job, queryClient]);
 
   async function handleSubmitOnKeyDown(
     e: React.KeyboardEvent<HTMLFormElement>,
@@ -35,15 +58,18 @@ export function CoursesPage() {
   }
 
   async function handleSubmitNewCourse(e: React.SubmitEvent<HTMLFormElement>) {
-    e.preventDefault();
-    console.log('Submit');
+    try {
+      e.preventDefault();
+      if (!prompt.trim() || jobId) return;
+      const created = await createCourse(prompt);
+      setJobId(created.id);
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   return (
-    <div
-      className="space-y-6 h-full flex flex-col
-    grow"
-    >
+    <div className="space-y-6 h-full flex flex-col grow">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Courses</h1>
         <p className="text-muted-foreground text-sm">
@@ -78,6 +104,7 @@ export function CoursesPage() {
           className="block min-h-14 max-h-fit w-full resize-none bg-transparent text-[15px] leading-6 outline-none placeholder:text-zinc-500"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
+          disabled={jobId !== null}
         />
         <div className="w-full h-fit flex justify-between items-center">
           <div>

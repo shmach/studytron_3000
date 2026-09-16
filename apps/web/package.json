@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "lint": "oxlint",
     "typecheck": "tsc -b",
-    "generate:types": "uv run export-openapi --out openapi.json && openapi-typescript openapi.json -o src/api/schema.d.ts",
+    "generate:types": "uv run export-openapi --out openapi.json && openapi-typescript openapi.json -o src/app/api/schema.d.ts",
     "prepare": "cd ../.. && husky apps/web/.husky"
   },
   "lint-staged": {
