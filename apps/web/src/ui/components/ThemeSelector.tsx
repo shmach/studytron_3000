@@ -8,7 +8,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from '@ui/components/ui/dropdown-menu';
+} from '@ui/components/ui/DropdownMenu';
 
 type ThemeOpts = ReturnType<typeof useTheme>['theme'];
 
