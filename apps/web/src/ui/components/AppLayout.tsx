@@ -1,6 +1,8 @@
 import { BookOpen } from 'lucide-react';
 import { Link, Outlet, ScrollRestoration } from 'react-router';
 
+import { ThemeSelector } from '@ui/components/ThemeSelector';
+
 export function AppLayout() {
   return (
     <div className="min-h-svh bg-background">
@@ -10,6 +12,9 @@ export function AppLayout() {
             <BookOpen className="size-5" />
             StudyTRON 3000
           </Link>
+          <div className="ml-auto">
+            <ThemeSelector />
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-5xl min-h-full flex flex-col grow px-4 py-8">
