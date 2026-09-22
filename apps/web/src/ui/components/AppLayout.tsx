@@ -5,7 +5,7 @@ import { ThemeSelector } from '@ui/components/ThemeSelector';
 
 export function AppLayout() {
   return (
-    <div className="min-h-svh bg-background">
+    <div className="min-h-svh bg-background flex flex-col justify-center">
       <header className="border-b">
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4">
           <Link to="/" className="flex items-center gap-2 font-semibold">
@@ -17,7 +17,7 @@ export function AppLayout() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl min-h-full flex flex-col grow px-4 py-8">
+      <main className="min-w-full mx-auto min-h-full flex flex-col justify-center items-center grow px-4 py-8">
         <Outlet />
       </main>
       <ScrollRestoration />

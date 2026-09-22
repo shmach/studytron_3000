@@ -13,14 +13,17 @@ import {
 import { Skeleton } from '@ui/components/ui/skeleton';
 import { useCourses } from '@app/hooks/useCourses';
 import { computeProgress } from '@app/lib/progress';
-import { useEffect, useState } from 'react';
-import { ArrowBigUp, FilePlus, Plus } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowBigUp, FilePlus, Plus, Search } from 'lucide-react';
 import { useIsMobile } from '@app/hooks/useIsMobile';
 import { Button } from '@ui/components/ui/Button';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCreateCourse } from '@app/hooks/useCreateCourse';
 import { useCourseJob } from '@app/hooks/useCourseJob';
 import { courseKeys } from '@app/api/queries';
+import { Input } from '@ui/components/ui/Input';
+import { useDebounce } from '@app/hooks/useDebounce';
+import { filterCourses } from '@app/lib/courseSearch';
 
 export function CoursesPage() {
   const queryClient = useQueryClient();
@@ -28,6 +31,8 @@ export function CoursesPage() {
   const { mutateAsync: createCourse } = useCreateCourse();
   const isMobile = useIsMobile();
 
+  const [search, setSearch] = useState<string>('');
+  const debouncedSearch = useDebounce(search);
   const [prompt, setPrompt] = useState<string>('');
   const [jobId, setJobId] = useState<string | null>(null);
   const { data: job } = useCourseJob(jobId);
@@ -46,6 +51,10 @@ export function CoursesPage() {
       // TODO: Show error on screen
     }
   }, [job, queryClient]);
+
+  useEffect(() => {
+    console.log('Fetch enviado com filtro debounced');
+  }, [debouncedSearch]);
 
   async function handleSubmitOnKeyDown(
     e: React.KeyboardEvent<HTMLFormElement>,
@@ -68,22 +77,40 @@ export function CoursesPage() {
     }
   }
 
+  const filteredCourses = useMemo(
+    () => filterCourses(data ?? [], debouncedSearch),
+    [data, debouncedSearch],
+  );
+
   return (
-    <div className="space-y-6 h-full flex flex-col grow">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Courses</h1>
-        <p className="text-muted-foreground text-sm">
-          Every course found in the vault served by the local server.
-        </p>
+    <div className="min-w-full md:min-w-[70%] lg:min-w-3xl space-y-6 flex flex-col gap-8">
+      <h1 className="text-4xl font-bold text-center m-0">
+        O que vai ser hoje chefe?
+      </h1>
+      <div className="min-w-full bg-transparent dark:bg-input/30 shadow-sm py-2 px-4 rounded-lg flex justify-center items-center border dark:border-none m-0">
+        <Search />
+        <Input
+          className="bg-transparent dark:bg-transparent border-none focus-visible:ring-0 shadow-none font-medium"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <Button
+          type="button"
+          size={'icon'}
+          variant={'default'}
+          className="rounded-full"
+        >
+          <Plus />
+        </Button>
       </div>
 
-      <div className="min-w-full min-h-full flex flex-col grow">
+      <div className="min-w-full flex flex-col">
         {isPending && <CourseListSkeleton />}
         {isError && <ErrorState error={error} onRetry={() => void refetch()} />}
         {data && data.length === 0 && <EmptyState />}
         {data && data.length > 0 && (
-          <ul className="h-3/4 grid gap-4 sm:grid-cols-2">
-            {data.map((bundle) => (
+          <ul className="h-3/4 flex flex-col gap-4">
+            {filteredCourses?.map((bundle) => (
               <li key={bundle.course.slug}>
                 <CourseCard bundle={bundle} />
               </li>
@@ -92,7 +119,7 @@ export function CoursesPage() {
         )}
       </div>
 
-      <form
+      {/* <form
         className="w-full flex flex-col gap-2 border rounded-lg p-3"
         onSubmit={(e) => handleSubmitNewCourse(e)}
         onKeyDown={(e) => handleSubmitOnKeyDown(e)}
@@ -119,7 +146,7 @@ export function CoursesPage() {
             <ArrowBigUp />
           </Button>
         </div>
-      </form>
+      </form> */}
     </div>
   );
 }
@@ -174,7 +201,7 @@ export function ProgressBar({ percent }: { percent: number }) {
 
 function CourseListSkeleton() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="flex gap-4 flex-col">
       {Array.from({ length: 2 }, (_, index) => (
         <Card key={index}>
           <CardHeader>
