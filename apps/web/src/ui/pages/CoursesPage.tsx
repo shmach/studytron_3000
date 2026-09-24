@@ -14,8 +14,7 @@ import { Skeleton } from '@ui/components/ui/skeleton';
 import { useCourses } from '@app/hooks/useCourses';
 import { computeProgress } from '@app/lib/progress';
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowBigUp, FilePlus, Plus, Search } from 'lucide-react';
-import { useIsMobile } from '@app/hooks/useIsMobile';
+import { Search } from 'lucide-react';
 import { Button } from '@ui/components/ui/Button';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCreateCourse } from '@app/hooks/useCreateCourse';
@@ -24,16 +23,16 @@ import { courseKeys } from '@app/api/queries';
 import { Input } from '@ui/components/ui/Input';
 import { useDebounce } from '@app/hooks/useDebounce';
 import { filterCourses } from '@app/lib/courseSearch';
+import { CourseQuestionnaireDialog } from '@ui/components/CourseQuestionnaireDialog';
 
 export function CoursesPage() {
   const queryClient = useQueryClient();
   const { data, isPending, isError, error, refetch } = useCourses();
   const { mutateAsync: createCourse } = useCreateCourse();
-  const isMobile = useIsMobile();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const [search, setSearch] = useState<string>('');
   const debouncedSearch = useDebounce(search);
-  const [prompt, setPrompt] = useState<string>('');
   const [jobId, setJobId] = useState<string | null>(null);
   const { data: job } = useCourseJob(jobId);
 
@@ -45,32 +44,20 @@ export function CoursesPage() {
       // Void is used to "fire and forget" - not need to await a promise that we don't need to.
       void queryClient.invalidateQueries({ queryKey: courseKeys.list() });
       setJobId(null);
-      setPrompt('');
     } else if (job.status === 'error') {
       setJobId(null);
       // TODO: Show error on screen
     }
   }, [job, queryClient]);
 
-  useEffect(() => {
-    console.log('Fetch enviado com filtro debounced');
-  }, [debouncedSearch]);
+  // useEffect(() => {
+  //   console.log('Fetch enviado com filtro debounced');
+  // }, [debouncedSearch]);
 
-  async function handleSubmitOnKeyDown(
-    e: React.KeyboardEvent<HTMLFormElement>,
-  ) {
-    if (isMobile) return;
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      e.currentTarget.requestSubmit();
-    }
-  }
-
-  async function handleSubmitNewCourse(e: React.SubmitEvent<HTMLFormElement>) {
+  async function handleQuestionnaireSubmit(formattedPrompt: string) {
+    if (jobId) return;
     try {
-      e.preventDefault();
-      if (!prompt.trim() || jobId) return;
-      const created = await createCourse(prompt);
+      const created = await createCourse(formattedPrompt);
       setJobId(created.id);
     } catch (error) {
       console.error(error);
@@ -94,22 +81,40 @@ export function CoursesPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <Button
-          type="button"
-          size={'icon'}
-          variant={'default'}
-          className="rounded-full"
-        >
-          <Plus />
-        </Button>
       </div>
 
       <div className="min-w-full flex flex-col">
         {isPending && <CourseListSkeleton />}
         {isError && <ErrorState error={error} onRetry={() => void refetch()} />}
-        {data && data.length === 0 && <EmptyState />}
-        {data && data.length > 0 && (
-          <ul className="h-3/4 flex flex-col gap-4">
+
+        {filteredCourses && filteredCourses.length === 0 && (
+          <Card className="flex flex-col items-center justify-center gap-4 w-full">
+            <CardHeader className="w-full flex flex-col gap-2 justify-center items-center">
+              <CardTitle className="text-center">
+                Curso não encontrado! 😢
+              </CardTitle>
+              <CardDescription className="text-center">
+                Não foi possível encontrar um curso para esse tópico. Deseja
+                criar um?
+              </CardDescription>
+            </CardHeader>
+            <CourseQuestionnaireDialog
+              topic={search}
+              onSubmit={(formattedPrompt) =>
+                void handleQuestionnaireSubmit(formattedPrompt)
+              }
+              open={isDialogOpen}
+              setOpenDialog={setIsDialogOpen}
+            >
+              <Button className="w-fit">
+                Criar curso sobre: {debouncedSearch}
+              </Button>
+            </CourseQuestionnaireDialog>
+          </Card>
+        )}
+
+        {filteredCourses && filteredCourses.length > 0 && (
+          <ul className="h-3/4 flex flex-col gap-4 overflow-y-auto">
             {filteredCourses?.map((bundle) => (
               <li key={bundle.course.slug}>
                 <CourseCard bundle={bundle} />
@@ -118,35 +123,6 @@ export function CoursesPage() {
           </ul>
         )}
       </div>
-
-      {/* <form
-        className="w-full flex flex-col gap-2 border rounded-lg p-3"
-        onSubmit={(e) => handleSubmitNewCourse(e)}
-        onKeyDown={(e) => handleSubmitOnKeyDown(e)}
-      >
-        <textarea
-          placeholder="O que você deseja aprender hoje?"
-          aria-label="O que você deseja aprender hoje"
-          rows={1}
-          className="block min-h-14 max-h-fit w-full resize-none bg-transparent text-[15px] leading-6 outline-none placeholder:text-zinc-500"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          disabled={jobId !== null}
-        />
-        <div className="w-full h-fit flex justify-between items-center">
-          <div>
-            <Button type="button" size={'icon'} variant={'ghost'}>
-              <Plus />
-            </Button>
-            <Button type="button" size={'icon'} variant={'ghost'}>
-              <FilePlus />
-            </Button>
-          </div>
-          <Button type="submit" size={'icon'}>
-            <ArrowBigUp />
-          </Button>
-        </div>
-      </form> */}
     </div>
   );
 }
@@ -215,22 +191,5 @@ function CourseListSkeleton() {
         </Card>
       ))}
     </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>No courses yet</CardTitle>
-        <CardDescription>
-          The vault has no folder with a{' '}
-          <code className="font-mono">00-curriculum.md</code>. Ask the
-          course-builder skill to create a course, or check the{' '}
-          <code className="font-mono">VAULT_PATH</code> setting of the local
-          server.
-        </CardDescription>
-      </CardHeader>
-    </Card>
   );
 }
