@@ -1,7 +1,7 @@
 import { createBrowserRouter } from 'react-router';
 
 import { AppLayout } from '@ui/components/AppLayout';
-import { CoursePage } from '@ui/pages/course-page';
+import { CoursePage } from '@ui/pages/CoursePage';
 import { CoursesPage } from '@ui/pages/CoursesPage';
 import { NotFoundPage } from '@ui/pages/not-found-page';
 

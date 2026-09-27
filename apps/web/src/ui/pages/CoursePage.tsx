@@ -1,7 +1,8 @@
 import { ArrowLeft } from 'lucide-react';
-import { Link, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 
 import type { CourseBundle, Module, Topic } from '@app/api/client';
+import { DeleteCourseDialog } from '@ui/components/DeleteCourseDialog';
 import { ErrorState } from '@ui/components/error-state';
 import { StatusBadge } from '@ui/components/status-badge';
 import { Badge } from '@ui/components/ui/badge';
@@ -21,15 +22,27 @@ import { ProgressBar } from '@ui/pages/CoursesPage';
 export function CoursePage() {
   const { slug } = useParams<{ slug: string }>();
   const { data, isPending, isError, error, refetch } = useCourse(slug);
+  const navigate = useNavigate();
+
+  const course = data ? data.course : undefined;
 
   return (
-    <div className="space-y-6">
-      <Button asChild variant="ghost" size="sm" className="-ml-2">
-        <Link to="/">
-          <ArrowLeft />
-          All courses
-        </Link>
-      </Button>
+    <div className="flex w-full flex-col gap-8">
+      <nav className="w-full flex justify-between items-center">
+        <Button asChild variant="ghost" size="sm" className="-ml-2">
+          <Link to="/">
+            <ArrowLeft />
+            All courses
+          </Link>
+        </Button>
+        {course && (
+          <DeleteCourseDialog
+            slug={course.slug}
+            courseName={course.course}
+            onDeleted={() => void navigate('/')}
+          />
+        )}
+      </nav>
 
       {isPending && <CourseSkeleton />}
       {isError && <ErrorState error={error} onRetry={() => void refetch()} />}
@@ -48,9 +61,11 @@ function CourseDetail({ bundle }: { bundle: CourseBundle }) {
   return (
     <>
       <header className="space-y-3">
-        <h1 className="text-3xl font-semibold tracking-tight">
-          {course.course}
-        </h1>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <h1 className="text-3xl font-semibold tracking-tight">
+            {course.course}
+          </h1>
+        </div>
         <p className="text-muted-foreground">{course.goal}</p>
         <div className="flex flex-wrap gap-2">
           <Badge variant="secondary">{course.level}</Badge>

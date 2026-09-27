@@ -16,15 +16,22 @@ router = APIRouter(prefix="/courses", tags=["courses"])
 vault_path = os.getenv("VAULT_PATH") or None
 
 
-def _load_course_or_404(slug: str) -> CourseBundle:
-    """Resolve `slug` inside the vault, translating filesystem errors into HTTP ones."""
+def _course_dir_or_404(slug: str) -> Path:
+    """Map `slug` to its folder inside the vault, rejecting anything that could escape it."""
     if not vault_path:
         raise HTTPException(500, "VAULT_PATH is not configured")
     if slug in ("", ".", "..") or "/" in slug or "\\" in slug:
         raise HTTPException(404, "Course not found")
 
+    return Path(vault_path) / slug
+
+
+def _load_course_or_404(slug: str) -> CourseBundle:
+    """Resolve `slug` inside the vault, translating filesystem errors into HTTP ones."""
+    course_dir = _course_dir_or_404(slug)
+
     try:
-        return vault.load_course(Path(vault_path) / slug)
+        return vault.load_course(course_dir)
     except FileNotFoundError as exc:
         raise HTTPException(404, "Course not found") from exc
 
@@ -42,6 +49,16 @@ def list_courses() -> list[CourseBundle]:
 @router.get("/{slug}", operation_id="get_course")
 def get_course_by_slug(slug: str) -> CourseBundle:
     return _load_course_or_404(slug)
+
+
+@router.delete("/{slug}", operation_id="delete_course", status_code=204)
+def delete_course(slug: str) -> None:
+    course_dir = _course_dir_or_404(slug)
+
+    try:
+        vault.delete_course(course_dir)
+    except FileNotFoundError as exc:
+        raise HTTPException(404, "Course not found") from exc
 
 
 @router.get("/{slug}/lessons/{topic_id}", operation_id="get_lesson")

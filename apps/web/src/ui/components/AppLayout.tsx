@@ -17,7 +17,7 @@ export function AppLayout() {
           </div>
         </div>
       </header>
-      <main className="min-w-full mx-auto min-h-full flex flex-col justify-center items-center grow px-4 py-8">
+      <main className="mx-auto flex w-full max-w-5xl grow flex-col px-4 py-8">
         <Outlet />
       </main>
       <ScrollRestoration />
