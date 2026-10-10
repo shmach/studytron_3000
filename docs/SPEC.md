@@ -492,7 +492,38 @@ Notas de design:
 - Exercícios não contêm respostas; a correção continua sendo feita pela skill
   (o app só lê no MVP).
 
-#### Feature 6 — Progresso do aluno pelo app
+#### Feature 6 — Skill tree (currículo gamificado)
+
+Além da trilha linear, a skill passa a poder gerar o currículo como uma árvore de
+habilidades: mais ampla, com ramos opcionais e pré-requisitos múltiplos. A trilha
+linear **continua existindo** e não é substituída.
+
+- [ ] Campo de pré-requisitos no `topic-meta`: `requires_all` (E) e `requires_any`
+      (OU). Um nó usa um ou outro, ou ambos se a regra mista for necessária.
+- [ ] Campo `optional: true` no `topic-meta` para marcar ramos opcionais.
+- [ ] Validação no `course-parser`: ids existentes, sem ciclos, sem auto-referência.
+      A linear precisa ser uma ordenação topológica válida do grafo (pré-requisitos
+      sempre antes do nó que dependem deles).
+- [ ] Skill gera a árvore a partir do mesmo conteúdo, com a mesma validação.
+- [ ] Desbloqueio é **derivado**, calculado no cliente a partir de `requires_*` e
+      `status`; nada é armazenado fora do vault.
+- [ ] Progresso separado em dois contadores:
+      - **Obrigatórios:** N/N = 100%. Só nós não opcionais contam para concluir o curso.
+      - **Extras:** contados à parte, por exemplo "Extras 3/5". Não entram no percentual
+        de conclusão.
+
+**Entrega:** árvore navegável gerada pela skill, com desbloqueio por pré-requisito e
+progresso de obrigatórios e extras separados.
+
+Notas de design:
+
+- Nós obrigatórios dependem apenas de nós obrigatórios. Assim o caminho principal
+  continua completo sem os extras, e "curso concluído" tem uma definição única.
+- Alternativa descartada: percentual acima de 100%. Dois contadores deixam explícito
+  o que é necessário para concluir e o que é bônus.
+- Depende da Feature 4 (visual de grafo) e da Feature 5 (páginas de aula).
+
+#### Feature 7 — Progresso do aluno pelo app
 
 Status do tópico passa a ser marcado pelo aluno (manualmente no Obsidian ou pelo app).
 A skill já documenta o modo não interativo ([skill/SKILL.md](../skill/SKILL.md), seção
@@ -540,6 +571,13 @@ Notas de design:
   só Chromium.
 - **Backend do SaaS (AWS serverless):** reaproveita `course-parser` e o mesmo
   frontend; vem depois do app local provar o conceito.
+- **Armazenamento em nuvem e sincronização entre dispositivos:** por enquanto o
+  vault continua local e é a fonte de verdade, inclusive para progresso. Quando o
+  SaaS for planejado, decidir: (a) separação conteúdo (bucket, imutável por versão)
+  × progresso (banco por usuário com API de escrita); (b) provedor (AWS ou
+  Cloudflare); (c) geração na máquina do usuário ou em worker; (d) destino do
+  Obsidian (editor ou somente leitura); (e) autenticação e contas, pré-requisito
+  para o app mobile sincronizar entre dispositivos.
 
 ## 10. Pontos de atenção conhecidos
 
