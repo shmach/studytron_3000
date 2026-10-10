@@ -1,10 +1,10 @@
-import os
 from pathlib import Path
 
 from course_parser import CourseBundle, ExerciseSet, Lesson, vault
 from dotenv import load_dotenv
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 
+from local_server.config.env import Env
 from local_server.services.job_store import CourseCreationJob, job_store
 from local_server.services.local_process import InvalidPromptException, LocalProcess
 from local_server.utils.existing_slugs import _existing_slugs
@@ -13,17 +13,17 @@ load_dotenv()
 
 router = APIRouter(prefix="/courses", tags=["courses"])
 
-vault_path = os.getenv("VAULT_PATH") or None
+env = Env()
 
 
 def _course_dir_or_404(slug: str) -> Path:
     """Map `slug` to its folder inside the vault, rejecting anything that could escape it."""
-    if not vault_path:
+    if not env.VAULT_PATH:
         raise HTTPException(500, "VAULT_PATH is not configured")
     if slug in ("", ".", "..") or "/" in slug or "\\" in slug:
         raise HTTPException(404, "Course not found")
 
-    return Path(vault_path) / slug
+    return Path(env.VAULT_PATH) / slug
 
 
 def _load_course_or_404(slug: str) -> CourseBundle:
@@ -38,12 +38,12 @@ def _load_course_or_404(slug: str) -> CourseBundle:
 
 @router.get("", operation_id="list_courses")
 def list_courses() -> list[CourseBundle]:
-    if not vault_path:
+    if not env.VAULT_PATH:
         raise HTTPException(500, "VAULT_PATH is not configured")
     try:
-        return vault.load_vault(Path(vault_path))
+        return vault.load_vault(Path(env.VAULT_PATH))
     except FileNotFoundError as exc:
-        raise HTTPException(500, f"vault not found: {vault_path}") from exc
+        raise HTTPException(500, f"vault not found: {env.VAULT_PATH}") from exc
 
 
 @router.get("/{slug}", operation_id="get_course")
@@ -91,7 +91,7 @@ async def _run_course_creation(job_id: str, prompt: str) -> None:
 
     try:
         local_process = LocalProcess(tool="claude", prompt=prompt)
-        await local_process.create_course_subprocess(cwd=vault_path)
+        await local_process.create_course_subprocess(cwd=env.VAULT_PATH)
         # print(f"[create_course] CLI result: {result}") # TODO: apagar depois
     except (InvalidPromptException, RuntimeError) as exc:
         job_store.mark_error(job_id, str(exc))
@@ -108,8 +108,8 @@ async def create_course(
     if not user_prompt:
         raise HTTPException(400, "Prompt must have a content")
 
-    if not vault_path:
-        raise HTTPException(500, "VAULT_PATH is not configured")
+    if not env.VAULT_PATH:
+        raise HTTPException(500, "VAULT PATH is not configured")
 
     prompt = (
         "Create a structured course using the skill course-builder. "
