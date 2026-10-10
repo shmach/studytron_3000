@@ -113,9 +113,14 @@ Corpo:
 - Subtópicos: `- [ ] **N.M.K <nome>** — <2–3 linhas de escopo>` (`[x]` quando
   concluído). Linhas seguintes não vazias continuam a descrição.
 
-Semântica de `status`: `pending` nada gerado; `in_progress` aula gerada, exercícios
-não tentados; `completed` aula feita e tentativas aceitáveis; `review` lacunas
-detectadas, próxima aula abre com reforço.
+Semântica de `status` (progresso **do aluno**, não da geração): `pending` não iniciado,
+padrão de todo tópico, inclusive sem aula gerada; `in_progress` aula gerada e o aluno
+está estudando (a skill define ao escrever a aula); `completed` aluno confirmou que
+concluiu (a skill pergunta ao gerar a próxima aula, ou o aluno edita à mão); `review`
+aluno quer revisar ou tentativas acusaram lacunas, próxima aula abre com reforço.
+Um tópico só pode ser `in_progress` se a aula existir. Ao gerar uma aula, a skill
+verifica se há tópicos `in_progress` e pergunta se foram concluídos, viram `review`
+ou continuam em andamento.
 
 Profundidade escala a quantidade: `quick` 3–4 módulos × 2–3 tópicos; `standard`
 5–7 × 3–4; `deep` 8+ × 4–5. Atualizações de estado editam **só** o bloco
@@ -487,13 +492,42 @@ Notas de design:
 - Exercícios não contêm respostas; a correção continua sendo feita pela skill
   (o app só lê no MVP).
 
+#### Feature 6 — Progresso do aluno pelo app
+
+Status do tópico passa a ser marcado pelo aluno (manualmente no Obsidian ou pelo app).
+A skill já documenta o modo não interativo ([skill/SKILL.md](../skill/SKILL.md), seção
+"Interaction mode"); falta o lado do servidor e do app.
+
+- [ ] Rota `PATCH /courses/{slug}/topics/{topic_id}/status`: altera só a linha `status`
+      do bloco `topic-meta` em `00-curriculum.md`, sem regenerar o arquivo. Aceita só
+      `pending | in_progress | completed | review`. Recusa `in_progress` se a aula do
+      tópico não existir.
+- [ ] Prompt de geração de aula no servidor declara o modo não interativo (a skill
+      não pode perguntar com ninguém do outro lado).
+- [ ] App lê as linhas `Pending status decision: <id> <título>` da saída da skill e mostra
+      um diálogo com três opções (concluí / quero revisar / ainda estou estudando), que
+      chamam a rota de PATCH. A decisão é do aluno e não passa pelo LLM.
+- [ ] Rota de geração de aula (ainda não existe; hoje só a criação de curso roda a skill).
+
+**Entrega:** o aluno muda o status de um tópico pelo app ou pelo Obsidian, e o app
+reflete a mudança sem regenerar nenhum arquivo.
+
+Notas de design:
+
+- A correção de exercícios continua marcando `completed` quando o resultado é `good`
+  ([skill/references/exercises-format.md](../skill/references/exercises-format.md)).
+  Isso é aceito: o aluno pode sempre corrigir o status à mão.
+- Edição concorrente com o Obsidian continua em aberto (ver "Decisões adiadas").
+
 #### Stretch (pós-protótipo)
 
 - [ ] **Atualização em tempo real:** `watchfiles` observando o vault + SSE do
       FastAPI, para o frontend refletir o que a skill gera sem F5. Hoje o app
       depende de `staleTime` (30 s), refetch no foco e do polling dos jobs.
-- [ ] **Write-back de progresso pela UI** (ver "Decisões adiadas": edição
-      concorrente com o Obsidian).
+- [ ] **Write-back de status pela UI:** rota `PATCH /courses/{slug}/topics/{topic_id}/status`
+      alterando só a linha `status` do bloco `topic-meta` em `00-curriculum.md`. Escopo
+      limitado a status; edição concorrente com o Obsidian continua em aberto (ver
+      "Decisões adiadas").
 - [ ] **Empacotamento desktop (Tauri)**.
 - [ ] **Publicar `course-parser` no PyPI** como pacote independente.
 

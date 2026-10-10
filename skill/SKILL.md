@@ -43,6 +43,23 @@ Course layout (paths relative to the configured courses root):
       <topic-id>-attempt-<n>.md      <- user attempts + corrections
 ```
 
+## Interaction mode
+
+The skill may run with no person present, for example when the local server
+launches it with `claude -p`. The calling prompt says so explicitly (e.g.
+"non-interactive" or "no user is present"). Without that statement, assume a
+user is present and ask when a decision is needed.
+
+In non-interactive mode:
+
+- Never ask a question. Use the defaults defined in the workflow.
+- Leave every `in_progress` topic unchanged. Do not mark anything `completed`
+  or `review` on the user's behalf.
+- Finish the requested work, then end the output with a line per topic that
+  still needs a status decision, e.g. `Pending status decision: 1.2 <topic name>`.
+  The app shows these to the user and answers them through the status route,
+  not through the skill.
+
 ## Deciding what the user wants
 
 Map the request to one of five workflows:
@@ -75,6 +92,20 @@ by hand between sessions; that is a supported and expected behavior).
 
 ## Workflow 2 — Generate a lesson
 
+Before generating anything, close the lesson that is still open:
+
+- Scan `00-curriculum.md` for topics with `status: in_progress`. If there are
+  any, ask the user, in one question per topic, whether they finished it:
+  - **Finished** → set `status: completed` and check that topic's subtopic
+    checkboxes.
+  - **Wants a review** → set `status: review`.
+  - **Still studying** → leave it as `in_progress`.
+- Do not guess the answer. In interactive mode, if the user does not answer,
+  stop and ask again before writing anything. In non-interactive mode, skip
+  this step and follow the rules in "Interaction mode".
+
+Then generate the lesson:
+
 1. Read `00-curriculum.md`. Identify the target topic: the one the user named,
    or the first topic with `status: pending` if they said "next".
 2. Read the lesson files of the 2–3 most recently completed topics, plus any
@@ -85,8 +116,9 @@ by hand between sessions; that is a supported and expected behavior).
    with a short "Quick review" section (a few paragraphs max) addressing those
    specific weak points, referencing — not repeating — the earlier material.
 4. Generate the lesson following `references/lesson-format.md`. Write it to
-   `lessons/`, then update the topic's front matter in `00-curriculum.md`
-   (`status: completed`, check the checkbox, set `last_reviewed`).
+   `lessons/`, then update the topic's front matter in `00-curriculum.md`:
+   `status: in_progress` and `last_reviewed` set to today. Leave the subtopic
+   checkboxes unchecked until the topic is completed.
 5. Close by offering exercises for the topic.
 
 ## Workflow 3 — Generate exercises
