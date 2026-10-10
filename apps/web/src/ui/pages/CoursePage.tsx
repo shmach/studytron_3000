@@ -7,7 +7,7 @@ import { DeleteCourseDialog } from '@ui/components/DeleteCourseDialog';
 import { ErrorState } from '@ui/components/error-state';
 import { StatusBadge } from '@ui/components/status-badge';
 import { Badge } from '@ui/components/ui/badge';
-import { Button } from '@ui/components/ui/Button';
+import { Button } from '@ui/components/ui/button';
 import {
   Card,
   CardContent,

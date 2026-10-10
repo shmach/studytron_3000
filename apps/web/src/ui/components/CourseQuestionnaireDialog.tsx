@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, SubmitEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -169,7 +169,7 @@ export function CourseQuestionnaireDialog({
     },
   ];
 
-  function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     onSubmit(buildPrompt(topic, new FormData(event.currentTarget)));
     setOpenDialog(false);

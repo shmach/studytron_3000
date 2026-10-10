@@ -14,7 +14,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@ui/components/ui/AlertDialog';
-import { Button } from '@ui/components/ui/Button';
+import { Button } from '@ui/components/ui/button';
 
 interface DeleteCourseDialogProps {
   slug: string;

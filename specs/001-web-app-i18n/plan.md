@@ -16,12 +16,14 @@ The `apps/web` UI mixes hardcoded English and Portuguese (e.g. `ThemeSelector` i
 |---|------|-------|--------|
 | 1 | Install dependencies | Claude | ✅ done |
 | 2 | Catalogs `en.json` / `pt-BR.json` | Claude | ✅ done |
-| 3 | Init `src/app/i18n/index.ts` | user | ⚠️ written, 2 fixes needed (see review) |
-| 4 | Typed keys `src/app/i18n/i18next.d.ts` | user | ⏳ file exists but empty |
+| 3 | Init `src/app/i18n/index.ts` | user | ✅ done (review fixes applied) |
+| 4 | Typed keys `src/app/i18n/i18next.d.ts` | user | ✅ done |
 | 5 | Bootstrap import in `main.tsx` | user | ✅ done |
-| 6 | `LanguageSelector` in header | user | ⏳ not started |
-| 7 | Migrate strings to `t()` / `<Trans>` | Claude | ⏳ blocked on 3–4 |
-| 8 | Key parity check + verification | Claude | ⏳ |
+| 6 | `LanguageSelector` in header | user | ✅ done |
+| 7 | Migrate strings to `t()` / `<Trans>` | Claude | ✅ done |
+| 8 | Key parity check + verification | Claude | ✅ done |
+
+**Status:** implementation complete. `typecheck` and `check:i18n` pass; manual checks validated in both languages. Known exception: `'Português'` in `CourseQuestionnaireDialog.tsx` is a native language name and stays untranslated, so the accent grep in step 8 excludes it.
 
 ## Review of what was done (step 3)
 

@@ -2,7 +2,7 @@ import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Trans, useTranslation } from 'react-i18next';
 
 import { API_BASE_URL, ApiError } from '@app/api/client';
-import { Button } from '@ui/components/ui/Button';
+import { Button } from '@ui/components/ui/button';
 import {
   Card,
   CardContent,

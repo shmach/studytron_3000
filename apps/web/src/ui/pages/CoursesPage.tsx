@@ -16,7 +16,7 @@ import { useCourses } from '@app/hooks/useCourses';
 import { computeProgress } from '@app/lib/progress';
 import { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
-import { Button } from '@ui/components/ui/Button';
+import { Button } from '@ui/components/ui/button';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCreateCourse } from '@app/hooks/useCreateCourse';
 import { useCourseJob } from '@app/hooks/useCourseJob';
@@ -52,10 +52,6 @@ export function CoursesPage() {
     }
   }, [job, queryClient]);
 
-  // useEffect(() => {
-  //   console.log('Fetch enviado com filtro debounced');
-  // }, [debouncedSearch]);
-
   async function handleQuestionnaireSubmit(formattedPrompt: string) {
     if (jobId) return;
     try {
@@ -89,30 +85,33 @@ export function CoursesPage() {
         {isPending && <CourseListSkeleton />}
         {isError && <ErrorState error={error} onRetry={() => void refetch()} />}
 
-        {filteredCourses && filteredCourses.length === 0 && (
-          <Card className="flex flex-col items-center justify-center gap-4 w-full">
-            <CardHeader className="w-full flex flex-col gap-2 justify-center items-center">
-              <CardTitle className="text-center">
-                {t('courses.notFoundTitle')}
-              </CardTitle>
-              <CardDescription className="text-center">
-                {t('courses.notFoundDescription')}
-              </CardDescription>
-            </CardHeader>
-            <CourseQuestionnaireDialog
-              topic={search}
-              onSubmit={(formattedPrompt) =>
-                void handleQuestionnaireSubmit(formattedPrompt)
-              }
-              open={isDialogOpen}
-              setOpenDialog={setIsDialogOpen}
-            >
-              <Button className="w-fit">
-                {t('courses.createAbout', { topic: debouncedSearch })}
-              </Button>
-            </CourseQuestionnaireDialog>
-          </Card>
-        )}
+        {!isPending &&
+          !isError &&
+          filteredCourses &&
+          filteredCourses.length === 0 && (
+            <Card className="flex flex-col items-center justify-center gap-4 w-full">
+              <CardHeader className="w-full flex flex-col gap-2 justify-center items-center">
+                <CardTitle className="text-center">
+                  {t('courses.notFoundTitle')}
+                </CardTitle>
+                <CardDescription className="text-center">
+                  {t('courses.notFoundDescription')}
+                </CardDescription>
+              </CardHeader>
+              <CourseQuestionnaireDialog
+                topic={search}
+                onSubmit={(formattedPrompt) =>
+                  void handleQuestionnaireSubmit(formattedPrompt)
+                }
+                open={isDialogOpen}
+                setOpenDialog={setIsDialogOpen}
+              >
+                <Button className="w-fit">
+                  {t('courses.createAbout', { topic: debouncedSearch })}
+                </Button>
+              </CourseQuestionnaireDialog>
+            </Card>
+          )}
 
         {filteredCourses && filteredCourses.length > 0 && (
           <ul className="h-3/4 flex flex-col gap-4 overflow-y-auto">
