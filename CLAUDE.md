@@ -182,6 +182,10 @@ ficam marcados como stretch.
 
 ## Convenções gerais
 - Comentários e nomes de variáveis em código: inglês, sempre.
+- shadcn/ui: o `components.json` fica em `apps/web`. Ao usar a skill `shadcn`, o
+  contexto injetado na raiz vem vazio; rode `npx shadcn@latest info --cwd apps/web`
+  antes de qualquer `add`/`docs`/`search` (e passe `--cwd apps/web` nesses comandos
+  também).
 - Toda escrita em Markdown gerada (pela skill ou pelo app) precisa continuar
   válida como nota Obsidian comum — sem HTML, sem sintaxe proprietária.
 - Mudanças no formato de `topic-meta`, front matter de aula/exercício, ou no

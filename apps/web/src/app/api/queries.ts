@@ -19,18 +19,22 @@ function unwrap<T>(result: {
   response: Response;
 }): T {
   if (result.error !== undefined || result.data === undefined) {
-    const detail =
-      typeof result.error === 'object' &&
-      result.error !== null &&
-      'detail' in result.error
-        ? String((result.error as { detail: unknown }).detail)
-        : result.response.statusText;
-    throw new ApiError(
-      result.response.status,
-      detail || `HTTP ${result.response.status}`,
-    );
+    throw toApiError(result);
   }
   return result.data;
+}
+
+function toApiError(result: { error?: unknown; response: Response }) {
+  const detail =
+    typeof result.error === 'object' &&
+    result.error !== null &&
+    'detail' in result.error
+      ? String((result.error as { detail: unknown }).detail)
+      : result.response.statusText;
+  return new ApiError(
+    result.response.status,
+    detail || `HTTP ${result.response.status}`,
+  );
 }
 
 export const coursesListQuery = () =>
@@ -73,4 +77,12 @@ export async function createCourseJob(userPrompt: string) {
       params: { query: { user_prompt: userPrompt } },
     }),
   );
+}
+
+/** 204 No Content has no body, so `unwrap` can't be used here — only the status matters. */
+export async function deleteCourse(slug: string) {
+  const result = await api.DELETE('/courses/{slug}', {
+    params: { path: { slug } },
+  });
+  if (!result.response.ok) throw toApiError(result);
 }

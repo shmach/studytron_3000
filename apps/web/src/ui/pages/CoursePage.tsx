@@ -1,7 +1,9 @@
 import { ArrowLeft } from 'lucide-react';
-import { Link, useParams } from 'react-router';
+import { useTranslation } from 'react-i18next';
+import { Link, useNavigate, useParams } from 'react-router';
 
 import type { CourseBundle, Module, Topic } from '@app/api/client';
+import { DeleteCourseDialog } from '@ui/components/DeleteCourseDialog';
 import { ErrorState } from '@ui/components/error-state';
 import { StatusBadge } from '@ui/components/status-badge';
 import { Badge } from '@ui/components/ui/badge';
@@ -19,17 +21,30 @@ import { computeProgress } from '@app/lib/progress';
 import { ProgressBar } from '@ui/pages/CoursesPage';
 
 export function CoursePage() {
+  const { t } = useTranslation();
   const { slug } = useParams<{ slug: string }>();
   const { data, isPending, isError, error, refetch } = useCourse(slug);
+  const navigate = useNavigate();
+
+  const course = data ? data.course : undefined;
 
   return (
-    <div className="space-y-6">
-      <Button asChild variant="ghost" size="sm" className="-ml-2">
-        <Link to="/">
-          <ArrowLeft />
-          All courses
-        </Link>
-      </Button>
+    <div className="flex w-full flex-col gap-8">
+      <nav className="w-full flex justify-between items-center">
+        <Button asChild variant="ghost" size="sm" className="-ml-2">
+          <Link to="/">
+            <ArrowLeft />
+            {t('course.allCourses')}
+          </Link>
+        </Button>
+        {course && (
+          <DeleteCourseDialog
+            slug={course.slug}
+            courseName={course.course}
+            onDeleted={() => void navigate('/')}
+          />
+        )}
+      </nav>
 
       {isPending && <CourseSkeleton />}
       {isError && <ErrorState error={error} onRetry={() => void refetch()} />}
@@ -39,34 +54,47 @@ export function CoursePage() {
 }
 
 function CourseDetail({ bundle }: { bundle: CourseBundle }) {
+  const { t, i18n } = useTranslation();
   const { course, lessons, exercise_sets: exerciseSets, attempts } = bundle;
   const progress = computeProgress(course);
-  // Topic ids that already have generated content, so the curriculum can show it.
+
+  const createdDate = new Intl.DateTimeFormat(i18n.resolvedLanguage, {
+    dateStyle: 'medium',
+  }).format(new Date(`${course.created}T00:00:00`));
+
   const lessonTopics = new Set(lessons.map((lesson) => lesson.topic));
   const exerciseTopics = new Set(exerciseSets.map((set) => set.topic));
 
   return (
     <>
       <header className="space-y-3">
-        <h1 className="text-3xl font-semibold tracking-tight">
-          {course.course}
-        </h1>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <h1 className="text-3xl font-semibold tracking-tight">
+            {course.course}
+          </h1>
+        </div>
         <p className="text-muted-foreground">{course.goal}</p>
         <div className="flex flex-wrap gap-2">
           <Badge variant="secondary">{course.level}</Badge>
           <Badge variant="outline">{course.depth}</Badge>
           <Badge variant="outline">{course.language}</Badge>
-          <Badge variant="outline">created {course.created}</Badge>
+          <Badge variant="outline">
+            {t('course.created', { date: createdDate })}
+          </Badge>
         </div>
       </header>
 
       <Card>
         <CardHeader>
-          <CardTitle>Progress</CardTitle>
+          <CardTitle>{t('course.progress')}</CardTitle>
           <CardDescription>
-            {progress.completedTopics} of {progress.totalTopics} topics
-            completed · {lessons.length} lessons · {exerciseSets.length}{' '}
-            exercise sets · {attempts.length} attempts
+            {t('course.progressSummary', {
+              completed: progress.completedTopics,
+              total: progress.totalTopics,
+              lessons: lessons.length,
+              exerciseSets: exerciseSets.length,
+              attempts: attempts.length,
+            })}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -91,7 +119,7 @@ function CourseDetail({ bundle }: { bundle: CourseBundle }) {
       {course.overview && (
         <Card>
           <CardHeader>
-            <CardTitle>Overview</CardTitle>
+            <CardTitle>{t('course.overview')}</CardTitle>
           </CardHeader>
           <CardContent className="whitespace-pre-line text-sm leading-relaxed">
             {course.overview}
@@ -100,7 +128,9 @@ function CourseDetail({ bundle }: { bundle: CourseBundle }) {
       )}
 
       <section className="space-y-4">
-        <h2 className="text-xl font-semibold tracking-tight">Curriculum</h2>
+        <h2 className="text-xl font-semibold tracking-tight">
+          {t('course.curriculum')}
+        </h2>
         {course.modules.map((module, index) => (
           <ModuleCard
             key={module.title}
@@ -128,11 +158,13 @@ function ModuleCard({
   lessonTopics,
   exerciseTopics,
 }: ModuleCardProps) {
+  const { t } = useTranslation();
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>
-          Module {index} · {module.title}
+          {t('course.module', { index, title: module.title })}
         </CardTitle>
         {module.description && (
           <CardDescription>{module.description}</CardDescription>
@@ -161,6 +193,7 @@ interface TopicRowProps {
 }
 
 function TopicRow({ topic, hasLesson, hasExercises }: TopicRowProps) {
+  const { t } = useTranslation();
   const done = topic.subtopics.filter((subtopic) => subtopic.completed).length;
 
   return (
@@ -174,15 +207,24 @@ function TopicRow({ topic, hasLesson, hasExercises }: TopicRowProps) {
         {topic.meta.perceived_difficulty && (
           <Badge variant="outline">{topic.meta.perceived_difficulty}</Badge>
         )}
-        {hasLesson && <Badge variant="secondary">lesson</Badge>}
-        {hasExercises && <Badge variant="secondary">exercises</Badge>}
+        {hasLesson && (
+          <Badge variant="secondary">{t('course.lessonBadge')}</Badge>
+        )}
+        {hasExercises && (
+          <Badge variant="secondary">{t('course.exercisesBadge')}</Badge>
+        )}
         <span className="text-muted-foreground ml-auto text-xs">
-          {done}/{topic.subtopics.length} subtopics
+          {t('course.subtopicsCount', {
+            done,
+            total: topic.subtopics.length,
+          })}
         </span>
       </div>
       {topic.meta.weak_points.length > 0 && (
         <p className="text-muted-foreground text-xs">
-          Weak points: {topic.meta.weak_points.join(', ')}
+          {t('course.weakPoints', {
+            points: topic.meta.weak_points.join(', '),
+          })}
         </p>
       )}
       <ul className="space-y-1 pl-4 text-sm">
@@ -192,7 +234,11 @@ function TopicRow({ topic, hasLesson, hasExercises }: TopicRowProps) {
               type="checkbox"
               checked={subtopic.completed}
               readOnly
-              aria-label={`${subtopic.title} ${subtopic.completed ? 'completed' : 'pending'}`}
+              aria-label={
+                subtopic.completed
+                  ? t('course.subtopicCompleted', { title: subtopic.title })
+                  : t('course.subtopicPending', { title: subtopic.title })
+              }
               className="mt-1 size-3.5 accent-primary"
             />
             <span>

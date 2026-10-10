@@ -1,13 +1,8 @@
+import { useTranslation } from 'react-i18next';
+
 import { Badge } from '@ui/components/ui/badge';
 import type { TopicStatus } from '@app/api/client';
 import { cn } from '@app/lib/utils';
-
-const STATUS_LABEL: Record<TopicStatus, string> = {
-  pending: 'Pending',
-  in_progress: 'In progress',
-  completed: 'Completed',
-  review: 'Review',
-};
 
 const STATUS_CLASS: Record<TopicStatus, string> = {
   pending: 'bg-muted text-muted-foreground border-transparent',
@@ -26,9 +21,11 @@ export function StatusBadge({
   status: TopicStatus;
   className?: string;
 }) {
+  const { t } = useTranslation();
+
   return (
     <Badge variant="outline" className={cn(STATUS_CLASS[status], className)}>
-      {STATUS_LABEL[status]}
+      {t(`status.${status}` as const)}
     </Badge>
   );
 }

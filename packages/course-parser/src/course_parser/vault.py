@@ -10,6 +10,7 @@ This is the `local` storage adapter's read side. Layout, as defined by the skill
         exercises/<topic-id>-attempt-<n>.md
 """
 
+import shutil
 from collections.abc import Callable
 from pathlib import Path
 
@@ -62,6 +63,16 @@ def load_course(course_dir: Path) -> CourseBundle:
 
 def load_vault(root: Path) -> list[CourseBundle]:
     return [load_course(course_dir) for course_dir in list_course_dirs(root)]
+
+
+def delete_course(course_dir: Path) -> None:
+    """Remove a whole course folder. Refuses anything that is not a course (no curriculum)."""
+    course_dir = Path(course_dir)
+    curriculum_path = course_dir / CURRICULUM_FILENAME
+    if not curriculum_path.is_file():
+        raise FileNotFoundError(f'curriculum not found: {curriculum_path}')
+
+    shutil.rmtree(course_dir)
 
 
 def _markdown_files(directory: Path) -> list[Path]:

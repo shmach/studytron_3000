@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from course_parser.models import CourseBundle
-from course_parser.vault import list_course_dirs, load_course, load_vault
+from course_parser.vault import delete_course, list_course_dirs, load_course, load_vault
 
 FIXTURES_DIR = Path(__file__).parent / 'fixtures'
 JAVA = 'java-para-quem-programa'
@@ -89,3 +89,23 @@ class TestLoadVault:
         bundles = load_vault(FIXTURES_DIR)
 
         assert [b.course.slug for b in bundles] == ['arduino-cpp', JAVA]
+
+
+class TestDeleteCourse:
+    def test_removes_the_whole_course_dir(self, tmp_path):
+        course_dir = tmp_path / 'arduino-cpp'
+        shutil.copytree(FIXTURES_DIR / 'arduino-cpp', course_dir)
+
+        delete_course(course_dir)
+
+        assert not course_dir.exists()
+
+    def test_refuses_dir_without_curriculum(self, tmp_path):
+        notes = tmp_path / 'notes'
+        notes.mkdir()
+        (notes / 'random.md').write_text('# hi\n')
+
+        with pytest.raises(FileNotFoundError):
+            delete_course(notes)
+
+        assert notes.exists()

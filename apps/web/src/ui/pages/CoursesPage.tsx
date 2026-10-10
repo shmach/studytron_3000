@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import type { CourseBundle } from '@app/api/client';
@@ -13,22 +14,27 @@ import {
 import { Skeleton } from '@ui/components/ui/skeleton';
 import { useCourses } from '@app/hooks/useCourses';
 import { computeProgress } from '@app/lib/progress';
-import { useEffect, useState } from 'react';
-import { ArrowBigUp, FilePlus, Plus } from 'lucide-react';
-import { useIsMobile } from '@app/hooks/useIsMobile';
+import { useEffect, useMemo, useState } from 'react';
+import { Search } from 'lucide-react';
 import { Button } from '@ui/components/ui/Button';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCreateCourse } from '@app/hooks/useCreateCourse';
 import { useCourseJob } from '@app/hooks/useCourseJob';
 import { courseKeys } from '@app/api/queries';
+import { Input } from '@ui/components/ui/Input';
+import { useDebounce } from '@app/hooks/useDebounce';
+import { filterCourses } from '@app/lib/courseSearch';
+import { CourseQuestionnaireDialog } from '@ui/components/CourseQuestionnaireDialog';
 
 export function CoursesPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data, isPending, isError, error, refetch } = useCourses();
   const { mutateAsync: createCourse } = useCreateCourse();
-  const isMobile = useIsMobile();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const [prompt, setPrompt] = useState<string>('');
+  const [search, setSearch] = useState<string>('');
+  const debouncedSearch = useDebounce(search);
   const [jobId, setJobId] = useState<string | null>(null);
   const { data: job } = useCourseJob(jobId);
 
@@ -40,50 +46,77 @@ export function CoursesPage() {
       // Void is used to "fire and forget" - not need to await a promise that we don't need to.
       void queryClient.invalidateQueries({ queryKey: courseKeys.list() });
       setJobId(null);
-      setPrompt('');
     } else if (job.status === 'error') {
       setJobId(null);
       // TODO: Show error on screen
     }
   }, [job, queryClient]);
 
-  async function handleSubmitOnKeyDown(
-    e: React.KeyboardEvent<HTMLFormElement>,
-  ) {
-    if (isMobile) return;
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      e.currentTarget.requestSubmit();
-    }
-  }
+  // useEffect(() => {
+  //   console.log('Fetch enviado com filtro debounced');
+  // }, [debouncedSearch]);
 
-  async function handleSubmitNewCourse(e: React.SubmitEvent<HTMLFormElement>) {
+  async function handleQuestionnaireSubmit(formattedPrompt: string) {
+    if (jobId) return;
     try {
-      e.preventDefault();
-      if (!prompt.trim() || jobId) return;
-      const created = await createCourse(prompt);
+      const created = await createCourse(formattedPrompt);
       setJobId(created.id);
     } catch (error) {
       console.error(error);
     }
   }
 
+  const filteredCourses = useMemo(
+    () => filterCourses(data ?? [], debouncedSearch),
+    [data, debouncedSearch],
+  );
+
   return (
-    <div className="space-y-6 h-full flex flex-col grow">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Courses</h1>
-        <p className="text-muted-foreground text-sm">
-          Every course found in the vault served by the local server.
-        </p>
+    <div className="min-w-full md:min-w-[70%] lg:min-w-3xl space-y-6 flex flex-col gap-8">
+      <h1 className="text-4xl font-bold text-center m-0">
+        {t('courses.heading')}
+      </h1>
+      <div className="min-w-full bg-transparent dark:bg-input/30 shadow-sm py-2 px-4 rounded-lg flex justify-center items-center border dark:border-none m-0">
+        <Search />
+        <Input
+          className="bg-transparent dark:bg-transparent border-none focus-visible:ring-0 shadow-none font-medium"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
-      <div className="min-w-full min-h-full flex flex-col grow">
+      <div className="min-w-full flex flex-col">
         {isPending && <CourseListSkeleton />}
         {isError && <ErrorState error={error} onRetry={() => void refetch()} />}
-        {data && data.length === 0 && <EmptyState />}
-        {data && data.length > 0 && (
-          <ul className="h-3/4 grid gap-4 sm:grid-cols-2">
-            {data.map((bundle) => (
+
+        {filteredCourses && filteredCourses.length === 0 && (
+          <Card className="flex flex-col items-center justify-center gap-4 w-full">
+            <CardHeader className="w-full flex flex-col gap-2 justify-center items-center">
+              <CardTitle className="text-center">
+                {t('courses.notFoundTitle')}
+              </CardTitle>
+              <CardDescription className="text-center">
+                {t('courses.notFoundDescription')}
+              </CardDescription>
+            </CardHeader>
+            <CourseQuestionnaireDialog
+              topic={search}
+              onSubmit={(formattedPrompt) =>
+                void handleQuestionnaireSubmit(formattedPrompt)
+              }
+              open={isDialogOpen}
+              setOpenDialog={setIsDialogOpen}
+            >
+              <Button className="w-fit">
+                {t('courses.createAbout', { topic: debouncedSearch })}
+              </Button>
+            </CourseQuestionnaireDialog>
+          </Card>
+        )}
+
+        {filteredCourses && filteredCourses.length > 0 && (
+          <ul className="h-3/4 flex flex-col gap-4 overflow-y-auto">
+            {filteredCourses?.map((bundle) => (
               <li key={bundle.course.slug}>
                 <CourseCard bundle={bundle} />
               </li>
@@ -91,40 +124,12 @@ export function CoursesPage() {
           </ul>
         )}
       </div>
-
-      <form
-        className="w-full flex flex-col gap-2 border rounded-lg p-3"
-        onSubmit={(e) => handleSubmitNewCourse(e)}
-        onKeyDown={(e) => handleSubmitOnKeyDown(e)}
-      >
-        <textarea
-          placeholder="O que você deseja aprender hoje?"
-          aria-label="O que você deseja aprender hoje"
-          rows={1}
-          className="block min-h-14 max-h-fit w-full resize-none bg-transparent text-[15px] leading-6 outline-none placeholder:text-zinc-500"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          disabled={jobId !== null}
-        />
-        <div className="w-full h-fit flex justify-between items-center">
-          <div>
-            <Button type="button" size={'icon'} variant={'ghost'}>
-              <Plus />
-            </Button>
-            <Button type="button" size={'icon'} variant={'ghost'}>
-              <FilePlus />
-            </Button>
-          </div>
-          <Button type="submit" size={'icon'}>
-            <ArrowBigUp />
-          </Button>
-        </div>
-      </form>
     </div>
   );
 }
 
 function CourseCard({ bundle }: { bundle: CourseBundle }) {
+  const { t } = useTranslation();
   const { course, lessons } = bundle;
   const progress = computeProgress(course);
 
@@ -145,9 +150,11 @@ function CourseCard({ bundle }: { bundle: CourseBundle }) {
           </div>
           <ProgressBar percent={progress.percent} />
           <p className="text-muted-foreground text-xs">
-            {progress.completedTopics}/{progress.totalTopics} topics completed ·{' '}
-            {lessons.length} {lessons.length === 1 ? 'lesson' : 'lessons'}{' '}
-            generated
+            {t('courses.cardSummary', {
+              count: lessons.length,
+              completed: progress.completedTopics,
+              total: progress.totalTopics,
+            })}
           </p>
         </CardContent>
       </Card>
@@ -174,7 +181,7 @@ export function ProgressBar({ percent }: { percent: number }) {
 
 function CourseListSkeleton() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="flex gap-4 flex-col">
       {Array.from({ length: 2 }, (_, index) => (
         <Card key={index}>
           <CardHeader>
@@ -188,22 +195,5 @@ function CourseListSkeleton() {
         </Card>
       ))}
     </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>No courses yet</CardTitle>
-        <CardDescription>
-          The vault has no folder with a{' '}
-          <code className="font-mono">00-curriculum.md</code>. Ask the
-          course-builder skill to create a course, or check the{' '}
-          <code className="font-mono">VAULT_PATH</code> setting of the local
-          server.
-        </CardDescription>
-      </CardHeader>
-    </Card>
   );
 }

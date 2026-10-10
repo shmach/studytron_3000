@@ -140,6 +140,39 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Delete Course",
+        "operationId": "delete_course",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/courses/{slug}/lessons/{topic_id}": {

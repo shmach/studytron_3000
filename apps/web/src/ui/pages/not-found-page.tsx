@@ -1,13 +1,16 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import { Button } from '@ui/components/ui/Button';
 
 export function NotFoundPage() {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-4 py-16 text-center">
-      <h1 className="text-2xl font-semibold">Page not found</h1>
+      <h1 className="text-2xl font-semibold">{t('notFound.title')}</h1>
       <Button asChild variant="outline">
-        <Link to="/">Back to courses</Link>
+        <Link to="/">{t('notFound.backToCourses')}</Link>
       </Button>
     </div>
   );

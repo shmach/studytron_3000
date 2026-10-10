@@ -50,7 +50,8 @@ export interface paths {
     get: operations['get_course'];
     put?: never;
     post?: never;
-    delete?: never;
+    /** Delete Course */
+    delete: operations['delete_course'];
     options?: never;
     head?: never;
     patch?: never;
@@ -405,6 +406,35 @@ export interface operations {
         content: {
           'application/json': components['schemas']['CourseBundle'];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_course: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {
