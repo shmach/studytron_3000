@@ -65,7 +65,15 @@ last_reviewed:           # ISO date, set when lesson generated or reviewed
 
 ## Status semantics
 
-- `pending` — nothing generated yet
-- `in_progress` — lesson generated, exercises not yet attempted or incomplete
-- `completed` — lesson done and attempts show acceptable understanding
-- `review` — attempts revealed gaps; next lesson must open with reinforcement
+`status` tracks the **student's** progress through a topic, not how much of the
+course has been generated.
+
+- `pending` — not started. This is the default for every topic, including topics
+  without a lesson file yet. A topic cannot be `in_progress` before its lesson exists.
+- `in_progress` — the lesson was generated and the student is studying it. The
+  skill sets this when it writes the lesson.
+- `completed` — the student finished the topic. Set only after the student confirms
+  it (the skill asks when the next lesson is requested, or the student edits the
+  field by hand). Subtopic checkboxes are checked at this point, not at generation.
+- `review` — the student wants to revisit the topic, or exercise attempts revealed
+  gaps; the next lesson must open with reinforcement.
