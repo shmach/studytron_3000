@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import type { CourseBundle } from '@app/api/client';
@@ -26,6 +27,7 @@ import { filterCourses } from '@app/lib/courseSearch';
 import { CourseQuestionnaireDialog } from '@ui/components/CourseQuestionnaireDialog';
 
 export function CoursesPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data, isPending, isError, error, refetch } = useCourses();
   const { mutateAsync: createCourse } = useCreateCourse();
@@ -72,7 +74,7 @@ export function CoursesPage() {
   return (
     <div className="min-w-full md:min-w-[70%] lg:min-w-3xl space-y-6 flex flex-col gap-8">
       <h1 className="text-4xl font-bold text-center m-0">
-        O que vai ser hoje chefe?
+        {t('courses.heading')}
       </h1>
       <div className="min-w-full bg-transparent dark:bg-input/30 shadow-sm py-2 px-4 rounded-lg flex justify-center items-center border dark:border-none m-0">
         <Search />
@@ -91,11 +93,10 @@ export function CoursesPage() {
           <Card className="flex flex-col items-center justify-center gap-4 w-full">
             <CardHeader className="w-full flex flex-col gap-2 justify-center items-center">
               <CardTitle className="text-center">
-                Curso não encontrado! 😢
+                {t('courses.notFoundTitle')}
               </CardTitle>
               <CardDescription className="text-center">
-                Não foi possível encontrar um curso para esse tópico. Deseja
-                criar um?
+                {t('courses.notFoundDescription')}
               </CardDescription>
             </CardHeader>
             <CourseQuestionnaireDialog
@@ -107,7 +108,7 @@ export function CoursesPage() {
               setOpenDialog={setIsDialogOpen}
             >
               <Button className="w-fit">
-                Criar curso sobre: {debouncedSearch}
+                {t('courses.createAbout', { topic: debouncedSearch })}
               </Button>
             </CourseQuestionnaireDialog>
           </Card>
@@ -128,6 +129,7 @@ export function CoursesPage() {
 }
 
 function CourseCard({ bundle }: { bundle: CourseBundle }) {
+  const { t } = useTranslation();
   const { course, lessons } = bundle;
   const progress = computeProgress(course);
 
@@ -148,9 +150,11 @@ function CourseCard({ bundle }: { bundle: CourseBundle }) {
           </div>
           <ProgressBar percent={progress.percent} />
           <p className="text-muted-foreground text-xs">
-            {progress.completedTopics}/{progress.totalTopics} topics completed ·{' '}
-            {lessons.length} {lessons.length === 1 ? 'lesson' : 'lessons'}{' '}
-            generated
+            {t('courses.cardSummary', {
+              count: lessons.length,
+              completed: progress.completedTopics,
+              total: progress.totalTopics,
+            })}
           </p>
         </CardContent>
       </Card>

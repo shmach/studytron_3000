@@ -1,4 +1,5 @@
-import type { FormEvent, ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   AlertDialog,
@@ -26,75 +27,6 @@ import {
   QuestionnaireSubmit,
   QuestionnaireTitle,
 } from '@ui/components/ui/questionnaire';
-
-// `value` is what goes into the generated prompt; `label` is what the user sees.
-const questions = [
-  {
-    name: 'level',
-    required: true,
-    title: 'Qual é o seu nível atual no tema?',
-    description: 'Isso define de onde o curso começa.',
-    choices: [
-      { value: 'beginner', label: 'Iniciante' },
-      { value: 'intermediate', label: 'Intermediário' },
-      { value: 'advanced', label: 'Avançado' },
-    ],
-  },
-  {
-    name: 'depth',
-    required: true,
-    title: 'Qual a profundidade do curso?',
-    description: 'Controla a quantidade de módulos e tópicos.',
-    choices: [
-      { value: 'quick', label: 'Rápido', hint: 'Visão geral enxuta.' },
-      {
-        value: 'standard',
-        label: 'Padrão',
-        hint: 'Equilíbrio entre teoria e prática.',
-      },
-      {
-        value: 'deep',
-        label: 'Profundo',
-        hint: 'Cobertura completa e detalhada.',
-      },
-    ],
-  },
-  {
-    name: 'goal',
-    required: false,
-    title: 'Qual é o seu objetivo?',
-    description: 'Escolha um ou descreva o seu. Pode pular.',
-    choices: [
-      { value: 'get a job or career change', label: 'Carreira' },
-      { value: 'build a personal project', label: 'Projeto pessoal' },
-      { value: 'general knowledge and curiosity', label: 'Curiosidade' },
-    ],
-    input: { label: 'Outro objetivo', placeholder: 'Descreva o seu objetivo…' },
-  },
-  {
-    name: 'focus',
-    required: false,
-    title: 'O que deve ter mais peso?',
-    description: 'Selecione quantos quiser, ou pule.',
-    multiple: true,
-    choices: [
-      { value: 'theory and concepts', label: 'Teoria' },
-      { value: 'hands-on practice', label: 'Prática' },
-      { value: 'real-world examples', label: 'Exemplos reais' },
-      { value: 'exercises with feedback', label: 'Exercícios' },
-    ],
-  },
-  {
-    name: 'language',
-    required: true,
-    title: 'Em que idioma o curso deve ser escrito?',
-    description: 'Termos técnicos podem continuar no original.',
-    choices: [
-      { value: 'Portuguese (pt-BR)', label: 'Português' },
-      { value: 'English', label: 'English' },
-    ],
-  },
-] as const;
 
 const DEFAULT_LEVEL = 'beginner';
 
@@ -136,6 +68,107 @@ export function CourseQuestionnaireDialog({
   open,
   setOpenDialog,
 }: CourseQuestionnaireDialogProps) {
+  const { t } = useTranslation();
+
+  // `value` is what goes into the generated prompt and stays in English for the API;
+  // `label` is what the user sees and is translated.
+  const questions = [
+    {
+      name: 'level',
+      required: true,
+      title: t('questionnaire.level.title'),
+      description: t('questionnaire.level.description'),
+      choices: [
+        { value: 'beginner', label: t('questionnaire.level.beginner') },
+        { value: 'intermediate', label: t('questionnaire.level.intermediate') },
+        { value: 'advanced', label: t('questionnaire.level.advanced') },
+      ],
+    },
+    {
+      name: 'depth',
+      required: true,
+      title: t('questionnaire.depth.title'),
+      description: t('questionnaire.depth.description'),
+      choices: [
+        {
+          value: 'quick',
+          label: t('questionnaire.depth.quick'),
+          hint: t('questionnaire.depth.quickHint'),
+        },
+        {
+          value: 'standard',
+          label: t('questionnaire.depth.standard'),
+          hint: t('questionnaire.depth.standardHint'),
+        },
+        {
+          value: 'deep',
+          label: t('questionnaire.depth.deep'),
+          hint: t('questionnaire.depth.deepHint'),
+        },
+      ],
+    },
+    {
+      name: 'goal',
+      required: false,
+      title: t('questionnaire.goal.title'),
+      description: t('questionnaire.goal.description'),
+      choices: [
+        {
+          value: 'get a job or career change',
+          label: t('questionnaire.goal.career'),
+        },
+        {
+          value: 'build a personal project',
+          label: t('questionnaire.goal.project'),
+        },
+        {
+          value: 'general knowledge and curiosity',
+          label: t('questionnaire.goal.curiosity'),
+        },
+      ],
+      input: {
+        label: t('questionnaire.goal.otherLabel'),
+        placeholder: t('questionnaire.goal.otherPlaceholder'),
+      },
+    },
+    {
+      name: 'focus',
+      required: false,
+      title: t('questionnaire.focus.title'),
+      description: t('questionnaire.focus.description'),
+      multiple: true,
+      choices: [
+        {
+          value: 'theory and concepts',
+          label: t('questionnaire.focus.theory'),
+        },
+        {
+          value: 'hands-on practice',
+          label: t('questionnaire.focus.practice'),
+        },
+        {
+          value: 'real-world examples',
+          label: t('questionnaire.focus.examples'),
+        },
+        {
+          value: 'exercises with feedback',
+          label: t('questionnaire.focus.exercises'),
+        },
+      ],
+    },
+    {
+      name: 'language',
+      required: true,
+      title: t('questionnaire.language.title'),
+      description: t('questionnaire.language.description'),
+      // Language names are shown in their own language, so they are not translated.
+      choices: [
+        { value: 'Portuguese (pt-BR)', label: 'Português' },
+        { value: 'English', label: 'English' },
+      ],
+    },
+  ];
+
   function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     onSubmit(buildPrompt(topic, new FormData(event.currentTarget)));
@@ -147,10 +180,11 @@ export function CourseQuestionnaireDialog({
       <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
       <AlertDialogContent className="gap-2">
         <AlertDialogHeader>
-          <AlertDialogTitle>Personalizar curso</AlertDialogTitle>
+          <AlertDialogTitle>{t('questionnaire.title')}</AlertDialogTitle>
           <AlertDialogDescription>
-            Responda algumas perguntas para montar um prompt melhor
-            {topic.trim() ? ` sobre "${topic.trim()}"` : ''}.
+            {topic.trim()
+              ? t('questionnaire.descriptionWithTopic', { topic: topic.trim() })
+              : t('questionnaire.description')}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -182,7 +216,7 @@ export function CourseQuestionnaireDialog({
                     ) : null}
                   </QuestionnaireChoice>
                 ))}
-                {'input' in question ? (
+                {question.input ? (
                   <QuestionnaireInput
                     aria-label={question.input.label}
                     placeholder={question.input.placeholder}
@@ -193,16 +227,20 @@ export function CourseQuestionnaireDialog({
             </QuestionnaireItem>
           ))}
           <QuestionnaireActions>
-            <QuestionnairePrevious>Voltar</QuestionnairePrevious>
-            <QuestionnaireSkip>Pular</QuestionnaireSkip>
-            <QuestionnaireNext>Próxima</QuestionnaireNext>
-            <QuestionnaireSubmit>Criar curso</QuestionnaireSubmit>
+            <QuestionnairePrevious>
+              {t('questionnaire.previous')}
+            </QuestionnairePrevious>
+            <QuestionnaireSkip>{t('questionnaire.skip')}</QuestionnaireSkip>
+            <QuestionnaireNext>{t('questionnaire.next')}</QuestionnaireNext>
+            <QuestionnaireSubmit>
+              {t('questionnaire.submit')}
+            </QuestionnaireSubmit>
           </QuestionnaireActions>
         </Questionnaire>
 
         <AlertDialogFooter>
           <AlertDialogCancel className="w-20" variant={'ghost'}>
-            Cancelar
+            {t('common.cancel')}
           </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>

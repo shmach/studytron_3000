@@ -1,4 +1,5 @@
 import { Monitor, Moon, Sun } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@app/context/ThemeContext';
 import { Button } from '@ui/components/ui/Button';
@@ -14,11 +15,12 @@ type ThemeOpts = ReturnType<typeof useTheme>['theme'];
 
 export function ThemeSelector() {
   const { theme, changeTheme } = useTheme();
+  const { t } = useTranslation();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Alterar tema">
+        <Button variant="ghost" size="icon" aria-label={t('theme.label')}>
           <Sun className="dark:hidden" />
           <Moon className="hidden dark:block" />
         </Button>
@@ -30,15 +32,15 @@ export function ThemeSelector() {
         >
           <DropdownMenuRadioItem value="light">
             <Sun />
-            Claro
+            {t('theme.light')}
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="dark">
             <Moon />
-            Escuro
+            {t('theme.dark')}
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="system">
             <Monitor />
-            Sistema
+            {t('theme.system')}
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>

@@ -1,0 +1,109 @@
+{
+  "common": {
+    "cancel": "Cancelar",
+    "back": "Voltar",
+    "tryAgain": "Tentar novamente"
+  },
+  "theme": {
+    "label": "Alterar tema",
+    "light": "Claro",
+    "dark": "Escuro",
+    "system": "Sistema"
+  },
+  "language": {
+    "label": "Alterar idioma"
+  },
+  "status": {
+    "pending": "Pendente",
+    "in_progress": "Em andamento",
+    "completed": "Concluído",
+    "review": "Revisão"
+  },
+  "error": {
+    "title": "Não foi possível carregar os dados",
+    "unknown": "Erro desconhecido",
+    "network": "A API em <code>{{url}}</code> não respondeu. O servidor local está rodando?"
+  },
+  "notFound": {
+    "title": "Página não encontrada",
+    "backToCourses": "Voltar para os cursos"
+  },
+  "courses": {
+    "heading": "O que vai ser hoje chefe?",
+    "notFoundTitle": "Curso não encontrado! 😢",
+    "notFoundDescription": "Não foi possível encontrar um curso para esse tópico. Deseja criar um?",
+    "createAbout": "Criar curso sobre: {{topic}}",
+    "cardSummary_one": "{{completed}}/{{total}} tópicos concluídos · {{count}} aula gerada",
+    "cardSummary_other": "{{completed}}/{{total}} tópicos concluídos · {{count}} aulas geradas"
+  },
+  "course": {
+    "allCourses": "Todos os cursos",
+    "created": "criado em {{date}}",
+    "progress": "Progresso",
+    "progressSummary": "{{completed}} de {{total}} tópicos concluídos · {{lessons}} aulas · {{exerciseSets}} listas de exercícios · {{attempts}} tentativas",
+    "overview": "Visão geral",
+    "curriculum": "Cronograma",
+    "module": "Módulo {{index}} · {{title}}",
+    "lessonBadge": "aula",
+    "exercisesBadge": "exercícios",
+    "subtopicsCount": "{{done}}/{{total}} subtópicos",
+    "weakPoints": "Pontos fracos: {{points}}",
+    "subtopicCompleted": "{{title}} concluído",
+    "subtopicPending": "{{title}} pendente"
+  },
+  "deleteCourse": {
+    "trigger": "Excluir curso",
+    "title": "Excluir o curso “{{name}}”?",
+    "description": "Esta ação é <strong>irreversível</strong>. O cronograma, as aulas, os exercícios e as tentativas deste curso serão apagados permanentemente do vault. Confirme que deseja excluir o curso.",
+    "error": "Não foi possível excluir o curso: {{message}}",
+    "deleting": "Excluindo…",
+    "confirm": "Excluir definitivamente"
+  },
+  "questionnaire": {
+    "title": "Personalizar curso",
+    "description": "Responda algumas perguntas para montar um prompt melhor.",
+    "descriptionWithTopic": "Responda algumas perguntas para montar um prompt melhor sobre “{{topic}}”.",
+    "previous": "Voltar",
+    "skip": "Pular",
+    "next": "Próxima",
+    "submit": "Criar curso",
+    "level": {
+      "title": "Qual é o seu nível atual no tema?",
+      "description": "Isso define de onde o curso começa.",
+      "beginner": "Iniciante",
+      "intermediate": "Intermediário",
+      "advanced": "Avançado"
+    },
+    "depth": {
+      "title": "Qual a profundidade do curso?",
+      "description": "Controla a quantidade de módulos e tópicos.",
+      "quick": "Rápido",
+      "quickHint": "Visão geral enxuta.",
+      "standard": "Padrão",
+      "standardHint": "Equilíbrio entre teoria e prática.",
+      "deep": "Profundo",
+      "deepHint": "Cobertura completa e detalhada."
+    },
+    "goal": {
+      "title": "Qual é o seu objetivo?",
+      "description": "Escolha um ou descreva o seu. Pode pular.",
+      "career": "Carreira",
+      "project": "Projeto pessoal",
+      "curiosity": "Curiosidade",
+      "otherLabel": "Outro objetivo",
+      "otherPlaceholder": "Descreva o seu objetivo…"
+    },
+    "focus": {
+      "title": "O que deve ter mais peso?",
+      "description": "Selecione quantos quiser, ou pule.",
+      "theory": "Teoria",
+      "practice": "Prática",
+      "examples": "Exemplos reais",
+      "exercises": "Exercícios"
+    },
+    "language": {
+      "title": "Em que idioma o curso deve ser escrito?",
+      "description": "Termos técnicos podem continuar no original."
+    }
+  }
+}

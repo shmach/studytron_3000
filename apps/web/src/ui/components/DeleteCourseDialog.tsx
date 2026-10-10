@@ -1,5 +1,6 @@
 import { useState, type MouseEvent } from 'react';
 import { Trash2 } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import { useDeleteCourse } from '@app/hooks/useDeleteCourse';
 import {
@@ -26,6 +27,7 @@ export function DeleteCourseDialog({
   courseName,
   onDeleted,
 }: DeleteCourseDialogProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const { mutate, isPending, error, reset } = useDeleteCourse();
 
@@ -50,31 +52,36 @@ export function DeleteCourseDialog({
       <AlertDialogTrigger asChild>
         <Button variant="destructive" size="sm">
           <Trash2 />
-          Excluir curso
+          {t('deleteCourse.trigger')}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Excluir o curso “{courseName}”?</AlertDialogTitle>
+          <AlertDialogTitle>
+            {t('deleteCourse.title', { name: courseName })}
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            Esta ação é <strong>irreversível</strong>. O cronograma, as aulas,
-            os exercícios e as tentativas deste curso serão apagados
-            permanentemente do vault. Confirme que deseja excluir o curso.
+            <Trans
+              i18nKey="deleteCourse.description"
+              components={{ strong: <strong /> }}
+            />
           </AlertDialogDescription>
         </AlertDialogHeader>
         {error && (
           <p className="text-destructive text-sm" role="alert">
-            Não foi possível excluir o curso: {error.message}
+            {t('deleteCourse.error', { message: error.message })}
           </p>
         )}
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isPending}>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel disabled={isPending}>
+            {t('common.cancel')}
+          </AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
             disabled={isPending}
             onClick={handleConfirm}
           >
-            {isPending ? 'Excluindo…' : 'Excluir definitivamente'}
+            {isPending ? t('deleteCourse.deleting') : t('deleteCourse.confirm')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

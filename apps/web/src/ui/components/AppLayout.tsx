@@ -1,6 +1,7 @@
 import { BookOpen } from 'lucide-react';
 import { Link, Outlet, ScrollRestoration } from 'react-router';
 
+import { LanguageSelector } from '@ui/components/LanguageSelector';
 import { ThemeSelector } from '@ui/components/ThemeSelector';
 
 export function AppLayout() {
@@ -12,7 +13,8 @@ export function AppLayout() {
             <BookOpen className="size-5" />
             StudyTRON 3000
           </Link>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
+            <LanguageSelector />
             <ThemeSelector />
           </div>
         </div>

@@ -1,0 +1,109 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "back": "Back",
+    "tryAgain": "Try again"
+  },
+  "theme": {
+    "label": "Change theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "language": {
+    "label": "Change language"
+  },
+  "status": {
+    "pending": "Pending",
+    "in_progress": "In progress",
+    "completed": "Completed",
+    "review": "Review"
+  },
+  "error": {
+    "title": "Could not load data",
+    "unknown": "Unknown error",
+    "network": "The API at <code>{{url}}</code> did not answer. Is the local server running?"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "backToCourses": "Back to courses"
+  },
+  "courses": {
+    "heading": "What are we studying today, boss?",
+    "notFoundTitle": "Course not found! 😢",
+    "notFoundDescription": "We couldn't find a course for this topic. Want to create one?",
+    "createAbout": "Create course about: {{topic}}",
+    "cardSummary_one": "{{completed}}/{{total}} topics completed · {{count}} lesson generated",
+    "cardSummary_other": "{{completed}}/{{total}} topics completed · {{count}} lessons generated"
+  },
+  "course": {
+    "allCourses": "All courses",
+    "created": "created {{date}}",
+    "progress": "Progress",
+    "progressSummary": "{{completed}} of {{total}} topics completed · {{lessons}} lessons · {{exerciseSets}} exercise sets · {{attempts}} attempts",
+    "overview": "Overview",
+    "curriculum": "Curriculum",
+    "module": "Module {{index}} · {{title}}",
+    "lessonBadge": "lesson",
+    "exercisesBadge": "exercises",
+    "subtopicsCount": "{{done}}/{{total}} subtopics",
+    "weakPoints": "Weak points: {{points}}",
+    "subtopicCompleted": "{{title}} completed",
+    "subtopicPending": "{{title}} pending"
+  },
+  "deleteCourse": {
+    "trigger": "Delete course",
+    "title": "Delete the course “{{name}}”?",
+    "description": "This action is <strong>irreversible</strong>. The curriculum, lessons, exercises and attempts of this course will be permanently deleted from the vault. Confirm that you want to delete the course.",
+    "error": "Could not delete the course: {{message}}",
+    "deleting": "Deleting…",
+    "confirm": "Delete permanently"
+  },
+  "questionnaire": {
+    "title": "Customize course",
+    "description": "Answer a few questions to build a better prompt.",
+    "descriptionWithTopic": "Answer a few questions to build a better prompt about “{{topic}}”.",
+    "previous": "Back",
+    "skip": "Skip",
+    "next": "Next",
+    "submit": "Create course",
+    "level": {
+      "title": "What is your current level on this topic?",
+      "description": "This defines where the course starts.",
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced"
+    },
+    "depth": {
+      "title": "How deep should the course go?",
+      "description": "Controls the number of modules and topics.",
+      "quick": "Quick",
+      "quickHint": "A lean overview.",
+      "standard": "Standard",
+      "standardHint": "Balance between theory and practice.",
+      "deep": "Deep",
+      "deepHint": "Complete, detailed coverage."
+    },
+    "goal": {
+      "title": "What is your goal?",
+      "description": "Pick one or describe your own. You can skip.",
+      "career": "Career",
+      "project": "Personal project",
+      "curiosity": "Curiosity",
+      "otherLabel": "Other goal",
+      "otherPlaceholder": "Describe your goal…"
+    },
+    "focus": {
+      "title": "What should carry more weight?",
+      "description": "Select as many as you like, or skip.",
+      "theory": "Theory",
+      "practice": "Practice",
+      "examples": "Real-world examples",
+      "exercises": "Exercises"
+    },
+    "language": {
+      "title": "Which language should the course be written in?",
+      "description": "Technical terms may stay in the original."
+    }
+  }
+}
