@@ -4,18 +4,18 @@ import { Link, useNavigate, useParams } from 'react-router';
 
 import type { CourseBundle, Module, Topic } from '@app/api/client';
 import { DeleteCourseDialog } from '@ui/components/DeleteCourseDialog';
-import { ErrorState } from '@ui/components/error-state';
-import { StatusBadge } from '@ui/components/status-badge';
-import { Badge } from '@ui/components/ui/badge';
-import { Button } from '@ui/components/ui/button';
+import { ErrorState } from '@ui/components/ErrorState';
+import { StatusBadge } from '@ui/components/StatusBadge';
+import { Badge } from '@ui/components/ui/Badge';
+import { Button } from '@ui/components/ui/Button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@ui/components/ui/card';
-import { Skeleton } from '@ui/components/ui/skeleton';
+} from '@ui/components/ui/Card';
+import { Skeleton } from '@ui/components/ui/Skeleton';
 import { useCourse } from '@app/hooks/useCourse';
 import { computeProgress } from '@app/lib/progress';
 import { ProgressBar } from '@ui/pages/CoursesPage';

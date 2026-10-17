@@ -2,21 +2,21 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import type { CourseBundle } from '@app/api/client';
-import { ErrorState } from '@ui/components/error-state';
-import { Badge } from '@ui/components/ui/badge';
+import { ErrorState } from '@ui/components/ErrorState';
+import { Badge } from '@ui/components/ui/Badge';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@ui/components/ui/card';
-import { Skeleton } from '@ui/components/ui/skeleton';
+} from '@ui/components/ui/Card';
+import { Skeleton } from '@ui/components/ui/Skeleton';
 import { useCourses } from '@app/hooks/useCourses';
 import { computeProgress } from '@app/lib/progress';
 import { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
-import { Button } from '@ui/components/ui/button';
+import { Button } from '@ui/components/ui/Button';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCreateCourse } from '@app/hooks/useCreateCourse';
 import { useCourseJob } from '@app/hooks/useCourseJob';
@@ -68,7 +68,7 @@ export function CoursesPage() {
   );
 
   return (
-    <div className="min-w-full md:min-w-[70%] lg:min-w-3xl space-y-6 flex flex-col gap-8">
+    <div className="min-h-full min-w-full md:min-w-[70%] lg:min-w-3xl space-y-6 flex flex-col gap-8 grow justify-center items-center">
       <h1 className="text-4xl font-bold text-center m-0">
         {t('courses.heading')}
       </h1>
@@ -114,7 +114,7 @@ export function CoursesPage() {
           )}
 
         {filteredCourses && filteredCourses.length > 0 && (
-          <ul className="h-3/4 flex flex-col gap-4 overflow-y-auto">
+          <ul className="max-h-[40vh] flex flex-col gap-4 overflow-y-auto pr-1">
             {filteredCourses?.map((bundle) => (
               <li key={bundle.course.slug}>
                 <CourseCard bundle={bundle} />

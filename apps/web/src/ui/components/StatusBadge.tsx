@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-import { Badge } from '@ui/components/ui/badge';
+import { Badge } from '@ui/components/ui/Badge';
 import type { TopicStatus } from '@app/api/client';
 import { cn } from '@app/lib/utils';
 

@@ -26,7 +26,7 @@ import {
   QuestionnaireSkip,
   QuestionnaireSubmit,
   QuestionnaireTitle,
-} from '@ui/components/ui/questionnaire';
+} from '@ui/components/ui/Questionnaire';
 
 const DEFAULT_LEVEL = 'beginner';
 

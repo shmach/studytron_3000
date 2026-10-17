@@ -114,6 +114,11 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+
+    /* Minimal scrollbar: thin thumb, transparent track, colors from theme tokens. */
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--muted-foreground) 40%, transparent)
+      transparent;
   }
 
   body {

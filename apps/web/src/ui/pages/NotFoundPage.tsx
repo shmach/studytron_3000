@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
-import { Button } from '@ui/components/ui/button';
+import { Button } from '@ui/components/ui/Button';
 
 export function NotFoundPage() {
   const { t } = useTranslation();

@@ -2,7 +2,7 @@ import { Monitor, Moon, Sun } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@app/context/ThemeContext';
-import { Button } from '@ui/components/ui/button';
+import { Button } from '@ui/components/ui/Button';
 import {
   DropdownMenu,
   DropdownMenuContent,

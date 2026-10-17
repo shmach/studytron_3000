@@ -2,7 +2,7 @@ import { Languages } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { SUPPORTED_LANGUAGES } from '@app/i18n';
-import { Button } from '@ui/components/ui/button';
+import { Button } from '@ui/components/ui/Button';
 import {
   DropdownMenu,
   DropdownMenuContent,

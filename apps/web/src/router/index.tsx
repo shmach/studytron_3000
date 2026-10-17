@@ -3,7 +3,7 @@ import { createBrowserRouter } from 'react-router';
 import { AppLayout } from '@ui/components/AppLayout';
 import { CoursePage } from '@ui/pages/CoursePage';
 import { CoursesPage } from '@ui/pages/CoursesPage';
-import { NotFoundPage } from '@ui/pages/not-found-page';
+import { NotFoundPage } from '@ui/pages/NotFoundPage';
 
 export const router = createBrowserRouter([
   {
