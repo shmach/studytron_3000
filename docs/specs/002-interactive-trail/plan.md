@@ -30,12 +30,12 @@ subtópicos.
 | Biblioteca do grafo | `@xyflow/react` (React Flow) | Já definida no SPEC; zoom/pan, nós customizados em React, acessível por teclado |
 | Layout automático | `@dagrejs/dagre` | Síncrono, ~30 KB, suficiente para árvore/DAG pequeno. `elkjs` é assíncrono (Web Worker) e pesado; só compensaria com grafos enormes |
 | Forma do grafo | Nós de **módulo** em espinha (`módulo N → módulo N+1`) e nós de **tópico** ligados ao seu módulo (`módulo → cada tópico`) | Sem pré-requisitos reais nos dados, ligar tópico→tópico inventaria dependências. A ordem do currículo já está na espinha |
-| Lógica do grafo | Função pura `buildTrail(course)` separada do componente | Testável sem navegador; o componente só desenha. Mesmo espírito de `lib/progress.ts` |
+| Lógica do grafo | Função pura `buildTrail(course)` separada do componente | Fácil de raciocinar e de testar no futuro; o componente só desenha. Mesmo espírito de `lib/progress.ts` |
 | Posicionamento | Função separada `layoutTrail(nodes, edges)` | dagre só calcula `x/y`; trocar de lib depois não toca em `buildTrail` |
 | Convivência com a lista | Alternância `Trilha` / `Lista` em `CoursePage`, estado em `?view=trail\|list` (padrão `trail`) | A lista tem detalhes (weak points, badges) que a trilha não mostra; a URL permite compartilhar/recarregar na mesma visão. Sem componente `Tabs` novo |
 | Painel lateral | `Sheet` do shadcn (Radix Dialog) | Já cuida de foco, ESC e mobile; evita reinventar overlay |
 | Link para a aula | Painel mostra se há aula/exercícios, **sem link** nesta feature | A rota da página de aula só existe na Feature 5. O link entra lá (ponto de extensão: `TopicPanel`). Evita link quebrado |
-| Testes | Adicionar `vitest` | O web não tem runner; `buildTrail` e `layoutTrail` merecem testes. Config mínima, já integrado ao Vite. Se preferir não adicionar, os testes viram verificação manual |
+| Testes | **Sem testes automatizados nesta feature** (decisão do Samuel) | O web não tem runner e não será adicionado agora. A verificação é `typecheck` + `lint` + checagem manual. As funções puras continuam separadas, então testes podem entrar depois sem refactor |
 | Nó de tópico | Id do nó = `topic.meta.id` (`"1.1"`); id do módulo = `module-<n>` | Estável entre refetches (o React Flow preserva seleção/posição) e permite casar com `lessons`/`exercise_sets` |
 
 ## Estrutura de arquivos
@@ -44,9 +44,7 @@ subtópicos.
 apps/web/src/
   app/lib/
     trail.ts            buildTrail(course): { nodes, edges }   (puro, sem React)
-    trail.test.ts
     trailLayout.ts      layoutTrail(nodes, edges): nodes com position (dagre)
-    trailLayout.test.ts
   ui/components/trail/
     TrailGraph.tsx      <ReactFlow> + controles + seleção
     ModuleNode.tsx      nó customizado de módulo
@@ -91,7 +89,7 @@ tanto pelo dagre quanto pelo CSS dos nós, para não divergirem.
 
 | # | Passo | Quem | Status |
 | --- | --- | --- | --- |
-| 1 | Vitest + `buildTrail` (TDD) | Samuel | ⬜ |
+| 1 | `buildTrail` (modelo do grafo) | Samuel | ⬜ |
 | 2 | `layoutTrail` com dagre | Samuel | ⬜ |
 | 3 | Instalar React Flow e renderizar o grafo cru | Samuel | ⬜ |
 | 4 | Nós customizados (`ModuleNode`, `TopicNode`) com status | Samuel | ⬜ |
@@ -103,42 +101,31 @@ tanto pelo dagre quanto pelo CSS dos nós, para não divergirem.
 Samuel escreve os passos que ensinam algo novo (React Flow, dagre, testes no
 front); Claude revisa cada um antes do seguinte e faz os mecânicos.
 
-### Passo 1 — Vitest + `buildTrail` (TDD)
+### Passo 1 — `buildTrail` (modelo do grafo)
 
 **Objetivo:** ter o modelo do grafo, sem React nem biblioteca de grafo.
 
-1. `npm i -D vitest` em `apps/web`. Adicionar o script `"test": "vitest run"`.
-   Vitest lê o `vite.config.ts` (aliases `@app` etc. funcionam). Se o `tsc -b`
-   reclamar dos arquivos `*.test.ts`, mantê-los dentro de `src/` (já coberto
-   pelo `tsconfig.app.json`).
-2. Criar `src/app/lib/trail.test.ts` com um `Course` mínimo montado à mão
-   (2 módulos, 2 tópicos no primeiro e 1 no segundo) e **escrever os testes
-   antes** da implementação (abaixo).
-3. Rodar `npm test` e ver falhar. Implementar `buildTrail` em
-   `src/app/lib/trail.ts` até passar.
-4. `npm run typecheck && npm run lint`.
-5. Commit: `feat(web): add buildTrail graph model`.
-
-Testes a escrever (nome → asserção):
-
-- `creates one module node and one topic node per item` → 2 + 3 = 5 nós;
-  ids `module-1`, `module-2`, `1.1`, `1.2`, `2.1`.
-- `chains modules in a spine` → existe aresta `spine` `module-1 → module-2` e
-  nenhuma outra aresta `spine`.
-- `branches each topic from its module` → arestas `branch`
-  `module-1 → 1.1`, `module-1 → 1.2`, `module-2 → 2.1`.
-- `keeps curriculum order` → ordem dos ids dos nós = `module-1, 1.1, 1.2,
-  module-2, 2.1`.
-- `handles a course without modules` → `{ nodes: [], edges: [] }`.
-- `handles a module without topics` → só o nó do módulo, sem `branch`.
+1. Criar `src/app/lib/trail.ts` com os tipos `TrailNodeData`, `TrailNode` e
+   `TrailEdge` (seção "Modelo de dados do grafo") e a função
+   `buildTrail(course: Course): { nodes: TrailNode[]; edges: TrailEdge[] }`.
+   Importar `Course` e `Topic` de `@app/api/client`, nunca de `schema.d.ts`.
+2. Regras: 1 nó por módulo (`module-1`…) e 1 por tópico (`topic.meta.id`);
+   aresta `spine` `module-i → module-(i+1)`; aresta `branch` do módulo para cada
+   um dos seus tópicos; nós na ordem do currículo.
+3. Casos que não podem quebrar: curso sem módulos devolve `{ nodes: [], edges: [] }`;
+   módulo sem tópicos gera só o nó do módulo.
+4. Conferir a olho: chamar `buildTrail` num `console.log` temporário (ou no
+   Passo 3) com um curso real e comparar com o currículo. Remover o log antes
+   do commit.
+5. `npm run typecheck && npm run lint`.
+6. Commit: `feat(web): add buildTrail graph model`.
 
 ### Passo 2 — `layoutTrail` com dagre
 
 `npm i @dagrejs/dagre`. Função `layoutTrail` em `app/lib/trailLayout.ts`
-(assinatura na seção "Modelo de dados"). Testes: todo nó recebe `position`
-finita; `module-2` fica abaixo de `module-1` (`y` maior); tópicos irmãos não
-se sobrepõem (caixas de `NODE_SIZE` não se cruzam). Commit
-`feat(web): add dagre layout for the trail`.
+(assinatura na seção "Modelo de dados"). Conferência manual no Passo 3: todo nó
+recebe `position` finita, `module-2` fica abaixo de `module-1` e tópicos irmãos
+não se sobrepõem. Commit `feat(web): add dagre layout for the trail`.
 
 ### Passo 3 — React Flow cru
 
@@ -195,10 +182,10 @@ ficam acima das duas visões, como hoje.
   em componente.
 - Atualizar `docs/SPEC.md`: marcar os itens da Feature 4, mover para
   "Concluído", atualizar a árvore de `src/` (seção 6.1) e as rotas/fluxos (6.2,
-  6.4), mencionar `vitest` em "Tooling".
+  6.4), sem mudanças em "Tooling".
 - Atualizar o status desta tabela.
 
-## Edge cases (cada um precisa de teste ou verificação manual)
+## Edge cases (verificação manual)
 
 1. Curso sem módulos ou módulo sem tópicos: sem erro, mensagem de vazio na trilha.
 2. Curso grande (`deep`, 8+ módulos × 5 tópicos): `fitView` legível, zoom mínimo
@@ -216,7 +203,6 @@ ficam acima das duas visões, como hoje.
 
 ```sh
 # apps/web
-npm test
 npm run typecheck && npm run lint && npm run check:i18n
 ```
 
@@ -234,5 +220,4 @@ Manual (`./run.sh` com um vault real, ex.: `arduino-cpp`):
 
 - React Flow: [Quick start](https://reactflow.dev/learn), [Custom nodes](https://reactflow.dev/learn/customization/custom-nodes), [Layouting (dagre)](https://reactflow.dev/learn/layouting/layouting), [Performance](https://reactflow.dev/learn/advanced-use/performance) (por que `nodeTypes` fica fora do render).
 - dagre: [wiki da API](https://github.com/dagrejs/dagre/wiki).
-- Vitest: [Getting started](https://vitest.dev/guide/).
 - shadcn: [Sheet](https://ui.shadcn.com/docs/components/sheet).
