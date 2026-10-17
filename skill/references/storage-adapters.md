@@ -7,8 +7,8 @@ before any read/write.
 ## `local` (default, fully implemented)
 
 Reads and writes files directly under `storage.root` using the filesystem
-tools available in the session (Claude Desktop / Claude Code / any environment
-with file access).
+tools available in the session (any AI agent environment with file access,
+e.g. Claude Code, Codex, Antigravity).
 
 - `storage.root` points at the courses root — typically a folder inside the
   user's Obsidian vault (e.g. `C:\Users\me\vault\Courses`).

@@ -46,9 +46,10 @@ Course layout (paths relative to the configured courses root):
 ## Interaction mode
 
 The skill may run with no person present, for example when the local server
-launches it with `claude -p`. The calling prompt says so explicitly (e.g.
-"non-interactive" or "no user is present"). Without that statement, assume a
-user is present and ask when a decision is needed.
+launches an agent CLI in headless mode (e.g. `claude -p`). The calling
+prompt says so explicitly (e.g. "non-interactive" or "no user is present").
+Without that statement, assume a user is present and ask when a decision is
+needed.
 
 In non-interactive mode:
 

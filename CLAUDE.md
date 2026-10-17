@@ -1,7 +1,7 @@
 # course-builder (StudyTRON 3000)
 
 Projeto open source de geração e visualização de cursos de estudo estruturados.
-Uma **skill do Claude** gera cursos em Markdown num vault; um **app local**
+Uma **skill para agentes** gera cursos em Markdown num vault; um **app local**
 (FastAPI + React) lê e mostra esse vault. Caminha para virar um SaaS, com
 self-host via clone do repositório.
 

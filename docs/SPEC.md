@@ -2,7 +2,7 @@
 
 Documento de referência técnica do projeto. Descreve **o que existe hoje** no
 repositório (varredura do código em 2026-10-10), as decisões de arquitetura e o
-que ainda falta. Instruções de trabalho para o Claude ficam em `CLAUDE.md`;
+que ainda falta. Instruções de trabalho para agentes de IA ficam em `CLAUDE.md`;
 planos de features pontuais ficam em `docs/specs/<nnn-feature>/`.
 
 ## 1. Visão geral
@@ -16,7 +16,7 @@ Três partes desacopladas por um contrato de storage:
 
 | Parte | Onde | Papel |
 | --- | --- | --- |
-| Skill do Claude | `skill/` | Gera o curso (esqueleto + aulas + exercícios sob demanda) e escreve Markdown no vault |
+| Skill de agente de IA | `skill/` | Gera o curso (esqueleto + aulas + exercícios sob demanda) e escreve Markdown no vault |
 | Parser | `packages/course-parser/` | Converte o Markdown do vault em modelos Pydantic |
 | Servidor local | `apps/local-server/` | FastAPI sobre o parser; expõe o vault via HTTP e dispara a criação de cursos |
 | Frontend | `apps/web/` | React + Vite; lista cursos, mostra o currículo, cria e apaga cursos |
@@ -29,11 +29,11 @@ notas Obsidian válidas (sem HTML, sem sintaxe proprietária).
 ## 2. Arquitetura
 
 ```
- Claude Desktop/Code ──(skill course-builder)──▶  VAULT (pasta de Markdown)
+ Agente de IA ─────────(skill course-builder)──▶  VAULT (pasta de Markdown)
                                                         ▲
  apps/web (React) ──HTTP──▶ apps/local-server (FastAPI) ─┤ lê via course-parser
         ▲                          │                    │
-        └── tipos TS gerados ◀─ OpenAPI                 └─ cria curso: subprocess `claude -p`
+        └── tipos TS gerados ◀─ OpenAPI                 └─ cria curso: subprocess do CLI do agente
 ```
 
 ### Storage adapter
@@ -61,7 +61,7 @@ studytron_3000/
     specs/001-web-app-i18n/      plano da internacionalização do web (concluído)
   run.sh                         sobe servidor + frontend juntos
   pyproject.toml                 workspace uv: packages/* e apps/local-server
-  CLAUDE.md                      instruções para o Claude
+  CLAUDE.md                      instruções para agentes de IA
 ```
 
 `.claude/` e `.agents/` (skills de dev: shadcn, migrate-radix-to-base) constam
@@ -249,7 +249,8 @@ do vault). Documentação interativa em `http://localhost:8000/docs`.
 1. `POST /courses` valida o prompt e o `VAULT_PATH`, cria um job `pending` e
    agenda `_run_course_creation` em `BackgroundTasks`.
 2. A tarefa marca `running`, guarda o conjunto de pastas do vault, e roda
-   `claude -p <prompt> --output-format json --dangerously-skip-permissions`
+   o CLI do agente em modo headless (hoje só o Claude Code está implementado:
+   `claude -p <prompt> --output-format json --dangerously-skip-permissions`)
    com `cwd=VAULT_PATH` (`LocalProcess`, via `asyncio.to_thread(subprocess.run)`,
    timeout de 300 s).
 3. O prompt embrulha o pedido do usuário instruindo a skill `course-builder` a
@@ -551,7 +552,7 @@ Notas de design:
 ## 10. Pontos de atenção conhecidos
 
 - Criação de curso usa `--dangerously-skip-permissions` e executa o CLI
-  `claude` no vault; adequado apenas para uso local/de confiança.
+  do agente (hoje `claude`) no vault; adequado apenas para uso local/de confiança.
 - `JobStore` em memória e detecção do slug por diff de pastas (vulnerável a
   criações simultâneas e a reinício do servidor).
 - `create_course` recebe `user_prompt` como query string (prompts longos podem
