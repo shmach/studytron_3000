@@ -59,6 +59,7 @@ studytron_3000/
   docs/
     SPEC.md                      este arquivo
     specs/001-web-app-i18n/      plano da internacionalização do web (concluído)
+    specs/002-interactive-trail/ plano da Feature 4, trilha interativa (em andamento)
   run.sh                         sobe servidor + frontend juntos
   pyproject.toml                 workspace uv: packages/* e apps/local-server
   CLAUDE.md                      instruções para agentes de IA
