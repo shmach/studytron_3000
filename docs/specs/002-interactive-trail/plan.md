@@ -98,8 +98,8 @@ tanto pelo dagre quanto pelo CSS dos nós, para não divergirem.
 | 7 | Integrar em `CoursePage` (alternância + URL) | Claude | ⬜ |
 | 8 | i18n, verificação final e atualização do SPEC | Claude | ⬜ |
 
-Samuel escreve os passos que ensinam algo novo (React Flow, dagre, testes no
-front); Claude revisa cada um antes do seguinte e faz os mecânicos.
+Samuel escreve os passos que ensinam algo novo (React Flow e dagre);
+Claude revisa cada um antes do seguinte e faz os mecânicos.
 
 ### Passo 1 — `buildTrail` (modelo do grafo)
 
