@@ -122,10 +122,26 @@ Claude revisa cada um antes do seguinte e faz os mecânicos.
 
 ### Passo 2 — `layoutTrail` com dagre
 
-`npm i @dagrejs/dagre`. Função `layoutTrail` em `app/lib/trailLayout.ts`
-(assinatura na seção "Modelo de dados"). Conferência manual no Passo 3: todo nó
-recebe `position` finita, `module-2` fica abaixo de `module-1` e tópicos irmãos
-não se sobrepõem. Commit `feat(web): add dagre layout for the trail`.
+`npm i @dagrejs/dagre` (v3, traz tipos próprios). Em `app/lib/trailLayout.ts`:
+
+```ts
+export const NODE_SIZE = { width: 220, height: 64 };
+export interface PositionedTrailNode extends TrailNode { position: { x: number; y: number } }
+export function layoutTrail(trail: Trail): { nodes: PositionedTrailNode[]; edges: TrailEdge[] }
+```
+
+Pontos que não são óbvios (verificados rodando o dagre):
+
+- `import { graphlib, layout } from '@dagrejs/dagre'`; grafo com
+  `rankdir: 'TB'`, `nodesep`, `ranksep` e `setDefaultEdgeLabel(() => ({}))`.
+- O dagre devolve `x/y` do **centro** do nó; o React Flow espera o canto
+  superior esquerdo: `x - width / 2`, `y - height / 2`.
+- Aresta `spine` com `minlen: 2`. Sem isso o próximo módulo cai no mesmo nível
+  dos tópicos do módulo anterior, em vez de abaixo deles.
+
+Conferência manual no Passo 3: todo nó recebe `position` finita, `module-2` fica
+abaixo de todos os tópicos de `module-1` e tópicos irmãos não se sobrepõem.
+Commit `feat(web): add dagre layout for the trail`.
 
 ### Passo 3 — React Flow cru
 
