@@ -19,7 +19,7 @@ import { Skeleton } from '@ui/components/ui/Skeleton';
 import { useCourse } from '@app/hooks/useCourse';
 import { computeProgress } from '@app/lib/progress';
 import { ProgressBar } from '@ui/pages/CoursesPage';
-import { TrailGraph } from '@ui/components/Trail';
+import { TrailGraph } from '@ui/components/trail/TrailGraph';
 
 export function CoursePage() {
   const { t } = useTranslation();
