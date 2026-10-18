@@ -19,7 +19,6 @@ import { Skeleton } from '@ui/components/ui/Skeleton';
 import { useCourse } from '@app/hooks/useCourse';
 import { computeProgress } from '@app/lib/progress';
 import { ProgressBar } from '@ui/pages/CoursesPage';
-import { TrailGraph } from '@ui/components/trail/TrailGraph';
 
 export function CoursePage() {
   const { t } = useTranslation();
@@ -127,8 +126,6 @@ function CourseDetail({ bundle }: { bundle: CourseBundle }) {
           </CardContent>
         </Card>
       )}
-
-      <TrailGraph course={course} />
 
       <section className="space-y-4">
         <h2 className="text-xl font-semibold tracking-tight">
