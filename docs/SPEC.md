@@ -446,15 +446,18 @@ marcados como *stretch*.
 #### Feature 4 — Trilha interativa (estilo [roadmap.sh](https://roadmap.sh/frontend))
 
 Hoje o currículo é renderizado como lista de cards em `CoursePage`. A trilha o
-substitui/complementa por um grafo navegável.
+complementa com uma linha do tempo visual **dentro da página** (rola junto com
+ela; React Flow foi avaliado e descartado por ser um canvas com zoom/arrastar —
+ver `docs/specs/002-interactive-trail/plan.md`).
 
-- [ ] Integrar `@xyflow/react` (React Flow) com layout automático (`elkjs` ou
-      `dagre`).
-- [ ] Transformar módulos/tópicos em nós e edges (pré-requisito → sequência).
-- [ ] Cor/ícone do nó por `status` (`pending` / `in_progress` / `completed` /
+- [ ] Timeline vertical em HTML/CSS: módulos na espinha, tópicos em grade
+      responsiva logo abaixo.
+- [ ] Cor/ícone do card por `status` (`pending` / `in_progress` / `completed` /
       `review`) — dados já em `Topic.meta.status`; a agregação de status
-      existente (`lib/progress.ts`) pode servir à legenda.
-- [ ] Clique no nó abre painel lateral com os subtópicos e link para a aula.
+      existente (`lib/progress.ts`) serve à legenda.
+- [ ] Clique no card abre painel lateral com os subtópicos; o link para a aula
+      entra na Feature 5 (a rota da aula ainda não existe).
+- [ ] Alternância Trilha / Lista em `CoursePage`, guardada em `?view=`.
 
 **Entrega:** trilha visual navegável refletindo o estado real do currículo.
 
