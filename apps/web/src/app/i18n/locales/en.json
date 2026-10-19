@@ -50,6 +50,10 @@
     "subtopicCompleted": "{{title}} completed",
     "subtopicPending": "{{title}} pending"
   },
+  "trail": {
+    "empty": "This course has no modules yet.",
+    "topicLabel": "{{title}} — {{status}}"
+  },
   "deleteCourse": {
     "trigger": "Delete course",
     "title": "Delete the course “{{name}}”?",

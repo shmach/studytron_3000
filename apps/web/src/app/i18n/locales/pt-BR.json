@@ -50,6 +50,10 @@
     "subtopicCompleted": "{{title}} concluído",
     "subtopicPending": "{{title}} pendente"
   },
+  "trail": {
+    "empty": "Este curso ainda não tem módulos.",
+    "topicLabel": "{{title}} — {{status}}"
+  },
   "deleteCourse": {
     "trigger": "Excluir curso",
     "title": "Excluir o curso “{{name}}”?",
