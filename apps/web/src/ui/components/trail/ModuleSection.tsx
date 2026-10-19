@@ -31,7 +31,7 @@ export function ModuleSection({
       {module.description && (
         <p className="text-muted-foreground text-sm">{module.description}</p>
       )}
-      <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="mt-4 flex flex-col gap-3">
         {module.topics.map((topic) => (
           <li key={topic.meta.id}>
             <TopicCard

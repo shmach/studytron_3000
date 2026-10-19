@@ -25,7 +25,7 @@ export function TopicCard({ topic, selected, onSelect }: TopicCardProps) {
         status: t(`status.${status}` as const),
       })}
       className={cn(
-        'flex w-full items-center gap-2 rounded-lg border px-3 py-3 text-left text-sm transition-[filter,box-shadow] hover:brightness-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+        'flex w-full items-center gap-2 rounded-lg border px-3 py-3 text-left text-sm transition-[filter,box-shadow] hover:brightness-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none hover:cursor-pointer',
         className,
         selected && 'ring-2 ring-ring',
       )}
