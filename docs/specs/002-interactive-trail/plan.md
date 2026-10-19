@@ -76,8 +76,8 @@ Removidos: `app/lib/trail.ts`, `app/lib/trailLayout.ts`,
 | # | Passo | Quem | Status |
 | --- | --- | --- | --- |
 | 1-4 | `buildTrail`, `layoutTrail`, React Flow, nós customizados | Samuel | ✅ feitos e descartados (ver "Mudança de rumo") |
-| 5 | Limpeza: remover React Flow, dagre, `trail.ts`, `trailLayout.ts` | Samuel | ⬜ |
-| 6 | `TopicCard`, `ModuleSection` e `Trail` (timeline em HTML/CSS) | Samuel | ⬜ |
+| 5 | Limpeza: remover React Flow, dagre, `trail.ts`, `trailLayout.ts` | Samuel | ✅ |
+| 6 | `TopicCard`, `ModuleSection` e `Trail` (timeline em HTML/CSS) | Samuel | ✅ |
 | 7 | Legenda de status (`TrailLegend`) | Claude | ⬜ |
 | 8 | Painel lateral (`TopicPanel`) | Samuel | ⬜ |
 | 9 | Integrar em `CoursePage` (alternância + URL) | Claude | ⬜ |
