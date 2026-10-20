@@ -41,14 +41,7 @@
     "progress": "Progress",
     "progressSummary": "{{completed}} of {{total}} topics completed · {{lessons}} lessons · {{exerciseSets}} exercise sets · {{attempts}} attempts",
     "overview": "Overview",
-    "curriculum": "Curriculum",
-    "module": "Module {{index}} · {{title}}",
-    "lessonBadge": "lesson",
-    "exercisesBadge": "exercises",
-    "subtopicsCount": "{{done}}/{{total}} subtopics",
-    "weakPoints": "Weak points: {{points}}",
-    "subtopicCompleted": "{{title}} completed",
-    "subtopicPending": "{{title}} pending"
+    "module": "Module {{index}} · {{title}}"
   },
   "trail": {
     "empty": "This course has no modules yet.",

@@ -41,14 +41,7 @@
     "progress": "Progresso",
     "progressSummary": "{{completed}} de {{total}} tópicos concluídos · {{lessons}} aulas · {{exerciseSets}} listas de exercícios · {{attempts}} tentativas",
     "overview": "Visão geral",
-    "curriculum": "Cronograma",
-    "module": "Módulo {{index}} · {{title}}",
-    "lessonBadge": "aula",
-    "exercisesBadge": "exercícios",
-    "subtopicsCount": "{{done}}/{{total}} subtópicos",
-    "weakPoints": "Pontos fracos: {{points}}",
-    "subtopicCompleted": "{{title}} concluído",
-    "subtopicPending": "{{title}} pendente"
+    "module": "Módulo {{index}} · {{title}}"
   },
   "trail": {
     "empty": "Este curso ainda não tem módulos.",
