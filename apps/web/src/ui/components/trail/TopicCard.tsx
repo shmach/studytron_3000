@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { Topic } from '@app/api/client';
 import { cn } from '@app/lib/utils';
-import { STATUS_STYLE } from './statusStyle';
+import { STATUS_STYLE } from '../../utils/statusStyle';
 
 interface TopicCardProps {
   topic: Topic;
