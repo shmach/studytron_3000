@@ -2,7 +2,7 @@
 
 ## Context
 
-The `apps/web` UI mixes hardcoded English and Portuguese (e.g. `ThemeSelector` in Portuguese, `CoursePage` in English). Goal: every UI text goes through a translation catalog, English is the base/fallback, Portuguese is the translation, the initial language comes from the browser, and a header switcher lets the user change it (choice persisted).
+The `apps/client` UI mixes hardcoded English and Portuguese (e.g. `ThemeSelector` in Portuguese, `CoursePage` in English). Goal: every UI text goes through a translation catalog, English is the base/fallback, Portuguese is the translation, the initial language comes from the browser, and a header switcher lets the user change it (choice persisted).
 
 **Out of scope:** course content from the vault (stays in the language it was generated in), values sent to the API (`beginner`, `hands-on practice`…) and `topic-meta` status values — only their labels are translated. Server error details stay in English inside a translated wrapper message.
 
@@ -62,7 +62,7 @@ In `ThemeSelector`, `AppLayout`, `CourseQuestionnaireDialog`, `DeleteCourseDialo
 
 ### 8. Verification
 - `scripts/check-i18n-keys.mjs` + `"check:i18n"` script: flattens both catalogs, exits non-zero on any difference.
-- `npm run typecheck`, `npm run lint`, `npm run check:i18n` in `apps/web`.
+- `npm run typecheck`, `npm run lint`, `npm run check:i18n` in `apps/client`.
 - Manual (`npm run dev`, delete `studytron:language` from localStorage between runs):
   1. Browser pt-BR or pt-PT → UI in Portuguese, `<html lang="pt-BR">`; browser es/en → English.
   2. Switch in header → instant change, no reload; reload keeps the choice.

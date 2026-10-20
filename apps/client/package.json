@@ -1,5 +1,5 @@
 {
-  "name": "@course-builder/web",
+  "name": "@course-builder/client",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,7 +10,7 @@
     "lint": "oxlint",
     "typecheck": "tsc -b",
     "generate:types": "uv run export-openapi --out openapi.json && openapi-typescript openapi.json -o src/app/api/schema.d.ts",
-    "prepare": "cd ../.. && husky apps/web/.husky",
+    "prepare": "cd ../.. && husky apps/client/.husky",
     "check:i18n": "node scripts/check-i18n-keys.mjs"
   },
   "lint-staged": {

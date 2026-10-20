@@ -2,7 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 
-import type { CourseBundle, Module, Topic } from '@app/api/client';
+import type { CourseBundle } from '@app/api/client';
 import { DeleteCourseDialog } from '@ui/components/DeleteCourseDialog';
 import { ErrorState } from '@ui/components/ErrorState';
 import { StatusBadge } from '@ui/components/StatusBadge';
@@ -19,6 +19,7 @@ import { Skeleton } from '@ui/components/ui/Skeleton';
 import { useCourse } from '@app/hooks/useCourse';
 import { computeProgress } from '@app/lib/progress';
 import { ProgressBar } from '@ui/pages/CoursesPage';
+import { Trail } from '@ui/components/trail/Trail';
 
 export function CoursePage() {
   const { t } = useTranslation();
@@ -61,9 +62,6 @@ function CourseDetail({ bundle }: { bundle: CourseBundle }) {
   const createdDate = new Intl.DateTimeFormat(i18n.resolvedLanguage, {
     dateStyle: 'medium',
   }).format(new Date(`${course.created}T00:00:00`));
-
-  const lessonTopics = new Set(lessons.map((lesson) => lesson.topic));
-  const exerciseTopics = new Set(exerciseSets.map((set) => set.topic));
 
   return (
     <>
@@ -127,139 +125,8 @@ function CourseDetail({ bundle }: { bundle: CourseBundle }) {
         </Card>
       )}
 
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold tracking-tight">
-          {t('course.curriculum')}
-        </h2>
-        {course.modules.map((module, index) => (
-          <ModuleCard
-            key={module.title}
-            index={index + 1}
-            module={module}
-            lessonTopics={lessonTopics}
-            exerciseTopics={exerciseTopics}
-          />
-        ))}
-      </section>
+      <Trail course={course} />
     </>
-  );
-}
-
-interface ModuleCardProps {
-  index: number;
-  module: Module;
-  lessonTopics: Set<string>;
-  exerciseTopics: Set<string>;
-}
-
-function ModuleCard({
-  index,
-  module,
-  lessonTopics,
-  exerciseTopics,
-}: ModuleCardProps) {
-  const { t } = useTranslation();
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          {t('course.module', { index, title: module.title })}
-        </CardTitle>
-        {module.description && (
-          <CardDescription>{module.description}</CardDescription>
-        )}
-      </CardHeader>
-      <CardContent>
-        <ol className="divide-y">
-          {module.topics.map((topic) => (
-            <TopicRow
-              key={topic.meta.id}
-              topic={topic}
-              hasLesson={lessonTopics.has(topic.meta.id)}
-              hasExercises={exerciseTopics.has(topic.meta.id)}
-            />
-          ))}
-        </ol>
-      </CardContent>
-    </Card>
-  );
-}
-
-interface TopicRowProps {
-  topic: Topic;
-  hasLesson: boolean;
-  hasExercises: boolean;
-}
-
-function TopicRow({ topic, hasLesson, hasExercises }: TopicRowProps) {
-  const { t } = useTranslation();
-  const done = topic.subtopics.filter((subtopic) => subtopic.completed).length;
-
-  return (
-    <li className="space-y-2 py-3 first:pt-0 last:pb-0">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-muted-foreground font-mono text-xs">
-          {topic.meta.id}
-        </span>
-        <span className="font-medium">{topic.title}</span>
-        <StatusBadge status={topic.meta.status} />
-        {topic.meta.perceived_difficulty && (
-          <Badge variant="outline">{topic.meta.perceived_difficulty}</Badge>
-        )}
-        {hasLesson && (
-          <Badge variant="secondary">{t('course.lessonBadge')}</Badge>
-        )}
-        {hasExercises && (
-          <Badge variant="secondary">{t('course.exercisesBadge')}</Badge>
-        )}
-        <span className="text-muted-foreground ml-auto text-xs">
-          {t('course.subtopicsCount', {
-            done,
-            total: topic.subtopics.length,
-          })}
-        </span>
-      </div>
-      {topic.meta.weak_points.length > 0 && (
-        <p className="text-muted-foreground text-xs">
-          {t('course.weakPoints', {
-            points: topic.meta.weak_points.join(', '),
-          })}
-        </p>
-      )}
-      <ul className="space-y-1 pl-4 text-sm">
-        {topic.subtopics.map((subtopic) => (
-          <li key={subtopic.id} className="flex items-start gap-2">
-            <input
-              type="checkbox"
-              checked={subtopic.completed}
-              readOnly
-              aria-label={
-                subtopic.completed
-                  ? t('course.subtopicCompleted', { title: subtopic.title })
-                  : t('course.subtopicPending', { title: subtopic.title })
-              }
-              className="mt-1 size-3.5 accent-primary"
-            />
-            <span>
-              <span
-                className={
-                  subtopic.completed ? 'text-muted-foreground line-through' : ''
-                }
-              >
-                {subtopic.title}
-              </span>
-              {subtopic.description && (
-                <span className="text-muted-foreground">
-                  {' '}
-                  — {subtopic.description}
-                </span>
-              )}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </li>
   );
 }
 

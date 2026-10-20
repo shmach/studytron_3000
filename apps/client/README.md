@@ -1,4 +1,4 @@
-# web
+# client
 
 React + Vite + TypeScript frontend for course-builder. Reads the vault through
 the `local-server` API and renders the course list and each course's
@@ -14,7 +14,7 @@ Two terminals from the repo root:
 VAULT_PATH=/path/to/your/vault uv run fastapi dev apps/local-server/main.py
 
 # 2) frontend on http://localhost:5173
-cd apps/web
+cd apps/client
 npm install
 npm run dev
 ```
@@ -40,7 +40,7 @@ committed so a fresh clone builds without the server running. Whenever the
 Pydantic models or routes change:
 
 ```sh
-cd apps/web
+cd apps/client
 npm run generate:types
 ```
 

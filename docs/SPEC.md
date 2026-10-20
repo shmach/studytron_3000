@@ -19,7 +19,7 @@ Três partes desacopladas por um contrato de storage:
 | Skill de agente de IA | `skill/` | Gera o curso (esqueleto + aulas + exercícios sob demanda) e escreve Markdown no vault |
 | Parser | `packages/course-parser/` | Converte o Markdown do vault em modelos Pydantic |
 | Servidor local | `apps/local-server/` | FastAPI sobre o parser; expõe o vault via HTTP e dispara a criação de cursos |
-| Frontend | `apps/web/` | React + Vite; lista cursos, mostra o currículo, cria e apaga cursos |
+| Frontend | `apps/client/` | React + Vite; lista cursos, mostra o currículo, cria e apaga cursos |
 
 **Regra central:** os arquivos Markdown no vault são a única fonte de verdade.
 A skill escreve; o servidor/app lê (e apaga cursos inteiros). Nenhum lado guarda
@@ -31,7 +31,7 @@ notas Obsidian válidas (sem HTML, sem sintaxe proprietária).
 ```
  Agente de IA ─────────(skill course-builder)──▶  VAULT (pasta de Markdown)
                                                         ▲
- apps/web (React) ──HTTP──▶ apps/local-server (FastAPI) ─┤ lê via course-parser
+ apps/client (React) ──HTTP──▶ apps/local-server (FastAPI) ─┤ lê via course-parser
         ▲                          │                    │
         └── tipos TS gerados ◀─ OpenAPI                 └─ cria curso: subprocess do CLI do agente
 ```
@@ -55,10 +55,11 @@ studytron_3000/
   skill/                         Skill course-builder (SKILL.md, references/, assets/)
   packages/course-parser/        Python: Markdown -> Pydantic (src/course_parser, tests/)
   apps/local-server/             Python: FastAPI (src/local_server, main.py)
-  apps/web/                      React + Vite + TS (Node, fora do workspace uv)
+  apps/client/                     React + Vite + TS (Node, fora do workspace uv)
   docs/
     SPEC.md                      este arquivo
-    specs/001-web-app-i18n/      plano da internacionalização do web (concluído)
+    specs/001-web-app-i18n/      plano da internacionalização do client (concluído)
+    specs/002-interactive-trail/ plano da Feature 4, trilha interativa (encerrada com escopo reduzido)
   run.sh                         sobe servidor + frontend juntos
   pyproject.toml                 workspace uv: packages/* e apps/local-server
   CLAUDE.md                      instruções para agentes de IA
@@ -269,10 +270,10 @@ CORS liberado para `http://localhost:3000` e `http://localhost:5173`, métodos
 
 ### Contrato OpenAPI
 
-`uv run export-openapi --out apps/web/openapi.json` grava
+`uv run export-openapi --out apps/client/openapi.json` grava
 `app.openapi()`; o frontend gera os tipos a partir dele (seção 6.5).
 
-## 6. `apps/web`
+## 6. `apps/client`
 
 React 19 + Vite 8 + TypeScript 5.9, Tailwind v4, shadcn/ui (Radix), React
 Router 8, TanStack Query 5, `openapi-fetch`, i18next. Node 22+; **fora** do
@@ -295,7 +296,8 @@ src/
     lib/     progress.ts courseSearch.ts query-client.ts utils.ts
   ui/
     components/  AppLayout, LanguageSelector, ThemeSelector, CourseQuestionnaireDialog,
-                 DeleteCourseDialog, error-state, status-badge
+                 DeleteCourseDialog, error-state, status-badge,
+                 trail/ (Trail, ModuleSection, TopicCard, statusStyle)
     components/ui/  primitivas shadcn (AlertDialog, DropdownMenu, Input, Textarea,
                     badge, button, card, skeleton, questionnaire)
     pages/       CoursesPage, CoursePage, not-found-page
@@ -311,7 +313,7 @@ src/
 | Path | Componente | Conteúdo |
 | --- | --- | --- |
 | `/` | `CoursesPage` | busca (debounce, sem acentos), lista de cursos, estado vazio com criação via questionário |
-| `/courses/:slug` | `CoursePage` | metadados, progresso, visão geral, currículo (módulos → tópicos → subtópicos, somente leitura), exclusão |
+| `/courses/:slug` | `CoursePage` | metadados, progresso, visão geral, trilha do currículo (módulos → tópicos coloridos por status), exclusão |
 | `*` | `NotFoundPage` | 404 |
 
 Todas dentro de `AppLayout` (header com seletores de idioma e tema + `<Outlet/>`).
@@ -343,7 +345,7 @@ Todas dentro de `AppLayout` (header com seletores de idioma e tema + `<Outlet/>`
 ### 6.5 Tipos gerados
 
 ```sh
-cd apps/web && npm run generate:types
+cd apps/client && npm run generate:types
 ```
 
 Roda `uv run export-openapi --out openapi.json` e `openapi-typescript` →
@@ -390,24 +392,24 @@ uv tool install pre-commit
 pre-commit install
 ```
 
-Scripts do web: `dev`, `build` (`tsc -b && vite build`), `preview`, `typecheck`
+Scripts do client: `dev`, `build` (`tsc -b && vite build`), `preview`, `typecheck`
 (`tsc -b`), `lint` (`oxlint`), `generate:types`, `check:i18n`.
 
-Verificação padrão antes de entregar mudança no web: `npm run typecheck`,
+Verificação padrão antes de entregar mudança no client: `npm run typecheck`,
 `npm run lint`, `npm run check:i18n`. No Python: `uv run pytest`,
 `uv run ruff check`, `uv run ruff format`.
 
 ## 8. Como rodar
 
 Tudo junto (bash): `./run.sh` — sobe `fastapi dev apps/local-server/main.py` em
-`:8000` e `npm run dev` do web (exige `apps/web/node_modules`).
+`:8000` e `npm run dev` do client (exige `apps/client/node_modules`).
 
 Separado:
 
 ```sh
 uv sync
 VAULT_PATH=/caminho/do/vault uv run fastapi dev apps/local-server/main.py   # :8000
-cd apps/web && npm install && npm run dev                                   # Vite
+cd apps/client && npm install && npm run dev                                # Vite
 ```
 
 > `vite.config.ts` fixa a porta do dev server em **3000**; `run.sh` e os READMEs
@@ -423,7 +425,8 @@ cd apps/web && npm install && npm run dev                                   # Vi
 | `course-parser` | modelos, parsers, loader do vault, CLI, testes com fixtures reais |
 | `local-server` | leitura de cursos/aulas/exercícios, exclusão, criação por job, CORS, export OpenAPI |
 | Frontend base | Vite + Tailwind + shadcn, tipos gerados, TanStack Query, roteamento |
-| Lista e detalhe de curso | busca, progresso, currículo somente leitura |
+| Lista e detalhe de curso | busca, progresso, visão geral |
+| Trilha do currículo | Feature 4 (escopo reduzido): timeline em `CoursePage`, substitui a lista antiga; o clique no card ainda não leva a lugar nenhum (Feature 5) |
 | Criar/excluir curso pela UI | questionário → job → polling |
 | i18n EN + pt-BR | plano `001` concluído |
 | Tema claro/escuro/sistema | |
@@ -442,36 +445,45 @@ cd apps/web && npm install && npm run dev                                   # Vi
 Cada etapa entrega um incremento demonstrável. Escopo mínimo primeiro; extras
 marcados como *stretch*.
 
-#### Feature 4 — Trilha interativa (estilo [roadmap.sh](https://roadmap.sh/frontend))
+#### Feature 4 — Trilha interativa (estilo [roadmap.sh](https://roadmap.sh/frontend)) — encerrada
 
-Hoje o currículo é renderizado como lista de cards em `CoursePage`. A trilha o
-substitui/complementa por um grafo navegável.
+Encerrada com escopo reduzido (decisão de 2026-10-19). O que foi entregue é o
+componente de timeline; o painel lateral, a alternância Trilha / Lista e a
+legenda dedicada foram **descartados** (detalhes de tópico ficam na página de
+aula da Feature 5; a legenda já existe em `CoursePage` com `StatusBadge` +
+contagens). React Flow foi avaliado e descartado por ser um canvas com
+zoom/arrastar. Histórico em `docs/specs/002-interactive-trail/plan.md`.
 
-- [ ] Integrar `@xyflow/react` (React Flow) com layout automático (`elkjs` ou
-      `dagre`).
-- [ ] Transformar módulos/tópicos em nós e edges (pré-requisito → sequência).
-- [ ] Cor/ícone do nó por `status` (`pending` / `in_progress` / `completed` /
-      `review`) — dados já em `Topic.meta.status`; a agregação de status
-      existente (`lib/progress.ts`) pode servir à legenda.
-- [ ] Clique no nó abre painel lateral com os subtópicos e link para a aula.
+- [x] Timeline vertical em HTML/CSS (`ui/components/trail/`): módulos na
+      espinha, tópicos em grade responsiva logo abaixo.
+- [x] Cor/ícone do card por `status` (`pending` / `in_progress` / `completed` /
+      `review`), lidos de `Topic.meta.status` (`statusStyle.ts`).
+- [~] Painel lateral com subtópicos: **descartado** (vai para a página de aula).
+- [~] Alternância Trilha / Lista em `?view=`: **descartada**.
 
-**Entrega:** trilha visual navegável refletindo o estado real do currículo.
+A `Trail` já está montada em `CoursePage` e **substituiu** a lista de cards
+antiga (removida; não há alternância). **Pendência herdada pela Feature 5:** o
+clique no card só guarda `selectedId` em estado local; o `onSelect` do
+`TopicCard` deve passar a navegar para a aula do tópico (e o estado de seleção
+deixa de ser necessário). Com a lista removida, `CoursePage` perdeu os badges de
+"tem aula / tem exercícios" por tópico, que a Feature 5 precisa recolocar.
 
 Notas de design:
 
 - O currículo **não tem campo estruturado de pré-requisito**; relações do tipo
-  "builds on 2.3" aparecem só em prosa no parágrafo do tópico. As edges iniciais
-  vêm da ordem do currículo (sequência dentro e entre módulos). Pré-requisitos
-  explícitos exigiriam novo campo em `topic-meta` — o que obriga atualizar os três
-  formatos (skill, parser, tipos TS).
-- Todos os dados necessários já chegam em `GET /courses/{slug}`; não há rota nova
-  a criar.
-- Textos novos da UI entram nos dois catálogos de i18n.
+  "builds on 2.3" aparecem só em prosa. A trilha não desenha setas: a ordem do
+  currículo é a ordem da página. Pré-requisitos explícitos exigiriam novo campo
+  em `topic-meta` (atualizar skill, parser e tipos TS).
+- Todos os dados vêm de `GET /courses/{slug}`; nenhuma rota nova.
 
 #### Feature 5 — Página de aula e exercícios
 
+- [ ] Fazer o clique no card da trilha (`TopicCard`) navegar para a aula do
+      tópico, indicando no card se há aula/exercícios.
 - [ ] Renderização de Markdown com `react-markdown` + Shiki (syntax highlighting).
 - [ ] Página de aula com navegação anterior/próximo pela ordem do currículo.
+      Mostra também os detalhes do tópico (subtópicos, weak points, dificuldade
+      percebida), que antes iriam para um painel lateral.
 - [ ] Página de exercícios — **somente leitura**, sem correção pela UI.
 
 **Entrega:** fluxo completo trilha → tópico → aula → exercícios, lendo o vault
@@ -484,9 +496,9 @@ Notas de design:
   `ExerciseSet` com o Markdown em `content`; falta consumi-las no frontend
   (queries em `api/queries.ts`, hooks em `app/hooks/`, páginas em `ui/pages/`,
   rotas em `router/index.tsx`).
-- `CourseBundle` já traz `lessons` e `exercise_sets`; `CoursePage` já sabe quais
-  tópicos têm aula/exercício (`hasLesson` / `hasExercises`), o que viabiliza os
-  links.
+- `CourseBundle` já traz `lessons` e `exercise_sets`; os conjuntos de
+  tópicos com aula/exercício se derivam de `lessons` / `exercise_sets`
+  (`lessons.map(l => l.topic)`), base para os links e badges dos cards.
 - A navegação anterior/próximo deve seguir a ordem módulo → tópico do
   currículo (a mesma usada para ordenar aulas no loader).
 - Conteúdo do vault não é traduzido; só a casca da UI.
@@ -560,7 +572,7 @@ Notas de design:
 - Resquícios de debug: `print` em `routes/courses.py`, `console.log(job)` e
   `TODO` de exibir erro de job em `CoursesPage.tsx`.
 - `GET /vault/config` não é consumido pelo frontend.
-- READMEs de `apps/web` e `apps/local-server` estão defasados (layout de
+- READMEs de `apps/client` e `apps/local-server` estão defasados (layout de
   `src/`, tabela de rotas, porta do Vite).
 - `.specify/` (spec-kit) aparece deletado na árvore de trabalho (mudança ainda
   não commitada); planos de feature vivem em `docs/specs/`.

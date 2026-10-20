@@ -35,7 +35,7 @@ CORS is enabled for the Vite dev origin (`http://localhost:5173`).
 The frontend generates its TypeScript types from this server's schema:
 
 ```sh
-uv run export-openapi --out apps/web/openapi.json
+uv run export-openapi --out apps/client/openapi.json
 ```
 
-`cd apps/web && npm run generate:types` runs that plus `openapi-typescript`.
+`cd apps/client && npm run generate:types` runs that plus `openapi-typescript`.
