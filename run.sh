@@ -26,12 +26,12 @@ init_backend() {
 }
 
 init_frontend() {
-  if [[ ! -d apps/web/node_modules ]]; then
-    echo "apps/web/node_modules not found — run 'npm install' in apps/web first." >&2
+  if [[ ! -d apps/client/node_modules ]]; then
+    echo "apps/client/node_modules not found — run 'npm install' in apps/client first." >&2
     exit 1
   fi
-  echo "web app starting (http://localhost:5173)..."
-  (cd apps/web && npm run dev) &
+  echo "client app starting (http://localhost:5173)..."
+  (cd apps/client && npm run dev) &
   FRONTEND_PID=$!
 }
 

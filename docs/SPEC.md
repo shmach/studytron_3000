@@ -19,7 +19,7 @@ Três partes desacopladas por um contrato de storage:
 | Skill de agente de IA | `skill/` | Gera o curso (esqueleto + aulas + exercícios sob demanda) e escreve Markdown no vault |
 | Parser | `packages/course-parser/` | Converte o Markdown do vault em modelos Pydantic |
 | Servidor local | `apps/local-server/` | FastAPI sobre o parser; expõe o vault via HTTP e dispara a criação de cursos |
-| Frontend | `apps/web/` | React + Vite; lista cursos, mostra o currículo, cria e apaga cursos |
+| Frontend | `apps/client/` | React + Vite; lista cursos, mostra o currículo, cria e apaga cursos |
 
 **Regra central:** os arquivos Markdown no vault são a única fonte de verdade.
 A skill escreve; o servidor/app lê (e apaga cursos inteiros). Nenhum lado guarda
@@ -31,7 +31,7 @@ notas Obsidian válidas (sem HTML, sem sintaxe proprietária).
 ```
  Agente de IA ─────────(skill course-builder)──▶  VAULT (pasta de Markdown)
                                                         ▲
- apps/web (React) ──HTTP──▶ apps/local-server (FastAPI) ─┤ lê via course-parser
+ apps/client (React) ──HTTP──▶ apps/local-server (FastAPI) ─┤ lê via course-parser
         ▲                          │                    │
         └── tipos TS gerados ◀─ OpenAPI                 └─ cria curso: subprocess do CLI do agente
 ```
@@ -55,10 +55,10 @@ studytron_3000/
   skill/                         Skill course-builder (SKILL.md, references/, assets/)
   packages/course-parser/        Python: Markdown -> Pydantic (src/course_parser, tests/)
   apps/local-server/             Python: FastAPI (src/local_server, main.py)
-  apps/web/                      React + Vite + TS (Node, fora do workspace uv)
+  apps/client/                     React + Vite + TS (Node, fora do workspace uv)
   docs/
     SPEC.md                      este arquivo
-    specs/001-web-app-i18n/      plano da internacionalização do web (concluído)
+    specs/001-web-app-i18n/      plano da internacionalização do client (concluído)
     specs/002-interactive-trail/ plano da Feature 4, trilha interativa (encerrada com escopo reduzido)
   run.sh                         sobe servidor + frontend juntos
   pyproject.toml                 workspace uv: packages/* e apps/local-server
@@ -270,10 +270,10 @@ CORS liberado para `http://localhost:3000` e `http://localhost:5173`, métodos
 
 ### Contrato OpenAPI
 
-`uv run export-openapi --out apps/web/openapi.json` grava
+`uv run export-openapi --out apps/client/openapi.json` grava
 `app.openapi()`; o frontend gera os tipos a partir dele (seção 6.5).
 
-## 6. `apps/web`
+## 6. `apps/client`
 
 React 19 + Vite 8 + TypeScript 5.9, Tailwind v4, shadcn/ui (Radix), React
 Router 8, TanStack Query 5, `openapi-fetch`, i18next. Node 22+; **fora** do
@@ -345,7 +345,7 @@ Todas dentro de `AppLayout` (header com seletores de idioma e tema + `<Outlet/>`
 ### 6.5 Tipos gerados
 
 ```sh
-cd apps/web && npm run generate:types
+cd apps/client && npm run generate:types
 ```
 
 Roda `uv run export-openapi --out openapi.json` e `openapi-typescript` →
@@ -392,24 +392,24 @@ uv tool install pre-commit
 pre-commit install
 ```
 
-Scripts do web: `dev`, `build` (`tsc -b && vite build`), `preview`, `typecheck`
+Scripts do client: `dev`, `build` (`tsc -b && vite build`), `preview`, `typecheck`
 (`tsc -b`), `lint` (`oxlint`), `generate:types`, `check:i18n`.
 
-Verificação padrão antes de entregar mudança no web: `npm run typecheck`,
+Verificação padrão antes de entregar mudança no client: `npm run typecheck`,
 `npm run lint`, `npm run check:i18n`. No Python: `uv run pytest`,
 `uv run ruff check`, `uv run ruff format`.
 
 ## 8. Como rodar
 
 Tudo junto (bash): `./run.sh` — sobe `fastapi dev apps/local-server/main.py` em
-`:8000` e `npm run dev` do web (exige `apps/web/node_modules`).
+`:8000` e `npm run dev` do client (exige `apps/client/node_modules`).
 
 Separado:
 
 ```sh
 uv sync
 VAULT_PATH=/caminho/do/vault uv run fastapi dev apps/local-server/main.py   # :8000
-cd apps/web && npm install && npm run dev                                   # Vite
+cd apps/client && npm install && npm run dev                                # Vite
 ```
 
 > `vite.config.ts` fixa a porta do dev server em **3000**; `run.sh` e os READMEs
@@ -572,7 +572,7 @@ Notas de design:
 - Resquícios de debug: `print` em `routes/courses.py`, `console.log(job)` e
   `TODO` de exibir erro de job em `CoursesPage.tsx`.
 - `GET /vault/config` não é consumido pelo frontend.
-- READMEs de `apps/web` e `apps/local-server` estão defasados (layout de
+- READMEs de `apps/client` e `apps/local-server` estão defasados (layout de
   `src/`, tabela de rotas, porta do Vite).
 - `.specify/` (spec-kit) aparece deletado na árvore de trabalho (mudança ainda
   não commitada); planos de feature vivem em `docs/specs/`.

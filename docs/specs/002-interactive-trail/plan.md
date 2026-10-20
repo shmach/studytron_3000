@@ -70,12 +70,12 @@ O foco do produto passou a ser **acessar a aula do tópico**. Por isso:
 | Convivência com a lista | Alternância `Trilha` / `Lista` em `CoursePage`, estado em `?view=trail\|list` (padrão `trail`) | A lista tem detalhes (weak points, badges) que a trilha não mostra; a URL permite compartilhar/recarregar na mesma visão. Sem componente `Tabs` novo |
 | Painel lateral | `Sheet` do shadcn (Radix Dialog) | Já cuida de foco, ESC e mobile; evita reinventar overlay |
 | Link para a aula | Painel mostra se há aula/exercícios, **sem link** nesta feature | A rota da página de aula só existe na Feature 5. O link entra lá (ponto de extensão: `TopicPanel`) |
-| Testes | **Sem testes automatizados nesta feature** (decisão do Samuel) | O web não tem runner. Verificação: `typecheck` + `lint` + `check:i18n` + checagem manual |
+| Testes | **Sem testes automatizados nesta feature** (decisão do Samuel) | O client não tem runner. Verificação: `typecheck` + `lint` + `check:i18n` + checagem manual |
 
 ## Estrutura de arquivos
 
 ```
-apps/web/src/
+apps/client/src/
   ui/components/trail/
     statusStyle.ts      status -> { icon, className }   (já existe)
     TopicCard.tsx       card clicável de um tópico      (substitui TopicNode)
@@ -108,7 +108,7 @@ quando autorizado.
 
 ### Passo 5 — Limpeza
 
-1. `npm uninstall @xyflow/react @dagrejs/dagre` em `apps/web`.
+1. `npm uninstall @xyflow/react @dagrejs/dagre` em `apps/client`.
 2. Apagar `app/lib/trail.ts`, `app/lib/trailLayout.ts` e
    `ui/components/trail/TrailGraph.tsx`. `TopicNode.tsx` e `ModuleNode.tsx`
    podem ficar até o Passo 6 como referência de visual, mas importam
@@ -141,7 +141,7 @@ quando autorizado.
 ### Passo 8 — Painel lateral
 
 Adicionar o `Sheet` com o CLI do shadcn. Antes de qualquer comando, rodar
-`npx shadcn@latest info --cwd apps/web` e passar `--cwd apps/web` nos
+`npx shadcn@latest info --cwd apps/client` e passar `--cwd apps/client` nos
 comandos (regra do `CLAUDE.md`); conferir a capitalização do arquivo gerado
 (o projeto usa PascalCase em `components/ui/`).
 
@@ -187,7 +187,7 @@ ser a visão `list`. Progresso e visão geral ficam acima das duas visões.
 ## Verificação final
 
 ```sh
-# apps/web
+# apps/client
 npm run typecheck && npm run lint && npm run check:i18n
 ```
 

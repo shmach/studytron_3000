@@ -1,7 +1,7 @@
 """Dump the OpenAPI schema to a file so the frontend can generate TS types offline.
 
 Usage:
-    uv run export-openapi --out apps/web/openapi.json
+    uv run export-openapi --out apps/client/openapi.json
 """
 
 import argparse

@@ -18,7 +18,7 @@ qualquer parte do sistema. Planos de features pontuais: `docs/specs/`.
 - **Spec em três formatos.** Mudou `topic-meta`, front matter de aula/exercício
   ou o contrato de API? Atualize **juntos**: `skill/references/*`, models do
   `course-parser` e tipos gerados do frontend (`npm run generate:types` em
-  `apps/web`, commitando `openapi.json` + `schema.d.ts`).
+  `apps/client`, commitando `openapi.json` + `schema.d.ts`).
 - **Markdown gerado precisa ser nota Obsidian válida:** sem HTML, sem sintaxe
   proprietária. Edições de estado no currículo são cirúrgicas (só o bloco
   `topic-meta` / checkbox), nunca regenerar o arquivo.
@@ -40,14 +40,14 @@ qualquer parte do sistema. Planos de features pontuais: `docs/specs/`.
   (`tsc` acusa divergência de caixa até no Windows); aliases `@app`, `@ui`,
   `@router`.
 - Commits: Conventional Commits (validados pelo `commitlint`).
-- shadcn/ui: o `components.json` está em `apps/web`. Antes de qualquer
-  `add`/`docs`/`search`, rode `npx shadcn@latest info --cwd apps/web` e passe
-  `--cwd apps/web` nos comandos.
+- shadcn/ui: o `components.json` está em `apps/client`. Antes de qualquer
+  `add`/`docs`/`search`, rode `npx shadcn@latest info --cwd apps/client` e passe
+  `--cwd apps/client` nos comandos.
 
 ## Verificar antes de dar por concluído
 
 ```sh
-# frontend (em apps/web)
+# frontend (em apps/client)
 npm run typecheck && npm run lint && npm run check:i18n
 
 # Python (na raiz)
@@ -59,7 +59,7 @@ Mudou models Pydantic ou rotas? Regere os tipos TS (`npm run generate:types`).
 
 ## Setup
 
-- Python: `uv sync` na raiz. Frontend: Node 22+, `npm install` em `apps/web`
+- Python: `uv sync` na raiz. Frontend: Node 22+, `npm install` em `apps/client`
   (não faz parte do workspace `uv`).
 - Hook de pre-commit **não é versionado**; após clonar, uma vez:
   `uv tool install pre-commit && pre-commit install`.

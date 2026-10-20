@@ -1,0 +1,2 @@
+uvx pre-commit run
+cd apps/client && npx lint-staged
