@@ -313,7 +313,7 @@ src/
 | Path | Componente | Conteúdo |
 | --- | --- | --- |
 | `/` | `CoursesPage` | busca (debounce, sem acentos), lista de cursos, estado vazio com criação via questionário |
-| `/courses/:slug` | `CoursePage` | metadados, progresso, visão geral, currículo (módulos → tópicos → subtópicos, somente leitura), exclusão |
+| `/courses/:slug` | `CoursePage` | metadados, progresso, visão geral, trilha do currículo (módulos → tópicos coloridos por status), exclusão |
 | `*` | `NotFoundPage` | 404 |
 
 Todas dentro de `AppLayout` (header com seletores de idioma e tema + `<Outlet/>`).
@@ -425,8 +425,8 @@ cd apps/web && npm install && npm run dev                                   # Vi
 | `course-parser` | modelos, parsers, loader do vault, CLI, testes com fixtures reais |
 | `local-server` | leitura de cursos/aulas/exercícios, exclusão, criação por job, CORS, export OpenAPI |
 | Frontend base | Vite + Tailwind + shadcn, tipos gerados, TanStack Query, roteamento |
-| Lista e detalhe de curso | busca, progresso, currículo somente leitura |
-| Trilha (componente) | Feature 4, escopo reduzido; ainda não montada em `CoursePage` (ver Feature 5) |
+| Lista e detalhe de curso | busca, progresso, visão geral |
+| Trilha do currículo | Feature 4 (escopo reduzido): timeline em `CoursePage`, substitui a lista antiga; o clique no card ainda não leva a lugar nenhum (Feature 5) |
 | Criar/excluir curso pela UI | questionário → job → polling |
 | i18n EN + pt-BR | plano `001` concluído |
 | Tema claro/escuro/sistema | |
@@ -461,10 +461,12 @@ zoom/arrastar. Histórico em `docs/specs/002-interactive-trail/plan.md`.
 - [~] Painel lateral com subtópicos: **descartado** (vai para a página de aula).
 - [~] Alternância Trilha / Lista em `?view=`: **descartada**.
 
-**Pendência herdada pela Feature 5:** `Trail` ainda **não está montada** em
-`CoursePage` e o clique no card só guarda `selectedId` em estado local. O
-`onSelect` do `TopicCard` deve passar a navegar para a aula do tópico (e o
-estado de seleção deixa de ser necessário).
+A `Trail` já está montada em `CoursePage` e **substituiu** a lista de cards
+antiga (removida; não há alternância). **Pendência herdada pela Feature 5:** o
+clique no card só guarda `selectedId` em estado local; o `onSelect` do
+`TopicCard` deve passar a navegar para a aula do tópico (e o estado de seleção
+deixa de ser necessário). Com a lista removida, `CoursePage` perdeu os badges de
+"tem aula / tem exercícios" por tópico, que a Feature 5 precisa recolocar.
 
 Notas de design:
 
@@ -476,8 +478,8 @@ Notas de design:
 
 #### Feature 5 — Página de aula e exercícios
 
-- [ ] Montar a trilha (`Trail`, da Feature 4) em `CoursePage` e fazer o clique no
-      card navegar para a aula do tópico.
+- [ ] Fazer o clique no card da trilha (`TopicCard`) navegar para a aula do
+      tópico, indicando no card se há aula/exercícios.
 - [ ] Renderização de Markdown com `react-markdown` + Shiki (syntax highlighting).
 - [ ] Página de aula com navegação anterior/próximo pela ordem do currículo.
       Mostra também os detalhes do tópico (subtópicos, weak points, dificuldade
@@ -494,9 +496,9 @@ Notas de design:
   `ExerciseSet` com o Markdown em `content`; falta consumi-las no frontend
   (queries em `api/queries.ts`, hooks em `app/hooks/`, páginas em `ui/pages/`,
   rotas em `router/index.tsx`).
-- `CourseBundle` já traz `lessons` e `exercise_sets`; `CoursePage` já sabe quais
-  tópicos têm aula/exercício (`hasLesson` / `hasExercises`), o que viabiliza os
-  links.
+- `CourseBundle` já traz `lessons` e `exercise_sets`; os conjuntos de
+  tópicos com aula/exercício se derivam de `lessons` / `exercise_sets`
+  (`lessons.map(l => l.topic)`), base para os links e badges dos cards.
 - A navegação anterior/próximo deve seguir a ordem módulo → tópico do
   currículo (a mesma usada para ordenar aulas no loader).
 - Conteúdo do vault não é traduzido; só a casca da UI.

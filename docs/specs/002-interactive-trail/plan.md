@@ -51,12 +51,13 @@ O foco do produto passou a ser **acessar a aula do tópico**. Por isso:
   aula/exercícios aparecerão na página de aula (Feature 5).
 - **Legenda cancelada.** O bloco de badges com contagens em `CoursePage`
   (`StatusBadge` + `progress.byStatus`) já cumpre esse papel e fica acima da
-  trilha. Ao montar a trilha, conferir se as cores do `StatusBadge` batem com as
-  de `statusStyle.ts`.
-- **Alternância Trilha / Lista cancelada.** A trilha deve ser montada em
-  `CoursePage` na Feature 5, junto com o clique que navega para a aula.
-- **Pendência:** `Trail` não está montada em nenhuma página e `selectedId` só
-  existe para o painel; ao navegar para a aula, esse estado pode sair.
+  trilha. `StatusBadge` agora usa o `statusStyle.ts`, então as cores
+  dos badges e dos cards vêm da mesma fonte.
+- **Alternância Trilha / Lista cancelada.** A `Trail` foi montada em
+  `CoursePage` e a lista antiga foi removida (commit `b1f2590`).
+- **Pendência:** o clique no card só guarda `selectedId`; na Feature 5 ele passa
+  a navegar para a aula e esse estado pode sair. Os badges "aula/exercícios"
+  da lista antiga sumiram junto com ela e precisam voltar (no card ou na aula).
 
 ## Decisões de design (e por quê)
 
@@ -99,8 +100,8 @@ Removidos: `app/lib/trail.ts`, `app/lib/trailLayout.ts`,
 | 6 | `TopicCard`, `ModuleSection` e `Trail` (timeline em HTML/CSS) | Samuel | ✅ |
 | 7 | Legenda de status (`TrailLegend`) | Claude | ❌ cancelado: `CoursePage` já tem legenda (`StatusBadge` + contagens) |
 | 8 | Painel lateral (`TopicPanel`) | Samuel | ❌ cancelado: detalhes vão para a página de aula (Feature 5) |
-| 9 | Integrar em `CoursePage` (alternância + URL) | Claude | ➡️ movido para a Feature 5 (montar `Trail`, sem alternância) |
-| 10 | i18n, verificação final e atualização do SPEC | Claude | ✅ SPEC atualizado; chaves i18n extras não são mais necessárias |
+| 9 | Integrar em `CoursePage` (alternância + URL) | Claude | ✅ parcial: `Trail` montada e lista removida, sem alternância/URL |
+| 10 | i18n, verificação final e atualização do SPEC | Claude | ✅ SPEC atualizado; 7 chaves `course.*` órfãs removidas (`curriculum`, `lessonBadge`, `exercisesBadge`, `subtopicsCount`, `weakPoints`, `subtopicCompleted`, `subtopicPending`; recuperáveis do Git para a Feature 5); typecheck e `check:i18n` passam |
 
 Claude revisa cada passo do Samuel antes do seguinte, conferindo no navegador
 quando autorizado.
