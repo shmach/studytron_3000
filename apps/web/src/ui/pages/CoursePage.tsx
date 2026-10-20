@@ -2,7 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 
-import type { CourseBundle, Module, Topic } from '@app/api/client';
+import type { CourseBundle } from '@app/api/client';
 import { DeleteCourseDialog } from '@ui/components/DeleteCourseDialog';
 import { ErrorState } from '@ui/components/ErrorState';
 import { StatusBadge } from '@ui/components/StatusBadge';
@@ -62,9 +62,6 @@ function CourseDetail({ bundle }: { bundle: CourseBundle }) {
   const createdDate = new Intl.DateTimeFormat(i18n.resolvedLanguage, {
     dateStyle: 'medium',
   }).format(new Date(`${course.created}T00:00:00`));
-
-  const lessonTopics = new Set(lessons.map((lesson) => lesson.topic));
-  const exerciseTopics = new Set(exerciseSets.map((set) => set.topic));
 
   return (
     <>
