@@ -1,5 +1,9 @@
 # Plan: Feature 4 — Trilha interativa
 
+> **Status: encerrada com escopo reduzido (2026-10-19).** Foram entregues os
+> Passos 5 e 6 (timeline em HTML/CSS). Os Passos 7-10 foram cancelados; veja
+> "Encerramento" abaixo. O restante deste documento é mantido como histórico.
+
 Especificação de origem: [`docs/SPEC.md`](../../SPEC.md), "Feature 4 — Trilha interativa".
 
 ## Contexto
@@ -38,6 +42,21 @@ Decisão: trilha em **HTML/CSS no fluxo da página**. Não há dependência de
 grafo, nem cálculo de layout: o navegador faz o layout. `buildTrail`,
 `layoutTrail`, React Flow e dagre saem do projeto (o histórico no Git preserva
 tudo). `statusStyle.ts` e o visual dos nós de tópico e módulo são aproveitados.
+
+## Encerramento (2026-10-19)
+
+O foco do produto passou a ser **acessar a aula do tópico**. Por isso:
+
+- **Painel lateral cancelado.** Subtópicos, weak points, dificuldade e badges de
+  aula/exercícios aparecerão na página de aula (Feature 5).
+- **Legenda cancelada.** O bloco de badges com contagens em `CoursePage`
+  (`StatusBadge` + `progress.byStatus`) já cumpre esse papel e fica acima da
+  trilha. Ao montar a trilha, conferir se as cores do `StatusBadge` batem com as
+  de `statusStyle.ts`.
+- **Alternância Trilha / Lista cancelada.** A trilha deve ser montada em
+  `CoursePage` na Feature 5, junto com o clique que navega para a aula.
+- **Pendência:** `Trail` não está montada em nenhuma página e `selectedId` só
+  existe para o painel; ao navegar para a aula, esse estado pode sair.
 
 ## Decisões de design (e por quê)
 
@@ -78,10 +97,10 @@ Removidos: `app/lib/trail.ts`, `app/lib/trailLayout.ts`,
 | 1-4 | `buildTrail`, `layoutTrail`, React Flow, nós customizados | Samuel | ✅ feitos e descartados (ver "Mudança de rumo") |
 | 5 | Limpeza: remover React Flow, dagre, `trail.ts`, `trailLayout.ts` | Samuel | ✅ |
 | 6 | `TopicCard`, `ModuleSection` e `Trail` (timeline em HTML/CSS) | Samuel | ✅ |
-| 7 | Legenda de status (`TrailLegend`) | Claude | ⬜ |
-| 8 | Painel lateral (`TopicPanel`) | Samuel | ⬜ |
-| 9 | Integrar em `CoursePage` (alternância + URL) | Claude | ⬜ |
-| 10 | i18n, verificação final e atualização do SPEC | Claude | ⬜ |
+| 7 | Legenda de status (`TrailLegend`) | Claude | ❌ cancelado: `CoursePage` já tem legenda (`StatusBadge` + contagens) |
+| 8 | Painel lateral (`TopicPanel`) | Samuel | ❌ cancelado: detalhes vão para a página de aula (Feature 5) |
+| 9 | Integrar em `CoursePage` (alternância + URL) | Claude | ➡️ movido para a Feature 5 (montar `Trail`, sem alternância) |
+| 10 | i18n, verificação final e atualização do SPEC | Claude | ✅ SPEC atualizado; chaves i18n extras não são mais necessárias |
 
 Claude revisa cada passo do Samuel antes do seguinte, conferindo no navegador
 quando autorizado.

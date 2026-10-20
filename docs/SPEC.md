@@ -59,7 +59,7 @@ studytron_3000/
   docs/
     SPEC.md                      este arquivo
     specs/001-web-app-i18n/      plano da internacionalização do web (concluído)
-    specs/002-interactive-trail/ plano da Feature 4, trilha interativa (em andamento)
+    specs/002-interactive-trail/ plano da Feature 4, trilha interativa (encerrada com escopo reduzido)
   run.sh                         sobe servidor + frontend juntos
   pyproject.toml                 workspace uv: packages/* e apps/local-server
   CLAUDE.md                      instruções para agentes de IA
@@ -296,7 +296,8 @@ src/
     lib/     progress.ts courseSearch.ts query-client.ts utils.ts
   ui/
     components/  AppLayout, LanguageSelector, ThemeSelector, CourseQuestionnaireDialog,
-                 DeleteCourseDialog, error-state, status-badge
+                 DeleteCourseDialog, error-state, status-badge,
+                 trail/ (Trail, ModuleSection, TopicCard, statusStyle)
     components/ui/  primitivas shadcn (AlertDialog, DropdownMenu, Input, Textarea,
                     badge, button, card, skeleton, questionnaire)
     pages/       CoursesPage, CoursePage, not-found-page
@@ -425,6 +426,7 @@ cd apps/web && npm install && npm run dev                                   # Vi
 | `local-server` | leitura de cursos/aulas/exercícios, exclusão, criação por job, CORS, export OpenAPI |
 | Frontend base | Vite + Tailwind + shadcn, tipos gerados, TanStack Query, roteamento |
 | Lista e detalhe de curso | busca, progresso, currículo somente leitura |
+| Trilha (componente) | Feature 4, escopo reduzido; ainda não montada em `CoursePage` (ver Feature 5) |
 | Criar/excluir curso pela UI | questionário → job → polling |
 | i18n EN + pt-BR | plano `001` concluído |
 | Tema claro/escuro/sistema | |
@@ -443,39 +445,43 @@ cd apps/web && npm install && npm run dev                                   # Vi
 Cada etapa entrega um incremento demonstrável. Escopo mínimo primeiro; extras
 marcados como *stretch*.
 
-#### Feature 4 — Trilha interativa (estilo [roadmap.sh](https://roadmap.sh/frontend))
+#### Feature 4 — Trilha interativa (estilo [roadmap.sh](https://roadmap.sh/frontend)) — encerrada
 
-Hoje o currículo é renderizado como lista de cards em `CoursePage`. A trilha o
-complementa com uma linha do tempo visual **dentro da página** (rola junto com
-ela; React Flow foi avaliado e descartado por ser um canvas com zoom/arrastar —
-ver `docs/specs/002-interactive-trail/plan.md`).
+Encerrada com escopo reduzido (decisão de 2026-10-19). O que foi entregue é o
+componente de timeline; o painel lateral, a alternância Trilha / Lista e a
+legenda dedicada foram **descartados** (detalhes de tópico ficam na página de
+aula da Feature 5; a legenda já existe em `CoursePage` com `StatusBadge` +
+contagens). React Flow foi avaliado e descartado por ser um canvas com
+zoom/arrastar. Histórico em `docs/specs/002-interactive-trail/plan.md`.
 
-- [ ] Timeline vertical em HTML/CSS: módulos na espinha, tópicos em grade
-      responsiva logo abaixo.
-- [ ] Cor/ícone do card por `status` (`pending` / `in_progress` / `completed` /
-      `review`) — dados já em `Topic.meta.status`; a agregação de status
-      existente (`lib/progress.ts`) serve à legenda.
-- [ ] Clique no card abre painel lateral com os subtópicos; o link para a aula
-      entra na Feature 5 (a rota da aula ainda não existe).
-- [ ] Alternância Trilha / Lista em `CoursePage`, guardada em `?view=`.
+- [x] Timeline vertical em HTML/CSS (`ui/components/trail/`): módulos na
+      espinha, tópicos em grade responsiva logo abaixo.
+- [x] Cor/ícone do card por `status` (`pending` / `in_progress` / `completed` /
+      `review`), lidos de `Topic.meta.status` (`statusStyle.ts`).
+- [~] Painel lateral com subtópicos: **descartado** (vai para a página de aula).
+- [~] Alternância Trilha / Lista em `?view=`: **descartada**.
 
-**Entrega:** trilha visual navegável refletindo o estado real do currículo.
+**Pendência herdada pela Feature 5:** `Trail` ainda **não está montada** em
+`CoursePage` e o clique no card só guarda `selectedId` em estado local. O
+`onSelect` do `TopicCard` deve passar a navegar para a aula do tópico (e o
+estado de seleção deixa de ser necessário).
 
 Notas de design:
 
 - O currículo **não tem campo estruturado de pré-requisito**; relações do tipo
-  "builds on 2.3" aparecem só em prosa no parágrafo do tópico. As edges iniciais
-  vêm da ordem do currículo (sequência dentro e entre módulos). Pré-requisitos
-  explícitos exigiriam novo campo em `topic-meta` — o que obriga atualizar os três
-  formatos (skill, parser, tipos TS).
-- Todos os dados necessários já chegam em `GET /courses/{slug}`; não há rota nova
-  a criar.
-- Textos novos da UI entram nos dois catálogos de i18n.
+  "builds on 2.3" aparecem só em prosa. A trilha não desenha setas: a ordem do
+  currículo é a ordem da página. Pré-requisitos explícitos exigiriam novo campo
+  em `topic-meta` (atualizar skill, parser e tipos TS).
+- Todos os dados vêm de `GET /courses/{slug}`; nenhuma rota nova.
 
 #### Feature 5 — Página de aula e exercícios
 
+- [ ] Montar a trilha (`Trail`, da Feature 4) em `CoursePage` e fazer o clique no
+      card navegar para a aula do tópico.
 - [ ] Renderização de Markdown com `react-markdown` + Shiki (syntax highlighting).
 - [ ] Página de aula com navegação anterior/próximo pela ordem do currículo.
+      Mostra também os detalhes do tópico (subtópicos, weak points, dificuldade
+      percebida), que antes iriam para um painel lateral.
 - [ ] Página de exercícios — **somente leitura**, sem correção pela UI.
 
 **Entrega:** fluxo completo trilha → tópico → aula → exercícios, lendo o vault
