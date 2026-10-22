@@ -480,7 +480,14 @@ Notas de design:
 
 - [ ] Fazer o clique no card da trilha (`TopicCard`) navegar para a aula do
       tópico, indicando no card se há aula/exercícios.
-- [ ] Renderização de Markdown com `react-markdown` + Shiki (syntax highlighting).
+- [x] Renderização de Markdown com `react-markdown` + Shiki (syntax highlighting):
+      `ui/components/Markdown.tsx` (GFM, tema claro/escuro via CSS variables,
+      blocos sem linguagem caem em texto simples).
+- [ ] *Pendência:* suporte a LaTeX inline (`$\rightarrow$`), usado em aulas do
+      vault (ex.: `ai-engineer` 1.1) e hoje exibido como texto literal. Exigiria
+      `remark-math` + `rehype-katex` + CSS do KaTeX.
+- [ ] *Pendência:* importar a página de aula com `React.lazy` no router, para o
+      Shiki não pesar no bundle da lista de cursos.
 - [ ] Página de aula com navegação anterior/próximo pela ordem do currículo.
       Mostra também os detalhes do tópico (subtópicos, weak points, dificuldade
       percebida), que antes iriam para um painel lateral.
