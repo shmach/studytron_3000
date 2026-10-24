@@ -1,156 +1,305 @@
+import {
+  ArrowLeft,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Circle,
+} from 'lucide-react';
+import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link, useParams } from 'react-router';
+
 import { ApiError } from '@app/api/client';
+import type { CourseBundle, Topic } from '@app/api/client';
 import { useCourse } from '@app/hooks/useCourse';
 import { useLesson } from '@app/hooks/useLesson';
 import { dateFormatter } from '@app/lib/dateFormatter';
 import { exercisesPath, topicPath } from '@app/lib/routes';
 import { flattenTopics, getNeighbors } from '@app/lib/topic';
+import type { Neighbors } from '@app/lib/topic';
 import { ErrorState } from '@ui/components/ErrorState';
 import { Markdown } from '@ui/components/Markdown';
+import { StatusBadge } from '@ui/components/StatusBadge';
+import { Badge } from '@ui/components/ui/Badge';
 import { Button } from '@ui/components/ui/Button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@ui/components/ui/Card';
 import { Skeleton } from '@ui/components/ui/Skeleton';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useMemo } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router';
+import { NotFoundPage } from '@ui/pages/NotFoundPage';
 
 export function LessonPage() {
   const { slug, topicId } = useParams<{ slug: string; topicId: string }>();
-  const navigate = useNavigate();
+  const { data: bundle, isPending, error, refetch } = useCourse(slug);
 
-  if (!slug || !topicId) {
-    <Navigate to={'/not-found'} />;
-  }
+  const topics = useMemo(
+    () => (bundle ? flattenTopics(bundle.course) : []),
+    [bundle],
+  );
 
-  const {
-    data: courseContent,
-    isPending: isCoursePending,
-    error: courseError,
-  } = useCourse(slug);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [topicId]);
 
-  const {
-    data: lessonContent,
-    isPending: isLessonPending,
-    error: lessonError,
-  } = useLesson(slug, topicId);
+  if (!slug || !topicId) return <NotFoundPage />;
+  if (isPending) return <LessonSkeleton />;
+  if (error) return <ErrorState error={error} onRetry={() => void refetch()} />;
 
-  const topics = useMemo(() => {
-    if (!isCoursePending && courseContent) {
-      return flattenTopics(courseContent.course);
-    }
-  }, [courseContent, isCoursePending]);
-  const neighbors = topics && getNeighbors(topics, topicId as string);
-  const is404 = lessonError instanceof ApiError && lessonError.status === 404;
-
-  if (isCoursePending || isLessonPending) {
-    return <Skeleton />;
-  }
-
-  if (courseError) {
-    return <ErrorState error={courseError} />;
-  }
-
-  if (lessonError) {
-    if (lessonError instanceof ApiError && is404) {
-      return <LessonNotGenerated />;
-    } else {
-      return <ErrorState error={lessonError} />;
-    }
-  }
+  const neighbors = getNeighbors(topics, topicId);
+  if (!neighbors) return <NotFoundPage />;
 
   return (
-    <div className="min-w-full flex flex-col gap-3">
-      {/* TODO: refact this component into a composition pattern */}
-      <header className="font-mono h-fit pb-5 border-b-2 gap-4">
-        <div className="min-w-full flex items-center justify-between">
-          <h2 className="text-lg">
-            <CourseReturnLink slug={slug!} /> / {lessonContent?.topic} -{' '}
-            {lessonContent?.title}
-          </h2>
-          <span>
-            Tópico: {neighbors?.index && neighbors.index + 1} /{' '}
-            {neighbors?.total}
-          </span>
-        </div>
-        <div className="w-full flex flex-col gap-2 mt-5">
-          <span>Detalhes do tópico:</span>
-          <span>Subtópicos (total): {lessonContent?.covers.length}</span>
-          <span>
-            Gerado em: {dateFormatter(lessonContent?.generated as string)}
-          </span>
+    <LessonView
+      slug={slug}
+      bundle={bundle}
+      topic={topics[neighbors.index]}
+      neighbors={neighbors}
+    />
+  );
+}
+
+interface LessonViewProps {
+  slug: string;
+  bundle: CourseBundle;
+  topic: Topic;
+  neighbors: Neighbors;
+}
+
+function LessonView({ slug, bundle, topic, neighbors }: LessonViewProps) {
+  const { t } = useTranslation();
+  const { id } = topic.meta;
+  const hasExercises = bundle.exercise_sets.some((set) => set.topic === id);
+
+  return (
+    <div className="flex w-full flex-col gap-6">
+      <nav>
+        <Button asChild variant="ghost" size="sm" className="-ml-2">
+          <Link to={`/courses/${encodeURIComponent(slug)}`}>
+            <ArrowLeft />
+            {t('lesson.backToCourse')}
+          </Link>
+        </Button>
+      </nav>
+
+      <header className="space-y-3">
+        <p className="text-muted-foreground text-sm">
+          {bundle.course.course} ·{' '}
+          {t('lesson.position', {
+            current: neighbors.index + 1,
+            total: neighbors.total,
+          })}
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-semibold tracking-tight">
+            <span className="text-muted-foreground font-mono text-2xl">
+              {id}
+            </span>{' '}
+            {topic.title}
+          </h1>
+          <StatusBadge status={topic.meta.status} />
         </div>
       </header>
-      <main>
-        {lessonContent && <LessonView content={lessonContent.content} />}
-      </main>
-      <footer className="min-w-full flex justify-between items-center pt-6">
-        <Button
-          variant={'default'}
-          disabled={neighbors?.prev === null}
-          onClick={() =>
-            navigate(
-              topicPath(slug as string, neighbors?.prev?.meta.id as string),
-            )
-          }
-          aria-label="Ir para a aula anterior"
-        >
-          <ChevronLeft />
-        </Button>
-        <Button
-          variant={'default'}
-          onClick={() =>
-            navigate(exercisesPath(slug as string, topicId as string))
-          }
-          aria-label="Acessar a página de exercícios"
-        >
-          Exercises
-        </Button>
-        <Button
-          variant={'default'}
-          disabled={neighbors?.next === null}
-          onClick={() =>
-            navigate(
-              topicPath(slug as string, neighbors?.next?.meta.id as string),
-            )
-          }
-          aria-label="Ir para a próxima aula"
-        >
-          <ChevronRight />
-        </Button>
-      </footer>
+
+      <TopicDetails topic={topic} />
+
+      <LessonBody slug={slug} topicId={id} />
+
+      <LessonNav
+        slug={slug}
+        topicId={id}
+        neighbors={neighbors}
+        hasExercises={hasExercises}
+      />
     </div>
   );
 }
 
-function CourseReturnLink({ slug }: { slug: string }) {
+function TopicDetails({ topic }: { topic: Topic }) {
+  const { t } = useTranslation();
+  const { perceived_difficulty: difficulty, weak_points: weakPoints } =
+    topic.meta;
+  const { subtopics } = topic;
+
+  if (subtopics.length === 0 && weakPoints.length === 0 && !difficulty) {
+    return null;
+  }
+
   return (
-    <span className="pb-1 animate-pulse hover:border-b border-b-foreground">
-      <Link to={`/courses/${slug}`}>{slug}</Link>
-    </span>
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('lesson.details')}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4 text-sm">
+        {difficulty && (
+          <p className="flex items-center gap-2">
+            <span className="text-muted-foreground">
+              {t('lesson.difficulty')}
+            </span>
+            <Badge variant="outline">
+              {t(`lesson.difficultyValue.${difficulty}` as const)}
+            </Badge>
+          </p>
+        )}
+
+        {subtopics.length > 0 && (
+          <section className="space-y-2">
+            <h2 className="font-medium">{t('lesson.subtopics')}</h2>
+            <ul className="space-y-1.5">
+              {subtopics.map((subtopic) => (
+                <li key={subtopic.id} className="flex items-start gap-2">
+                  {subtopic.completed ? (
+                    <Check
+                      className="text-primary mt-0.5 size-4 shrink-0"
+                      aria-label={t('lesson.subtopicDone')}
+                    />
+                  ) : (
+                    <Circle
+                      className="text-muted-foreground mt-0.5 size-4 shrink-0"
+                      aria-label={t('lesson.subtopicPending')}
+                    />
+                  )}
+                  <span>
+                    <span className="text-muted-foreground font-mono text-xs">
+                      {subtopic.id}
+                    </span>{' '}
+                    {subtopic.title}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {weakPoints.length > 0 && (
+          <section className="space-y-2">
+            <h2 className="font-medium">{t('lesson.weakPoints')}</h2>
+            <ul className="list-disc space-y-1 pl-5">
+              {weakPoints.map((point) => (
+                <li key={point}>{point}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
-function LessonView({ content }: { content: string }) {
-  return <Markdown className="">{content}</Markdown>;
-}
+function LessonBody({ slug, topicId }: { slug: string; topicId: string }) {
+  const { t, i18n } = useTranslation();
+  const { data: lesson, isPending, error, refetch } = useLesson(slug, topicId);
 
-function LessonNotGenerated() {
-  const { slug, topicId } = useParams<{ slug: string; topicId: string }>();
+  if (isPending) return <BodySkeleton />;
+
+  if (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('lesson.notGeneratedTitle')}</CardTitle>
+          </CardHeader>
+          <CardContent className="text-muted-foreground text-sm">
+            {t('lesson.notGeneratedBody')}
+          </CardContent>
+        </Card>
+      );
+    }
+    return <ErrorState error={error} onRetry={() => void refetch()} />;
+  }
 
   return (
-    <div className="min-w-full flex flex-col gap-3">
-      <header>
-        <h2 className="text-lg">
-          <CourseReturnLink slug={slug!} /> / {topicId}
-        </h2>
-      </header>
-      <main>
-        <h1>Aula não gerada!</h1>
-        <p>O conteúdo dessa aula ainda não foi gerado.</p>
-        <p>
-          Gere o conteúdo ou clique no botão abaixo para gerar o conteúdo da
-          aula.
-        </p>
-        <Button>Gerar aula</Button>
-      </main>
+    <article className="space-y-4">
+      <p className="text-muted-foreground text-sm">
+        {t('lesson.generatedOn', {
+          date: dateFormatter(lesson.generated, i18n.resolvedLanguage),
+        })}
+      </p>
+      <Markdown>{lesson.content}</Markdown>
+    </article>
+  );
+}
+
+interface LessonNavProps {
+  slug: string;
+  topicId: string;
+  neighbors: Neighbors;
+  hasExercises: boolean;
+}
+
+function LessonNav({ slug, topicId, neighbors, hasExercises }: LessonNavProps) {
+  const { t } = useTranslation();
+  const { prev, next } = neighbors;
+
+  return (
+    <nav className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-t pt-6">
+      {prev ? (
+        <Button
+          asChild
+          variant="outline"
+          className="min-w-0 justify-self-start"
+          aria-label={t('lesson.goToPrevious', { title: prev.title })}
+        >
+          <Link to={topicPath(slug, prev.meta.id)}>
+            <ChevronLeft />
+            <span className="truncate">
+              {prev.meta.id}
+              <span className="hidden sm:inline"> {prev.title}</span>
+            </span>
+          </Link>
+        </Button>
+      ) : (
+        <span />
+      )}
+
+      {hasExercises ? (
+        <Button asChild>
+          <Link to={exercisesPath(slug, topicId)}>{t('lesson.exercises')}</Link>
+        </Button>
+      ) : (
+        <span />
+      )}
+
+      {next ? (
+        <Button
+          asChild
+          variant="outline"
+          className="min-w-0 justify-self-end"
+          aria-label={t('lesson.goToNext', { title: next.title })}
+        >
+          <Link to={topicPath(slug, next.meta.id)}>
+            <span className="truncate">
+              {next.meta.id}
+              <span className="hidden sm:inline"> {next.title}</span>
+            </span>
+            <ChevronRight />
+          </Link>
+        </Button>
+      ) : (
+        <span />
+      )}
+    </nav>
+  );
+}
+
+function BodySkeleton() {
+  return (
+    <div className="space-y-3">
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-5/6" />
+      <Skeleton className="h-4 w-2/3" />
+    </div>
+  );
+}
+
+function LessonSkeleton() {
+  return (
+    <div className="space-y-6">
+      <Skeleton className="h-8 w-1/2" />
+      <Skeleton className="h-24 w-full" />
+      <BodySkeleton />
     </div>
   );
 }

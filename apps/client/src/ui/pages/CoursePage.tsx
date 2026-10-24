@@ -56,11 +56,11 @@ export function CoursePage() {
 }
 
 function CourseDetail({ bundle }: { bundle: CourseBundle }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { course, lessons, exercise_sets: exerciseSets, attempts } = bundle;
   const progress = computeProgress(course);
 
-  const createdDate = dateFormatter(course.created);
+  const createdDate = dateFormatter(course.created, i18n.resolvedLanguage);
 
   return (
     <>

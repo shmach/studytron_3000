@@ -4,7 +4,7 @@ export function flattenTopics(course: Course): Topic[] {
   return course.modules.flatMap((module) => module.topics);
 }
 
-interface Neighbors {
+export interface Neighbors {
   index: number;
   prev: Topic | null;
   next: Topic | null;

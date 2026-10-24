@@ -47,6 +47,27 @@
     "empty": "This course has no modules yet.",
     "topicLabel": "{{title}} — {{status}}"
   },
+  "lesson": {
+    "backToCourse": "Back to course",
+    "position": "Topic {{current}} of {{total}}",
+    "details": "Topic details",
+    "difficulty": "Perceived difficulty",
+    "difficultyValue": {
+      "easy": "Easy",
+      "ok": "Okay",
+      "hard": "Hard"
+    },
+    "subtopics": "Subtopics",
+    "subtopicDone": "Completed",
+    "subtopicPending": "Not completed",
+    "weakPoints": "Weak points",
+    "generatedOn": "Generated on {{date}}",
+    "notGeneratedTitle": "Lesson not generated yet",
+    "notGeneratedBody": "This topic has no lesson in the vault. Ask your agent to generate it with the course-builder skill, then reload this page.",
+    "exercises": "Exercises",
+    "goToPrevious": "Previous topic: {{title}}",
+    "goToNext": "Next topic: {{title}}"
+  },
   "deleteCourse": {
     "trigger": "Delete course",
     "title": "Delete the course “{{name}}”?",
