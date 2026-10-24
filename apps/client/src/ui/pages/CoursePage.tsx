@@ -20,6 +20,7 @@ import { useCourse } from '@app/hooks/useCourse';
 import { computeProgress } from '@app/lib/progress';
 import { ProgressBar } from '@ui/pages/CoursesPage';
 import { Trail } from '@ui/components/trail/Trail';
+import { dateFormatter } from '@app/lib/dateFormatter';
 
 export function CoursePage() {
   const { t } = useTranslation();
@@ -55,13 +56,11 @@ export function CoursePage() {
 }
 
 function CourseDetail({ bundle }: { bundle: CourseBundle }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { course, lessons, exercise_sets: exerciseSets, attempts } = bundle;
   const progress = computeProgress(course);
 
-  const createdDate = new Intl.DateTimeFormat(i18n.resolvedLanguage, {
-    dateStyle: 'medium',
-  }).format(new Date(`${course.created}T00:00:00`));
+  const createdDate = dateFormatter(course.created);
 
   return (
     <>
