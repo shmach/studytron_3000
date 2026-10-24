@@ -6,16 +6,9 @@ import { TopicCard } from './TopicCard';
 interface ModuleSectionProps {
   index: number;
   module: Module;
-  selectedId: string | null;
-  onSelectTopic: (id: string) => void;
 }
 
-export function ModuleSection({
-  index,
-  module,
-  selectedId,
-  onSelectTopic,
-}: ModuleSectionProps) {
+export function ModuleSection({ index, module }: ModuleSectionProps) {
   const { t } = useTranslation();
 
   return (
@@ -34,11 +27,7 @@ export function ModuleSection({
       <ul className="mt-4 flex flex-col gap-3">
         {module.topics.map((topic) => (
           <li key={topic.meta.id}>
-            <TopicCard
-              topic={topic}
-              selected={topic.meta.id === selectedId}
-              onSelect={onSelectTopic}
-            />
+            <TopicCard topic={topic} />
           </li>
         ))}
       </ul>
