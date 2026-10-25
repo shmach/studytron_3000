@@ -10,6 +10,10 @@ export const courseKeys = {
   all: ['courses'] as const,
   list: () => [...courseKeys.all, 'list'] as const,
   detail: (slug: string) => [...courseKeys.all, 'detail', slug] as const,
+  lesson: (slug: string, topicId: string) =>
+    [...courseKeys.detail(slug), 'lesson', topicId] as const,
+  exercises: (slug: string, topicId: string) =>
+    [...courseKeys.detail(slug), 'exercises', topicId] as const,
 };
 
 /** Normalize openapi-fetch's `{ data, error, response }` into data-or-throw for TanStack Query. */
@@ -37,6 +41,11 @@ function toApiError(result: { error?: unknown; response: Response }) {
   );
 }
 
+export function retryUnlessNotFound(error: unknown): boolean {
+  if (error instanceof ApiError && error.status === 404) return false;
+  return true;
+}
+
 export const coursesListQuery = () =>
   queryOptions({
     queryKey: courseKeys.list(),
@@ -51,6 +60,36 @@ export const courseDetailQuery = (slug: string) =>
       unwrap(
         await api.GET('/courses/{slug}', {
           params: { path: { slug } },
+          signal,
+        }),
+      ),
+  });
+
+/** A missing lesson/exercise set is a normal state (not generated yet), so don't retry on 404. */
+const retryUnlessMissing = (failureCount: number, error: Error) =>
+  retryUnlessNotFound(error) && failureCount < 3;
+
+export const courseLessonQuery = (slug: string, topicId: string) =>
+  queryOptions({
+    queryKey: courseKeys.lesson(slug, topicId),
+    retry: retryUnlessMissing,
+    queryFn: async ({ signal }) =>
+      unwrap(
+        await api.GET('/courses/{slug}/lessons/{topic_id}', {
+          params: { path: { slug, topic_id: topicId } },
+          signal,
+        }),
+      ),
+  });
+
+export const courseExercisesQuery = (slug: string, topicId: string) =>
+  queryOptions({
+    queryKey: courseKeys.exercises(slug, topicId),
+    retry: retryUnlessMissing,
+    queryFn: async ({ signal }) =>
+      unwrap(
+        await api.GET('/courses/{slug}/exercises/{topic_id}', {
+          params: { path: { slug, topic_id: topicId } },
           signal,
         }),
       ),

@@ -4,17 +4,19 @@ import type { Module } from '@app/api/client';
 import { TopicCard } from './TopicCard';
 
 interface ModuleSectionProps {
+  slug: string;
   index: number;
   module: Module;
-  selectedId: string | null;
-  onSelectTopic: (id: string) => void;
+  lessonTopics: ReadonlySet<string>;
+  exerciseTopics: ReadonlySet<string>;
 }
 
 export function ModuleSection({
+  slug,
   index,
   module,
-  selectedId,
-  onSelectTopic,
+  lessonTopics,
+  exerciseTopics,
 }: ModuleSectionProps) {
   const { t } = useTranslation();
 
@@ -35,9 +37,10 @@ export function ModuleSection({
         {module.topics.map((topic) => (
           <li key={topic.meta.id}>
             <TopicCard
+              slug={slug}
               topic={topic}
-              selected={topic.meta.id === selectedId}
-              onSelect={onSelectTopic}
+              hasLesson={lessonTopics.has(topic.meta.id)}
+              hasExercises={exerciseTopics.has(topic.meta.id)}
             />
           </li>
         ))}

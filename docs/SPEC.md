@@ -426,7 +426,8 @@ cd apps/client && npm install && npm run dev                                # Vi
 | `local-server` | leitura de cursos/aulas/exercícios, exclusão, criação por job, CORS, export OpenAPI |
 | Frontend base | Vite + Tailwind + shadcn, tipos gerados, TanStack Query, roteamento |
 | Lista e detalhe de curso | busca, progresso, visão geral |
-| Trilha do currículo | Feature 4 (escopo reduzido): timeline em `CoursePage`, substitui a lista antiga; o clique no card ainda não leva a lugar nenhum (Feature 5) |
+| Trilha do currículo | Feature 4 (escopo reduzido): timeline em `CoursePage`, substitui a lista antiga; o clique no card leva à página de aula |
+| Página de aula | Feature 5 (parcial): `LessonPage` com Markdown + Shiki, detalhes do tópico, navegação anterior/próximo, estados de carregamento/erro/aula não gerada; carregada com `lazy` no router. Página de exercícios somente leitura e indicadores de aula/exercícios nos cards. Links do Markdown e LaTeX adiados |
 | Criar/excluir curso pela UI | questionário → job → polling |
 | i18n EN + pt-BR | plano `001` concluído |
 | Tema claro/escuro/sistema | |
@@ -462,11 +463,8 @@ zoom/arrastar. Histórico em `docs/specs/002-interactive-trail/plan.md`.
 - [~] Alternância Trilha / Lista em `?view=`: **descartada**.
 
 A `Trail` já está montada em `CoursePage` e **substituiu** a lista de cards
-antiga (removida; não há alternância). **Pendência herdada pela Feature 5:** o
-clique no card só guarda `selectedId` em estado local; o `onSelect` do
-`TopicCard` deve passar a navegar para a aula do tópico (e o estado de seleção
-deixa de ser necessário). Com a lista removida, `CoursePage` perdeu os badges de
-"tem aula / tem exercícios" por tópico, que a Feature 5 precisa recolocar.
+antiga (removida; não há alternância). O clique no card agora navega para a
+aula (Feature 5), e o `TopicCard` indica se há aula/exercícios.
 
 Notas de design:
 
@@ -478,24 +476,34 @@ Notas de design:
 
 #### Feature 5 — Página de aula e exercícios
 
-- [ ] Fazer o clique no card da trilha (`TopicCard`) navegar para a aula do
-      tópico, indicando no card se há aula/exercícios.
-- [ ] Renderização de Markdown com `react-markdown` + Shiki (syntax highlighting).
-- [ ] Página de aula com navegação anterior/próximo pela ordem do currículo.
-      Mostra também os detalhes do tópico (subtópicos, weak points, dificuldade
-      percebida), que antes iriam para um painel lateral.
-- [ ] Página de exercícios — **somente leitura**, sem correção pela UI.
+- [x] Clique no card da trilha (`TopicCard`) navega para a aula do tópico
+      (`app/lib/routes.ts`). O card é o próprio `Link` e mostra ícones de
+      aula/exercícios disponíveis, derivados de `bundle.lessons` /
+      `exercise_sets` (`CoursePage` → `Trail` → `ModuleSection` → `TopicCard`).
+- [x] Renderização de Markdown com `react-markdown` + Shiki (syntax highlighting):
+      `ui/components/Markdown.tsx` (GFM, tema claro/escuro via CSS variables,
+      blocos sem linguagem caem em texto simples).
+- [x] Páginas de aula e exercícios importadas com `lazy` no router
+      (`router/index.tsx`), para o Shiki não pesar no bundle da lista de cursos.
+- [x] Página de aula (`ui/pages/LessonPage.tsx`) com navegação anterior/próximo
+      pela ordem do currículo (`app/lib/topic.ts`). Mostra também os detalhes do
+      tópico (subtópicos, weak points, dificuldade percebida), que antes iriam
+      para um painel lateral. Trata carregamento, erro com retry, tópico
+      inexistente e aula não gerada (404).
+- [x] Página de exercícios (`ui/pages/ExercisesPage.tsx`) — **somente leitura**,
+      sem correção pela UI. Mesmos estados da aula (skeleton, erro com retry,
+      404 "não gerado") e volta para a aula do tópico.
 
 **Entrega:** fluxo completo trilha → tópico → aula → exercícios, lendo o vault
 real pela API.
 
 Notas de design:
 
+- Queries em `api/queries.ts` e hooks `useLesson` / `useExerciseSet` já
+  existem; as rotas `lessons` e `exercises` estão em `router/index.tsx`.
 - As rotas `GET /courses/{slug}/lessons/{topic_id}` e
   `GET /courses/{slug}/exercises/{topic_id}` já existem e retornam `Lesson` /
-  `ExerciseSet` com o Markdown em `content`; falta consumi-las no frontend
-  (queries em `api/queries.ts`, hooks em `app/hooks/`, páginas em `ui/pages/`,
-  rotas em `router/index.tsx`).
+  `ExerciseSet` com o Markdown em `content`; o frontend já consome a de aula.
 - `CourseBundle` já traz `lessons` e `exercise_sets`; os conjuntos de
   tópicos com aula/exercício se derivam de `lessons` / `exercise_sets`
   (`lessons.map(l => l.topic)`), base para os links e badges dos cards.
@@ -546,6 +554,14 @@ Notas de design:
 
 ### Decisões adiadas (não descartadas)
 
+- **Suporte a LaTeX no Markdown:** fórmulas inline (`$\rightarrow$`), usadas em
+  aulas do vault (ex.: `ai-engineer` 1.1), hoje aparecem como texto literal.
+  Exigiria `remark-math` + `rehype-katex` + CSS do KaTeX. Só retomar se virar um
+  problema real de leitura.
+- **Links no Markdown renderizado:** wikilinks `[[...]]` e links relativos para
+  `.md` do vault aparecem quebrados em `Markdown.tsx`; links externos estão sem
+  `rel="noopener noreferrer"`. Retomar mais adiante, junto com a definição de como
+  o app resolve links entre notas do vault.
 - **Write-back pela UI:** edição concorrente do mesmo arquivo que o usuário
   edita no Obsidian — só depois do resto estável.
 - **Tauri:** alternativa/evolução ao servidor local + navegador.

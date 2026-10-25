@@ -12,6 +12,18 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: CoursesPage },
       { path: 'courses/:slug', Component: CoursePage },
+      {
+        path: 'courses/:slug/topics/:topicId',
+        lazy: async () => ({
+          Component: (await import('@ui/pages/LessonPage')).LessonPage,
+        }),
+      },
+      {
+        path: 'courses/:slug/topics/:topicId/exercises',
+        lazy: async () => ({
+          Component: (await import('@ui/pages/ExercisesPage')).ExercisesPage,
+        }),
+      },
       { path: '*', Component: NotFoundPage },
     ],
   },

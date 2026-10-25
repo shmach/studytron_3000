@@ -45,7 +45,37 @@
   },
   "trail": {
     "empty": "Este curso ainda não tem módulos.",
-    "topicLabel": "{{title}} — {{status}}"
+    "hasLesson": "Aula disponível",
+    "hasExercises": "Exercícios disponíveis"
+  },
+  "lesson": {
+    "backToCourse": "Voltar ao curso",
+    "position": "Tópico {{current}} de {{total}}",
+    "details": "Detalhes do tópico",
+    "difficulty": "Dificuldade percebida",
+    "difficultyValue": {
+      "easy": "Fácil",
+      "ok": "Média",
+      "hard": "Difícil"
+    },
+    "subtopics": "Subtópicos",
+    "subtopicDone": "Concluído",
+    "subtopicPending": "Não concluído",
+    "weakPoints": "Pontos fracos",
+    "generatedOn": "Gerada em {{date}}",
+    "notGeneratedTitle": "Aula ainda não gerada",
+    "notGeneratedBody": "Este tópico não tem aula no vault. Peça ao seu agente para gerá-la com a skill course-builder e recarregue esta página.",
+    "exercises": "Exercícios",
+    "goToPrevious": "Tópico anterior: {{title}}",
+    "goToNext": "Próximo tópico: {{title}}"
+  },
+  "exercises": {
+    "backToLesson": "Voltar à aula",
+    "title": "Exercícios: {{title}}",
+    "generatedOn": "Gerados em {{date}}",
+    "difficultyTarget": "Dificuldade-alvo: {{value}}",
+    "notGeneratedTitle": "Exercícios ainda não gerados",
+    "notGeneratedBody": "Este tópico não tem exercícios no vault. Peça ao seu agente para gerá-los com a skill course-builder e recarregue esta página."
   },
   "deleteCourse": {
     "trigger": "Excluir curso",
