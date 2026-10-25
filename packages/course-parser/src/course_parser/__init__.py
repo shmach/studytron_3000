@@ -16,6 +16,7 @@ from course_parser.parsers.curriculum import parse_curriculum
 from course_parser.parsers.exercises import parse_attempt, parse_exercise_file, parse_exercise_set
 from course_parser.parsers.lesson import parse_lesson
 from course_parser.vault import list_course_dirs, load_course, load_vault
+from course_parser.writers import TopicNotFoundError, set_topic_status
 
 __all__ = [
     'Attempt',
@@ -27,6 +28,7 @@ __all__ = [
     'Subtopic',
     'Topic',
     'TopicMeta',
+    'TopicNotFoundError',
     'list_course_dirs',
     'load_course',
     'load_vault',
@@ -36,4 +38,5 @@ __all__ = [
     'parse_exercise_file',
     'parse_exercise_set',
     'parse_lesson',
+    'set_topic_status',
 ]

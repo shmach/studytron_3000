@@ -3,10 +3,14 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+# Student progress on a topic. One definition, reused by TopicMeta and by the
+# status writer, so the list of valid values lives in exactly one place.
+TopicStatus = Literal['pending', 'in_progress', 'completed', 'review']
+
 
 class TopicMeta(BaseModel):
     id: str
-    status: Literal['pending', 'in_progress', 'completed', 'review'] = 'pending'
+    status: TopicStatus = 'pending'
     perceived_difficulty: Literal['easy', 'ok', 'hard'] | None = None
     weak_points: list[str] = []
     last_reviewed: date | None = None
