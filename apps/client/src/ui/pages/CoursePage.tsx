@@ -124,7 +124,11 @@ function CourseDetail({ bundle }: { bundle: CourseBundle }) {
         </Card>
       )}
 
-      <Trail course={course} />
+      <Trail
+        course={course}
+        lessonTopics={new Set(lessons.map((lesson) => lesson.topic))}
+        exerciseTopics={new Set(exerciseSets.map((set) => set.topic))}
+      />
     </>
   );
 }

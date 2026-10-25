@@ -45,7 +45,8 @@
   },
   "trail": {
     "empty": "This course has no modules yet.",
-    "topicLabel": "{{title}} — {{status}}"
+    "hasLesson": "Lesson available",
+    "hasExercises": "Exercises available"
   },
   "lesson": {
     "backToCourse": "Back to course",

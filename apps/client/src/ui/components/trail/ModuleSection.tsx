@@ -4,11 +4,20 @@ import type { Module } from '@app/api/client';
 import { TopicCard } from './TopicCard';
 
 interface ModuleSectionProps {
+  slug: string;
   index: number;
   module: Module;
+  lessonTopics: ReadonlySet<string>;
+  exerciseTopics: ReadonlySet<string>;
 }
 
-export function ModuleSection({ index, module }: ModuleSectionProps) {
+export function ModuleSection({
+  slug,
+  index,
+  module,
+  lessonTopics,
+  exerciseTopics,
+}: ModuleSectionProps) {
   const { t } = useTranslation();
 
   return (
@@ -27,7 +36,12 @@ export function ModuleSection({ index, module }: ModuleSectionProps) {
       <ul className="mt-4 flex flex-col gap-3">
         {module.topics.map((topic) => (
           <li key={topic.meta.id}>
-            <TopicCard topic={topic} />
+            <TopicCard
+              slug={slug}
+              topic={topic}
+              hasLesson={lessonTopics.has(topic.meta.id)}
+              hasExercises={exerciseTopics.has(topic.meta.id)}
+            />
           </li>
         ))}
       </ul>

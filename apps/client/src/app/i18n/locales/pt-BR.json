@@ -45,7 +45,8 @@
   },
   "trail": {
     "empty": "Este curso ainda não tem módulos.",
-    "topicLabel": "{{title}} — {{status}}"
+    "hasLesson": "Aula disponível",
+    "hasExercises": "Exercícios disponíveis"
   },
   "lesson": {
     "backToCourse": "Voltar ao curso",

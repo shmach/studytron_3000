@@ -427,7 +427,7 @@ cd apps/client && npm install && npm run dev                                # Vi
 | Frontend base | Vite + Tailwind + shadcn, tipos gerados, TanStack Query, roteamento |
 | Lista e detalhe de curso | busca, progresso, visão geral |
 | Trilha do currículo | Feature 4 (escopo reduzido): timeline em `CoursePage`, substitui a lista antiga; o clique no card leva à página de aula |
-| Página de aula | Feature 5 (parcial): `LessonPage` com Markdown + Shiki, detalhes do tópico, navegação anterior/próximo, estados de carregamento/erro/aula não gerada; carregada com `lazy` no router. Página de exercícios somente leitura entregue. Faltam os badges de aula/exercícios nos cards |
+| Página de aula | Feature 5 (parcial): `LessonPage` com Markdown + Shiki, detalhes do tópico, navegação anterior/próximo, estados de carregamento/erro/aula não gerada; carregada com `lazy` no router. Página de exercícios somente leitura e indicadores de aula/exercícios nos cards. Faltam links do Markdown e LaTeX |
 | Criar/excluir curso pela UI | questionário → job → polling |
 | i18n EN + pt-BR | plano `001` concluído |
 | Tema claro/escuro/sistema | |
@@ -464,9 +464,7 @@ zoom/arrastar. Histórico em `docs/specs/002-interactive-trail/plan.md`.
 
 A `Trail` já está montada em `CoursePage` e **substituiu** a lista de cards
 antiga (removida; não há alternância). O clique no card agora navega para a
-aula (Feature 5). Com a lista removida, `CoursePage` perdeu os badges de "tem
-aula / tem exercícios" por tópico, que a Feature 5 ainda precisa recolocar no
-`TopicCard`.
+aula (Feature 5), e o `TopicCard` indica se há aula/exercícios.
 
 Notas de design:
 
@@ -478,11 +476,10 @@ Notas de design:
 
 #### Feature 5 — Página de aula e exercícios
 
-- [~] Clique no card da trilha (`TopicCard`) navega para a aula do tópico
-      (`app/lib/routes.ts`). **Falta:** indicar no card se há aula/exercícios
-      (derivar de `bundle.lessons` / `exercise_sets` e passar por `Trail` →
-      `ModuleSection` → `TopicCard`). Corrigir também o `<button>` dentro do
-      `<Link>` (HTML inválido) e receber `slug` por prop em vez de `useParams`.
+- [x] Clique no card da trilha (`TopicCard`) navega para a aula do tópico
+      (`app/lib/routes.ts`). O card é o próprio `Link` e mostra ícones de
+      aula/exercícios disponíveis, derivados de `bundle.lessons` /
+      `exercise_sets` (`CoursePage` → `Trail` → `ModuleSection` → `TopicCard`).
 - [x] Renderização de Markdown com `react-markdown` + Shiki (syntax highlighting):
       `ui/components/Markdown.tsx` (GFM, tema claro/escuro via CSS variables,
       blocos sem linguagem caem em texto simples).
