@@ -16,6 +16,7 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 
 from local_server.config.env import Env
+from local_server.prompts import build_course_prompt
 from local_server.services.job_store import CourseCreationJob, job_store
 from local_server.services.local_process import InvalidPromptException, LocalProcess
 from local_server.utils.atomic_write import read_text_exact, write_text_atomic
@@ -155,7 +156,7 @@ async def _run_course_creation(job_id: str, prompt: str) -> None:
 
     try:
         local_process = LocalProcess(tool="claude", prompt=prompt)
-        await local_process.create_course_subprocess(cwd=env.VAULT_PATH)
+        await local_process.run(cwd=env.VAULT_PATH)
         # print(f"[create_course] CLI result: {result}") # TODO: apagar depois
     except (InvalidPromptException, RuntimeError) as exc:
         job_store.mark_error(job_id, str(exc))
@@ -175,15 +176,7 @@ async def create_course(
     if not env.VAULT_PATH:
         raise HTTPException(500, "VAULT PATH is not configured")
 
-    prompt = (
-        "Create a structured course using the skill course-builder. "
-        "This is a non-interactive, single-shot call — you cannot ask the user "
-        "follow-up questions and no one will answer them this turn. If the skill "
-        "would normally ask about target depth, starting level, or goal, infer "
-        "reasonable defaults from the request below instead of asking, and state "
-        "the assumptions you made in your final summary. Proceed directly to "
-        f"generating the curriculum.\n\nUser's request: {user_prompt}"
-    )
+    prompt = build_course_prompt(user_prompt)
 
     job = job_store.create()
     print(f"job: {job}")

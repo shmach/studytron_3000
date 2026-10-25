@@ -112,7 +112,7 @@ importa: o Passo 1 não depende de nada, e os Passos 4 e 5 dependem do 1 e do 3.
 | --- | --- | --- | --- |
 | 1 | Função pura `set_topic_status` no `course-parser` + testes | — | `uv run pytest` |
 | 2 | Rota `PATCH /courses/{slug}/topics/{topic_id}/status` | 1 | teste de rota; `uv run pytest` |
-| 3 | Modo não interativo: prompt de aula e captura da saída da CLI | — | teste do texto do prompt; execução manual de uma aula |
+| 3 ✅ | Modo não interativo: prompt de aula e leitura da saída da CLI | — | teste do texto do prompt; execução manual de uma aula |
 | 4 | Rota de geração de aula com job | 3 | teste do job com CLI simulada |
 | 5 | Extração de `Pending status decision:` e exposição no job | 3, 4 | teste com saída de exemplo |
 | 6 | Regerar tipos e verificar o contrato | 2, 4 | `npm run generate:types` + `typecheck` |
@@ -209,6 +209,33 @@ e pergunta, o que trava a execução headless até o timeout de 300 s. O
 **Verificação:** teste de que o prompt contém as frases de modo não
 interativo; uma execução manual de `build_lesson_prompt` contra um curso de
 teste, conferindo que a saída não contém pergunta.
+
+**Resultado (entregue em 2026-10-25):**
+
+- `prompts.py` tem `build_course_prompt` (texto idêntico ao anterior, conferido
+  contra o `HEAD`) e `build_lesson_prompt(slug, topic_id)`. O parâmetro
+  `user_context` do plano não foi criado: nada o usa ainda. A função recusa
+  `slug` e `topic_id` com formato inesperado, porque os dois entram no texto do
+  prompt.
+- `LocalProcess.create_course_subprocess` virou `run` (devolve o stdout cru) e
+  nasceu `extract_result(stdout)`, que lê o texto final do JSON da CLI e
+  levanta `RuntimeError` para JSON inválido, ausência de `result` ou
+  `is_error`.
+- **Formato confirmado com a CLI real:** `claude -p --output-format json`
+  imprime um único objeto JSON com `type: "result"`, `is_error` e o texto final
+  em `result`. O Passo 5 pode contar com isso.
+- **Armazenar a saída no job ficou para o Passo 4**, junto com os campos novos
+  do job (`kind`, `pending_decisions`). Guardar agora criaria campos sem uso.
+- **Execução real em cópia temporária** (fixture `java-para-quem-programa`, com
+  o tópico 1.1 em `in_progress`, pedindo a aula do 1.2): a skill não fez
+  perguntas, gerou a aula, deixou o 1.1 em `in_progress` e terminou a saída com
+  `Pending status decision: 1.1 JVM, JDK e o modelo de execução`. O formato da
+  linha bate com o que o Passo 5 vai extrair.
+- **Efeito colateral observado:** a CLI gravou `.claude/model-roles.json` na
+  pasta de trabalho (`cwd`), por causa de um hook de início de sessão do
+  ambiente do usuário. No servidor, `cwd` é o `VAULT_PATH`, então esse arquivo
+  pode aparecer dentro do vault. É anterior a esta feature (a criação de curso
+  já roda do mesmo jeito) e não foi corrigido aqui.
 
 ### Passo 4 — Rota de geração de aula com job
 
