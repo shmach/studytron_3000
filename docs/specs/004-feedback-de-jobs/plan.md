@@ -1,6 +1,7 @@
 # Plan: Feature 7 — Feedback de jobs e decisões pendentes
 
-> **Status: planejado (não iniciado).** Criado em 2026-10-25 ao encerrar a Feature 6:
+> **Status: em andamento.** Passos 1 a 3 entregues em 2026-10-25; faltam o Passo 4 (checklist
+> com a CLI real) e o Passo 5 (concorrência). Criado ao encerrar a Feature 6:
 > reúne os Passos 11 a 13 do plano
 > [`003-progresso-do-aluno`](../003-progresso-do-aluno/plan.md) e os pontos que
 > ficaram adiados. Especificação de origem: [`docs/SPEC.md`](../../SPEC.md), seção 9,
@@ -80,11 +81,11 @@ apps/client/src/
 
 | # | Passo | Depende de | Verificação |
 | --- | --- | --- | --- |
-| 1 | Painel de jobs na tela inicial e toasts | — (Feature 6) | `typecheck`, `lint`, `check:i18n`, navegador |
-| 2 | Diálogo de decisão pendente | 1 | idem, com saída real da skill |
-| 3 | Decidir o comportamento no timeout depois de o arquivo ser escrito | — | teste de servidor com CLI simulada |
-| 4 | Teste manual de ponta a ponta | 1, 2 | checklist abaixo |
-| 5 | Testes de concorrência (etapa própria, depois dos demais) | 1 a 4 | roteiro abaixo |
+| 1 | Painel de jobs na tela inicial e toasts | — (Feature 6) | **feito**; `typecheck`, `lint`, `check:i18n`, navegador com CLI simulada |
+| 2 | Diálogo de decisão pendente | 1 | **feito**; idem. Falta conferir com a saída real da skill |
+| 3 | Decidir o comportamento no timeout depois de o arquivo ser escrito | — | **feito** (opção A); testes de servidor com CLI simulada |
+| 4 | Teste manual de ponta a ponta | 1, 2 | a fazer; checklist abaixo |
+| 5 | Testes de concorrência (etapa própria, depois dos demais) | 1 a 4 | a fazer; roteiro abaixo |
 
 ### Passo 1 — Painel de jobs e toasts
 
@@ -241,10 +242,35 @@ Usado na Feature 6 e reaproveitável aqui:
 4. Para um job real, esperar de 1 a 2 minutos e **não** deixar o servidor ser parado antes
    de o job acabar.
 
+## Registro da implementação (2026-10-25)
+
+- **Timeout (Passo 3):** Samuel escolheu a opção A. `CliTimeoutError` (subclasse de
+  `RuntimeError`) sai de `LocalProcess.run`; `_run_generation` confere `produced(curso)`
+  também nesse caminho. Sem arquivo, o erro é a mensagem do timeout mais "no lesson/exercises
+  for topic X was written". A resposta do agente se perde com o processo morto, então uma
+  aula concluída assim não tem `pending_decisions`.
+- **`Job.created_at`:** não estava no plano. O painel precisava do tempo decorrido e o
+  contrato não tinha timestamp. Campo novo, UTC, opcional no TS (tem valor padrão).
+- **`sonner` e `Dialog`:** o registro do shadcn não estava acessível no ambiente de
+  desenvolvimento, então `Sonner.tsx` e `Dialog.tsx` foram escritos à mão no formato do
+  shadcn (o `Sonner` usa o `ThemeContext` do projeto, sem `next-themes`). O pacote `sonner`
+  entrou por `npm install`. Se quiser, rode `npx shadcn@latest add sonner dialog --cwd
+  apps/client --diff` para comparar.
+- **Painel:** lê a lista de jobs **sem filtro** (a mesma consulta do observador) e filtra
+  `pending`/`running` no cliente, para não abrir uma segunda requisição.
+- **Diálogo:** os botões ficam inativos enquanto há job ativo no curso (mesma regra do
+  `StatusSelect`); fechar o diálogo descarta as perguntas restantes sem mudar status.
+- **`useGeneration`:** perdeu o efeito que invalidava o curso ao fim do job (passo 4 da
+  seção do Passo 1); isso agora é só do `useJobsWatcher`.
+- **Verificação feita:** `uv run pytest` (203 testes), `ruff`, `typecheck`, `lint`,
+  `check:i18n`; navegador (Playwright) contra o servidor real com a CLI substituída por uma
+  simulação lenta: toast de início, painel com tempo decorrido, toast de fim, painel
+  esvaziando, diálogo, ESC sem mudar status, "Concluí" mudando só a linha `status`, toast de
+  erro e recarga no meio de um job sem toast de início.
+
 ## Decisões em aberto
 
-1. **Comportamento no timeout depois de o arquivo escrito** (Passo 3): opções A, B ou C
-   acima.
+Nenhuma. A do Passo 3 foi tomada (opção A).
 
 ## Riscos
 

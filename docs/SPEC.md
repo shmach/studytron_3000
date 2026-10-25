@@ -63,7 +63,7 @@ studytron_3000/
     specs/001-web-app-i18n/      plano da internacionalização do client (concluído)
     specs/002-interactive-trail/ plano da Feature 4, trilha interativa (encerrada com escopo reduzido)
     specs/003-progresso-do-aluno/ plano da Feature 6, progresso do aluno pelo app (encerrada; Passos 11 a 13 passaram para a Feature 7)
-    specs/004-feedback-de-jobs/  plano da Feature 7, feedback de jobs e decisões pendentes (a fazer)
+    specs/004-feedback-de-jobs/  plano da Feature 7, feedback de jobs e decisões pendentes (em andamento: interface e timeout entregues; faltam o teste manual com a CLI real e os testes de concorrência)
   run.sh                         sobe servidor + frontend juntos
   pyproject.toml                 workspace uv: packages/* e apps/local-server
   CLAUDE.md                      instruções para agentes de IA
@@ -274,7 +274,8 @@ Criar curso, gerar aula e gerar exercícios são **jobs**: a rota responde logo 
 um `Job` e a CLI do agente roda em segundo plano (`BackgroundTasks`).
 
 `Job`: `id`, `kind` (`course_creation | lesson_generation | exercise_generation`),
-`status` (`pending | running | done | error`), `slug`, `topic_id`, `error` e
+`status` (`pending | running | done | error`), `slug`, `topic_id`, `error`,
+`created_at` (UTC; o painel de jobs mostra o tempo decorrido) e
 `pending_decisions` (`PendingDecision[]`: `topic_id` e `title`; só em jobs de aula).
 O texto final da CLI fica em `Job.output`, **fora da API** (`exclude=True`).
 
@@ -306,6 +307,11 @@ O texto final da CLI fica em `Job.output`, **fora da API** (`exclude=True`).
 4. A saída da CLI é lida por `extract_result` (objeto JSON com `result` e
    `is_error`). O job só vira `done` se o curso recarregado **tiver o arquivo
    esperado** (a aula ou os exercícios do tópico); o relato do agente não basta.
+   Se a CLI estoura o timeout (`CliTimeoutError`, subclasse de `RuntimeError`), o
+   servidor confere o arquivo do mesmo jeito: existindo, o job vira `done` (com um
+   aviso no log); faltando, vira `error` com a mensagem do timeout. A resposta do
+   agente se perde com o processo, então um job de aula concluído assim **não traz
+   `pending_decisions`**.
 5. Em jobs de aula, `pending_decisions_from` lê as linhas `Pending status
    decision:` e as confere contra o currículo: o tópico precisa existir, estar
    `in_progress` agora e não ser o tópico cuja aula acabou de ser gerada. O
@@ -335,7 +341,7 @@ CORS liberado para `http://localhost:3000` e `http://localhost:5173`, métodos
 
 `apps/local-server/tests/` (`uv run pytest` na raiz): `test_status_route`,
 `test_lesson_job`, `test_exercise_job`, `test_jobs_list`, `test_pending_decisions`,
-`test_prompts`, `test_local_process`. Usam `TestClient`, um vault temporário
+`test_prompts`, `test_local_process` (inclui o timeout). Usam `TestClient`, um vault temporário
 copiado das fixtures do `course-parser` e uma CLI simulada (`fake_cli` no
 `conftest.py`): nenhum teste chama o agente de verdade, e nenhum toca o vault do
 `.env`.
@@ -364,16 +370,17 @@ src/
     api/ client.ts queries.ts schema.d.ts(gerado)
     context/ThemeContext.tsx
     hooks/   useCourses useCourse useCreateCourse useCourseJob useDeleteCourse useDebounce useIsMobile
-             useLesson useExerciseSet useJobs useUpdateTopicStatus useGeneration
+             useLesson useExerciseSet useJobs useJobsWatcher useUpdateTopicStatus useGeneration
     i18n/    index.ts i18next.d.ts locales/{en,pt-BR}.json
-    lib/     progress.ts courseSearch.ts query-client.ts routes.ts topic.ts utils.ts
+    lib/     progress.ts courseSearch.ts query-client.ts routes.ts topic.ts jobs.ts utils.ts
   ui/
     components/  AppLayout, LanguageSelector, ThemeSelector, CourseQuestionnaireDialog,
                  DeleteCourseDialog, ErrorState, StatusBadge, StatusSelect, Markdown,
                  NotGeneratedCard, GenerateButton, GenerationProgress, BodySkeleton,
+                 JobsPanel, PendingStatusDialog,
                  trail/ (Trail, ModuleSection, TopicCard)
-    components/ui/  primitivas shadcn (AlertDialog, DropdownMenu, Input, Textarea,
-                    badge, button, card, skeleton, questionnaire)
+    components/ui/  primitivas shadcn (AlertDialog, Dialog, DropdownMenu, Input, Textarea,
+                    Sonner, badge, button, card, skeleton, questionnaire)
     utils/       statusStyle.ts
     pages/       CoursesPage, CoursePage, LessonPage, ExercisesPage, NotFoundPage
     styles/index.css
@@ -387,13 +394,13 @@ src/
 
 | Path | Componente | Conteúdo |
 | --- | --- | --- |
-| `/` | `CoursesPage` | busca (debounce, sem acentos), lista de cursos, estado vazio com criação via questionário |
+| `/` | `CoursesPage` | busca (debounce, sem acentos), painel de jobs em andamento, lista de cursos, estado vazio com criação via questionário |
 | `/courses/:slug` | `CoursePage` | metadados, progresso, visão geral, trilha do currículo (módulos → tópicos coloridos por status, com indicadores de aula e exercícios), exclusão |
 | `/courses/:slug/topics/:topicId` | `LessonPage` | aula em Markdown, detalhes do tópico, seletor de status, anterior/próximo, botão para gerar a aula e, quando só ela existe, os exercícios (carregada com `lazy`) |
 | `/courses/:slug/topics/:topicId/exercises` | `ExercisesPage` | exercícios em Markdown (somente leitura), botão para gerá-los (inativo sem aula) (carregada com `lazy`) |
 | `*` | `NotFoundPage` | 404 |
 
-Todas dentro de `AppLayout` (header com seletores de idioma e tema + `<Outlet/>`).
+Todas dentro de `AppLayout` (header com seletores de idioma e tema + `<Outlet/>`, o `Toaster`, o observador de jobs e o diálogo de decisão pendente).
 
 ### 6.3 Camada de dados
 
@@ -410,8 +417,13 @@ Todas dentro de `AppLayout` (header com seletores de idioma e tema + `<Outlet/>`
   `generateExercises`, `updateTopicStatus`, `deleteCourse` (204 sem corpo).
 - Hooks de escrita: `useUpdateTopicStatus` (invalida o curso com `exact: true` e a
   lista de cursos, sem refazer aula e exercícios) e `useGeneration` (inicia a
-  geração, acompanha os jobs do curso e, quando o job ativo some da lista,
-  invalida o curso, a aula e os exercícios).
+  geração e acompanha os jobs do curso para travar os botões).
+- `useJobsWatcher` (montado em `AppLayout`) é a **única fonte de avisos de job**:
+  compara cada lista de jobs com a anterior (`diffJobs`, em `lib/jobs.ts`) e dispara
+  os toasts de início, fim e erro (`sonner`), invalida o curso, a aula e os exercícios
+  do job que terminou e entrega ao diálogo as decisões pendentes de uma aula. A
+  primeira lista só registra o estado, sem avisar. `JobsPanel` lê a mesma lista
+  (mesma requisição) e mostra só `pending`/`running`.
 - `lib/query-client.ts`: `staleTime` 30 s, `retry` 1.
 - `lib/progress.ts`: `computeProgress(course)` → totais por status e percentual
   de tópicos `completed`.
@@ -521,6 +533,7 @@ cd apps/client && npm install && npm run dev                                # Vi
 | Trilha do currículo | Feature 4 (escopo reduzido): timeline em `CoursePage`, substitui a lista antiga; o clique no card leva à página de aula |
 | Página de aula | Feature 5 (parcial): `LessonPage` com Markdown + Shiki, detalhes do tópico, navegação anterior/próximo, estados de carregamento/erro/aula não gerada; carregada com `lazy` no router. Página de exercícios somente leitura e indicadores de aula/exercícios nos cards. Links do Markdown e LaTeX adiados |
 | Progresso do aluno pelo app | Feature 6 (encerrada): seletor de status na `LessonPage`; botões para gerar aula e exercícios, com progresso do job; `PATCH` de status, rotas de geração, `GET /jobs` e `pending_decisions` no servidor. Painel de jobs, toasts e diálogo de decisão ficaram para a Feature 7 |
+| Feedback de jobs | Feature 7 (parcial): `JobsPanel` na tela inicial, toasts de início e fim, `PendingStatusDialog`, `Job.created_at` e aceite do arquivo gravado quando a CLI estoura o timeout. Faltam o teste manual com a CLI real e os testes de concorrência |
 | Criar/excluir curso pela UI | questionário → job → polling |
 | i18n EN + pt-BR | plano `001` concluído |
 | Tema claro/escuro/sistema | |
@@ -649,20 +662,22 @@ Fecha a parte de interface da Feature 6: o aluno acompanha os jobs sem abrir cad
 é avisado quando terminam e responde às decisões pendentes. O servidor e os tipos já estão
 prontos. Plano e passos em `docs/specs/004-feedback-de-jobs/plan.md`.
 
-- [ ] **Painel de jobs na tela inicial** (`JobsPanel`): só os jobs em andamento, de todos os
+- [x] **Painel de jobs na tela inicial** (`JobsPanel`): só os jobs em andamento, de todos os
       tipos; o job some do painel ao terminar (sem histórico).
-- [ ] **Toasts** (`sonner`, via shadcn) quando um job começa e quando termina (sucesso ou
+- [x] **Toasts** (`sonner`, via shadcn) quando um job começa e quando termina (sucesso ou
       erro), por um observador global (`useJobsWatcher`) no `AppLayout`; a primeira
       consulta só registra o estado, sem avisar.
-- [ ] **Diálogo de decisão pendente** (`PendingStatusDialog`): ao terminar uma aula com
+- [x] **Diálogo de decisão pendente** (`PendingStatusDialog`): ao terminar uma aula com
       `pending_decisions`, pergunta ao aluno (concluí / quero revisar / ainda estou
       estudando); cada opção chama a rota de status. Sem resposta, nada muda.
-- [ ] **Teste ponta a ponta** com um vault de teste e checklist final.
+- [ ] **Teste ponta a ponta** com um vault de teste e checklist final. O fluxo de
+      interface foi conferido no navegador com uma CLI simulada; falta o checklist
+      com a CLI real (`docs/specs/004-feedback-de-jobs/plan.md`, Passo 4).
 - [ ] **Testes de concorrência** (etapa própria, depois do resto): duas gerações no mesmo
       curso, status durante uma geração, duas abas, edição no Obsidian durante a escrita,
       reinício do servidor com job em andamento.
-- [ ] Decidir o que fazer quando a CLI estoura o timeout **depois** de escrever o arquivo
-      (hoje o job vira `error` mesmo com a aula gravada).
+- [x] Timeout **depois** de escrever o arquivo: decidido (opção A) e implementado; o job
+      vira `done` se o arquivo existe. Ver "Jobs".
 
 #### Stretch (pós-protótipo)
 
@@ -706,8 +721,9 @@ prontos. Plano e passos em `docs/specs/004-feedback-de-jobs/plan.md`.
 - `JobStore` em memória e detecção do slug por diff de pastas na criação de curso
   (vulnerável a criações simultâneas e a reinício do servidor). Os jobs de geração
   têm trava de um por curso, mas ela só foi coberta por testes de unidade.
-- O timeout de 300 s vale para o processo da CLI: se ele demorar a encerrar depois de
-  escrever o arquivo, o job vira `error` mesmo com a aula ou os exercícios gravados.
+- O timeout de 300 s vale para o processo da CLI. Se ele estoura depois de a aula ou os
+  exercícios serem gravados, o job vira `done`, aceitando um arquivo que o agente pode
+  não ter terminado de escrever; nesse caso não há `pending_decisions`.
 - A CLI pode gravar `.claude/model-roles.json` dentro do `VAULT_PATH`, por causa de
   um hook de início de sessão do ambiente do usuário. Anterior à Feature 6; não
   corrigido.
