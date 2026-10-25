@@ -49,12 +49,14 @@ class TestLoadCourse:
     def test_lessons_are_sorted_by_topic_id(self, tmp_path):
         course_dir = tmp_path / JAVA
         shutil.copytree(FIXTURES_DIR / JAVA, course_dir)
-        original = (course_dir / 'lessons' / '1-1-jvm-jdk-modelo-de-execucao.md').read_text()
+        original = (course_dir / 'lessons' / '1-1-jvm-jdk-modelo-de-execucao.md').read_text(
+            encoding='utf-8'
+        )
         (course_dir / 'lessons' / '1-10-late.md').write_text(
-            original.replace('topic: "1.1"', 'topic: "1.10"')
+            original.replace('topic: "1.1"', 'topic: "1.10"'), encoding='utf-8'
         )
         (course_dir / 'lessons' / '1-2-second.md').write_text(
-            original.replace('topic: "1.1"', 'topic: "1.2"')
+            original.replace('topic: "1.1"', 'topic: "1.2"'), encoding='utf-8'
         )
 
         bundle = load_course(course_dir)

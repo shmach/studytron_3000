@@ -16,7 +16,7 @@ JAVA = 'java-para-quem-programa'
 
 
 def _read_fixture(relative_path: str) -> str:
-    return (FIXTURES_DIR / relative_path).read_text()
+    return (FIXTURES_DIR / relative_path).read_text(encoding='utf-8')
 
 
 class TestParseLesson:
