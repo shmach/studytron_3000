@@ -1,3 +1,4 @@
+import asyncio
 import threading
 from pathlib import Path
 
@@ -16,9 +17,13 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 
 from local_server.config.env import Env
-from local_server.prompts import build_course_prompt
-from local_server.services.job_store import CourseCreationJob, job_store
-from local_server.services.local_process import InvalidPromptException, LocalProcess
+from local_server.prompts import build_course_prompt, build_lesson_prompt
+from local_server.services.job_store import Job, JobKind, job_store
+from local_server.services.local_process import (
+    InvalidPromptException,
+    LocalProcess,
+    extract_result,
+)
 from local_server.utils.atomic_write import read_text_exact, write_text_atomic
 from local_server.utils.existing_slugs import _existing_slugs
 
@@ -166,10 +171,72 @@ async def _run_course_creation(job_id: str, prompt: str) -> None:
     job_store.mark_done(job_id, slug=next(iter(new_slugs), None))
 
 
+def _summarize(text: str, limit: int = 300) -> str:
+    return text if len(text) <= limit else text[:limit] + "…"
+
+
+async def _run_lesson_generation(
+    job_id: str, slug: str, topic_id: str, prompt: str
+) -> None:
+    job_store.mark_running(job_id)
+
+    try:
+        local_process = LocalProcess(tool="claude", prompt=prompt)
+        stdout = await local_process.run(cwd=env.VAULT_PATH)
+        output = extract_result(stdout)
+    except (InvalidPromptException, RuntimeError) as exc:
+        job_store.mark_error(job_id, str(exc))
+        return
+
+    job_store.set_output(job_id, output)
+
+    # The lesson file is the proof the work happened; the agent's own report is not.
+    try:
+        course_content = await asyncio.to_thread(
+            vault.load_course, _course_dir_or_404(slug)
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        job_store.mark_error(job_id, f"Could not read the course afterwards: {exc}")
+        return
+
+    if not any(lesson.topic == topic_id for lesson in course_content.lessons):
+        job_store.mark_error(
+            job_id,
+            f"The agent finished but wrote no lesson for topic {topic_id}. "
+            f"Its answer: {_summarize(output)}",
+        )
+        return
+
+    job_store.mark_done(job_id)
+
+
+@router.post(
+    "/{slug}/topics/{topic_id}/lesson", operation_id="generate_lesson", status_code=202
+)
+def generate_lesson(slug: str, topic_id: str, background_tasks: BackgroundTasks) -> Job:
+    course_content = _load_course_or_404(slug)
+
+    if _find_topic(course_content, topic_id) is None:
+        raise HTTPException(404, "Topic not found")
+
+    if any(lesson.topic == topic_id for lesson in course_content.lessons):
+        raise HTTPException(409, "This topic already has a lesson")
+
+    try:
+        prompt = build_lesson_prompt(slug, topic_id)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+    job = job_store.create_exclusive(JobKind.LESSON_GENERATION, slug, topic_id)
+    if job is None:
+        raise HTTPException(409, "A lesson is already being generated for this course")
+
+    background_tasks.add_task(_run_lesson_generation, job.id, slug, topic_id, prompt)
+    return job
+
+
 @router.post("", operation_id="create_course")
-async def create_course(
-    user_prompt: str, background_tasks: BackgroundTasks
-) -> CourseCreationJob:
+async def create_course(user_prompt: str, background_tasks: BackgroundTasks) -> Job:
     if not user_prompt:
         raise HTTPException(400, "Prompt must have a content")
 
@@ -185,8 +252,8 @@ async def create_course(
     return job
 
 
-@router.get("/jobs/{job_id}", operation_id="get_course_creation_job")
-def get_course_creation_job(job_id: str) -> CourseCreationJob:
+@router.get("/jobs/{job_id}", operation_id="get_job")
+def get_job(job_id: str) -> Job:
     job = job_store.get(job_id)
     if not job:
         raise HTTPException(404, "Job not found")

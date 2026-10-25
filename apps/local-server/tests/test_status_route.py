@@ -1,35 +1,13 @@
-import shutil
 from pathlib import Path
 
-import pytest
 from fastapi.testclient import TestClient
-from local_server.app import app
-from local_server.routes import courses
 
-# The parser package already ships real courses as fixtures; reuse them instead of copying.
-FIXTURES_DIR = (
-    Path(__file__).parents[3] / "packages" / "course-parser" / "tests" / "fixtures"
-)
 SLUG = "java-para-quem-programa"
 CURRICULUM = "00-curriculum.md"
 
 # In this fixture topic 1.1 has a lesson (status completed) and topic 1.2 has none (pending).
 TOPIC_WITH_LESSON = "1.1"
 TOPIC_WITHOUT_LESSON = "1.2"
-
-
-@pytest.fixture
-def vault_dir(tmp_path, monkeypatch):
-    """A throw-away vault. `env.VAULT_PATH` is read at import time, so it is patched in place;
-    this also guarantees the tests never touch the real vault from `.env`."""
-    shutil.copytree(FIXTURES_DIR / SLUG, tmp_path / SLUG)
-    monkeypatch.setattr(courses.env, "VAULT_PATH", str(tmp_path))
-    return tmp_path
-
-
-@pytest.fixture
-def client(vault_dir):
-    return TestClient(app)
 
 
 def _curriculum_bytes(vault_dir: Path) -> bytes:

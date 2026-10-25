@@ -113,7 +113,7 @@ importa: o Passo 1 não depende de nada, e os Passos 4 e 5 dependem do 1 e do 3.
 | 1 | Função pura `set_topic_status` no `course-parser` + testes | — | `uv run pytest` |
 | 2 | Rota `PATCH /courses/{slug}/topics/{topic_id}/status` | 1 | teste de rota; `uv run pytest` |
 | 3 ✅ | Modo não interativo: prompt de aula e leitura da saída da CLI | — | teste do texto do prompt; execução manual de uma aula |
-| 4 | Rota de geração de aula com job | 3 | teste do job com CLI simulada |
+| 4 ✅ | Rota de geração de aula com job | 3 | teste do job com CLI simulada |
 | 5 | Extração de `Pending status decision:` e exposição no job | 3, 4 | teste com saída de exemplo |
 | 6 | Regerar tipos e verificar o contrato | 2, 4 | `npm run generate:types` + `typecheck` |
 | 7 | UI: mutação de status e botões | 6 | `typecheck`, `lint`, `check:i18n`, navegador |
@@ -271,6 +271,32 @@ teste, conferindo que a saída não contém pergunta.
 escrever no `00-curriculum.md` ao mesmo tempo. Mitigação mínima nesta feature:
 recusar um segundo job para o mesmo `slug` enquanto houver um em `pending` ou
 `running` (`409`). Um lock de escrita fica para depois.
+
+**Resultado (entregue em 2026-10-25):**
+
+- `POST /courses/{slug}/topics/{topic_id}/lesson` (`operation_id`
+  `generate_lesson`) responde `202` com o job. Antes de criar o job, recusa:
+  curso ou tópico inexistente (`404`), tópico que já tem aula (`409`), job de
+  aula ativo no mesmo curso (`409`) e slug que não passa na validação do prompt
+  (`422`).
+- `CourseCreationJob` virou `Job`, com `kind` (`course_creation` |
+  `lesson_generation`) e `topic_id`. O `operation_id` de consulta passou a
+  `get_job`; o caminho `GET /courses/jobs/{job_id}` não mudou, então o
+  frontend não precisa mudar por isso.
+- O texto final da CLI fica em `Job.output`, **fora da API** (`exclude=True`;
+  não aparece nem no OpenAPI). É o armazenamento que o Passo 5 vai usar para
+  extrair as decisões pendentes. O campo público `pending_decisions` só nasce
+  no Passo 5.
+- A trava "um job de aula por curso" é feita dentro do `JobStore`
+  (`create_exclusive`, com `threading.Lock`), para duas requisições simultâneas
+  não passarem juntas pela checagem.
+- O job só vira `done` se o curso recarregado tiver a aula do tópico. Se a CLI
+  terminar sem gerá-la, o job vira `error` com o início da resposta do agente.
+- Testes com a CLI simulada, em `tests/test_lesson_job.py`, incluindo uma
+  regressão da criação de curso (que não tinha teste). Fixtures comuns foram
+  para `tests/conftest.py`, que também dá um `JobStore` novo a cada teste.
+- **Contrato mudou, tipos não:** `openapi.json` e `schema.d.ts` seguem como
+  antes até o Passo 6.
 
 ### Passo 5 — Decisões pendentes
 

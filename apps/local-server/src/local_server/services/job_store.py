@@ -1,7 +1,8 @@
+import threading
 from enum import Enum
 from uuid import uuid4
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class JobStatus(str, Enum):
@@ -11,31 +12,80 @@ class JobStatus(str, Enum):
     ERROR = "error"
 
 
-class CourseCreationJob(BaseModel):
+class JobKind(str, Enum):
+    COURSE_CREATION = "course_creation"
+    LESSON_GENERATION = "lesson_generation"
+
+
+class Job(BaseModel):
     id: str
+    kind: JobKind = JobKind.COURSE_CREATION
     status: JobStatus
+    # Course creation: filled when the job is done. Lesson generation: the course being edited.
     slug: str | None = None
+    # Lesson generation only.
+    topic_id: str | None = None
     error: str | None = None
+    # Final text printed by the agent CLI. Internal: `exclude=True` keeps it out of API
+    # responses (it can be long and is only meant for the server).
+    output: str | None = Field(default=None, exclude=True)
+
+
+_ACTIVE = (JobStatus.PENDING, JobStatus.RUNNING)
 
 
 class JobStore:
     def __init__(self) -> None:
-        self._jobs: dict[str, CourseCreationJob] = {}
+        self._jobs: dict[str, Job] = {}
+        # Guards "is there an active job? then create one" so two requests arriving together
+        # cannot both pass the check.
+        self._lock = threading.Lock()
 
-    def create(self) -> CourseCreationJob:
-        job = CourseCreationJob(id=str(uuid4()), status=JobStatus.PENDING)
+    def create(
+        self,
+        kind: JobKind = JobKind.COURSE_CREATION,
+        slug: str | None = None,
+        topic_id: str | None = None,
+    ) -> Job:
+        job = Job(
+            id=str(uuid4()),
+            kind=kind,
+            status=JobStatus.PENDING,
+            slug=slug,
+            topic_id=topic_id,
+        )
         self._jobs[job.id] = job
         return job
 
-    def get(self, job_id: str) -> CourseCreationJob | None:
+    def create_exclusive(
+        self, kind: JobKind, slug: str, topic_id: str | None = None
+    ) -> Job | None:
+        """Create a job unless one of the same `kind` is already active for `slug`.
+
+        Returns `None` when there is one. Used to keep a single agent run per course, because
+        the agent rewrites the same curriculum file every time.
+        """
+        with self._lock:
+            if any(
+                j.kind == kind and j.slug == slug and j.status in _ACTIVE
+                for j in self._jobs.values()
+            ):
+                return None
+            return self.create(kind=kind, slug=slug, topic_id=topic_id)
+
+    def get(self, job_id: str) -> Job | None:
         return self._jobs.get(job_id)
 
     def mark_running(self, job_id: str) -> None:
         self._jobs[job_id].status = JobStatus.RUNNING
 
-    def mark_done(self, job_id: str, slug: str | None) -> None:
+    def set_output(self, job_id: str, output: str) -> None:
+        self._jobs[job_id].output = output
+
+    def mark_done(self, job_id: str, slug: str | None = None) -> None:
         self._jobs[job_id].status = JobStatus.DONE
-        self._jobs[job_id].slug = slug
+        if slug is not None:
+            self._jobs[job_id].slug = slug
 
     def mark_error(self, job_id: str, error: str) -> None:
         self._jobs[job_id].status = JobStatus.ERROR
