@@ -1,53 +1,62 @@
 # Plan: Feature 6 — Progresso do aluno pelo app
 
-> **Status: planejado (não iniciado).** Especificação de origem:
-> [`docs/SPEC.md`](../../SPEC.md), seção 9, "Feature 6 — Progresso do aluno pelo app".
+> **Status: em andamento.** Passos 1 a 4 entregues. Em 2026-10-25 o plano foi
+> ampliado: a geração de **exercícios** e a **geração de aula e de exercícios
+> pelo frontend** entraram no escopo (Passos 5, 6 e 10), e os passos seguintes
+> foram renumerados. Especificação de origem: [`docs/SPEC.md`](../../SPEC.md),
+> seção 9, "Feature 6 — Progresso do aluno pelo app". O SPEC é atualizado no
+> último passo.
 
 ## Contexto
 
 Hoje o `status` de um tópico (`pending | in_progress | completed | review`) só
-muda à mão no Obsidian ou pela skill. O app é somente leitura: mostra o status
-na trilha, mas não consegue alterá-lo. A Feature 6 fecha esse ciclo em quatro
-partes:
+muda à mão no Obsidian ou pela skill, e aulas e exercícios só são gerados pela
+skill, fora do app. O app é somente leitura. A Feature 6 fecha esse ciclo:
 
 1. uma rota para alterar o status sem regenerar o arquivo;
-2. a geração de aula pelo app, em modo não interativo;
+2. a geração de aula e de exercícios pelo servidor, em modo não interativo;
 3. a leitura, pelo app, das decisões pendentes que a skill devolve;
-4. um diálogo que pergunta ao aluno o que fazer com cada decisão.
+4. a interface: seletor de status, botões para gerar aula e exercícios, com o
+   progresso do job, e um diálogo que pergunta ao aluno o que fazer com cada
+   decisão pendente.
 
-**Entrega:** o aluno muda o status de um tópico pelo app ou pelo Obsidian, e o
-app reflete a mudança sem regenerar nenhum arquivo.
+**Entrega:** o aluno gera a aula e os exercícios de um tópico e muda o status
+dele pelo app ou pelo Obsidian, e o app reflete a mudança sem regenerar nenhum
+arquivo.
 
 **Fora do escopo:**
 
 - Write-back com edição concorrente do Obsidian (continua em "Decisões
-  adiadas" do SPEC). A rota desta feature escreve só a linha `status`, o que
-  reduz a janela de conflito, mas não a elimina.
+  adiadas" do SPEC). A rota de status escreve só a linha `status`, o que reduz
+  a janela de conflito, mas não a elimina.
 - Atualização em tempo real (SSE/`watchfiles`). Após uma mudança, o app
-  invalida a query do curso; não há push.
+  invalida as queries; não há push.
 - Pré-requisitos (`requires_all` / `requires_any`) e `optional: true`. São
   itens do Todoist, não desta feature.
 - Correção de exercícios pela UI. Continua sendo papel da skill.
+- Regerar uma aula ou um conjunto de exercícios que já existe, e cancelar um job
+  em andamento. A geração só vale para o que ainda não existe (`409` caso
+  contrário).
 
 ## Estado atual (o que já existe e o que falta)
 
 | Peça | Situação hoje | Arquivo de referência |
 | --- | --- | --- |
-| Leitura do `topic-meta` | pronta; o parser só lê | `packages/course-parser/src/course_parser/parsers/curriculum.py` |
-| Modelo `TopicMeta.status` | `Literal[...]` com os 4 valores | `packages/course-parser/src/course_parser/models.py` |
-| Escrita do vault | **não existe**; o parser não escreve | — |
-| Rota de status | **não existe** | `apps/local-server/src/local_server/routes/courses.py` |
-| Geração de aula | **não existe**; só a criação de curso roda a skill | `routes/courses.py` (`_run_course_creation`) |
-| Saída da CLI | capturada em `create_course_subprocess` e **descartada** | `services/local_process.py`, `routes/courses.py` |
-| CORS | libera só `GET`, `POST`, `DELETE` | `apps/local-server/src/local_server/app.py:31` |
-| Jobs | `JobStore` só conhece criação de curso (`CourseCreationJob`) | `services/job_store.py` |
-| Tipos gerados | `openapi.json` + `schema.d.ts` precisam ser regerados | `apps/client/package.json` (`generate:types`) |
+| Leitura do `topic-meta` | pronta | `packages/course-parser/src/course_parser/parsers/curriculum.py` |
+| Escrita do `status` | **pronta** (`set_topic_status`) | `packages/course-parser/src/course_parser/writers/topic_status.py` |
+| Rota de status | **pronta** (`PATCH`, CORS liberado) | `apps/local-server/src/local_server/routes/courses.py` |
+| Prompt e leitura da saída da CLI | **prontos** (`build_lesson_prompt`, `extract_result`) | `prompts.py`, `services/local_process.py` |
+| Geração de aula | **pronta** (`POST .../lesson`, com job) | `routes/courses.py` |
+| Geração de exercícios | **não existe** | — |
+| Job ativo do curso | **não existe** (só consulta por id) | `services/job_store.py` |
+| Decisões pendentes | **não existem**; a saída da CLI fica em `Job.output`, fora da API | `services/job_store.py` |
+| Tipos gerados | **desatualizados** (`openapi.json` + `schema.d.ts`) | `apps/client/package.json` (`generate:types`) |
+| Frontend | somente leitura; já tem polling de job (`courseJobQuery`) e o cartão "não gerado" | `apps/client/src/app/api/queries.ts`, `ui/components/NotGeneratedCard.tsx` |
 
 Contrato que não muda: o formato do `topic-meta` e os valores de `status`
 seguem iguais. Por isso **não** há alteração em `skill/references/*` por causa
-do contrato. Há, sim, alteração de comportamento na skill (modo não
-interativo), que já está documentado em `skill/SKILL.md`, seção "Interaction
-mode". Ver Passo 3.
+do contrato. O comportamento de modo não interativo já está documentado em
+`skill/SKILL.md`, seção "Interaction mode".
 
 ## Decisões de design (e por quê)
 
@@ -63,62 +72,71 @@ mode". Ver Passo 3.
 | Status inválido | `Literal[...]` no corpo da requisição | O FastAPI responde 422 sozinho e o OpenAPI gera o enum; os tipos TS saem prontos |
 | Campo `last_reviewed` | **Não** é alterado pela rota | O SPEC restringe a rota à linha `status`. Atualizar a data seria uma decisão separada (ver "Decisões em aberto") |
 | Checkboxes dos subtópicos | **Não** são alterados pela rota | Mesmo motivo. Ver "Decisões em aberto", item 1, porque a skill faz isso ao concluir |
-| Geração de aula | Rota própria com job, no mesmo modelo da criação de curso | Geração leva dezenas de segundos; sem job o request HTTP estoura o timeout do navegador e do subprocesso (300 s) |
-| Resultado do job de aula | Verificar se o arquivo `lessons/<id>-*.md` existe após a execução, **não** pela diferença de pastas | A diferença de pastas (`_existing_slugs`) serve para criar curso. Para uma aula, o artefato esperado é conhecido |
-| Decisões pendentes | O servidor extrai as linhas `Pending status decision:` da saída da CLI e as devolve no job | A decisão é do aluno. Expor as linhas pelo job evita que o app tenha de ler arquivos ou logs |
-| Diálogo de decisão | Um `Dialog` do shadcn, aberto ao concluir a geração de aula com decisões pendentes, e também ao abrir o curso se houver decisões não respondidas | Cada opção chama a rota de status. Não há decisão automática: sem resposta, nada muda |
-| Testes | `pytest` no `course-parser` para a função de escrita; teste de rota no `local-server` com `TestClient` e vault temporário | A lógica de escrita é a parte que pode corromper dados, então merece teste automatizado. O client segue sem runner, como na Feature 4 |
+| Geração de aula e de exercícios | Rotas próprias com job, no mesmo modelo da criação de curso | Geração leva dezenas de segundos; sem job o request HTTP estoura o timeout do navegador e do subprocesso (300 s) |
+| Resultado do job de geração | Verificar se o arquivo esperado existe após a execução (aula ou exercícios), **não** pela diferença de pastas | A diferença de pastas (`_existing_slugs`) serve para criar curso. Para uma aula ou um conjunto de exercícios, o artefato esperado é conhecido |
+| Exercícios exigem aula | `409` se o tópico não tem aula | A skill lê a aula antes de gerar os exercícios (`SKILL.md`, Workflow 3). Sem aula, a execução falharia depois de gastar uso |
+| Um job de geração ativo por curso, de **qualquer** tipo | A trava do `JobStore` ignora o tipo do job | A skill reescreve o mesmo `00-curriculum.md` e as pastas do mesmo curso; aula e exercícios simultâneos poderiam se atropelar |
+| Job ativo consultável | `GET /courses/{slug}/jobs/active` | Sem isso, ao recarregar a página o app não sabe qual job acompanhar e não sabe que os botões devem ficar desabilitados. A trava por curso torna isso necessário |
+| Decisões pendentes | O servidor extrai as linhas `Pending status decision:` da saída da CLI e as devolve no job de **aula** | A decisão é do aluno. Expor as linhas pelo job evita que o app tenha de ler arquivos ou logs. Exercícios não geram decisões de status |
+| Onde ficam os botões de gerar | Nos cartões "não gerado" das páginas de aula e de exercícios, e na página de aula quando a aula existe mas os exercícios não | É onde o aluno já cai ao abrir um tópico sem conteúdo. O card da trilha continua sendo um `Link`, sem controles dentro |
+| Acompanhamento do job na UI | Reaproveitar o polling de `courseJobQuery`; ao terminar, invalidar curso, aula e exercícios | Uma única forma de acompanhar tarefas. A invalidação faz os indicadores da trilha e as páginas aparecerem sem recarregar |
+| Diálogo de decisão | Um `Dialog` do shadcn, aberto ao concluir a geração de aula com decisões pendentes | Cada opção chama a rota de status. Não há decisão automática: sem resposta, nada muda |
+| Testes | `pytest` no `course-parser` para a função de escrita; testes de rota no `local-server` com `TestClient`, vault temporário e CLI simulada | A lógica de escrita é a parte que pode corromper dados, então merece teste automatizado. O client segue sem runner, como na Feature 4 |
 
 ## Estrutura de arquivos
 
 ```
 packages/course-parser/
-  src/course_parser/
-    writers/
-      __init__.py
-      topic_status.py        set_topic_status(text, topic_id, status) -> str   (novo)
-  tests/
-    test_topic_status.py     (novo)
+  src/course_parser/writers/topic_status.py   set_topic_status(...)              (feito)
+  tests/test_topic_status.py                                                      (feito)
 
 apps/local-server/src/local_server/
-  routes/courses.py          + PATCH status, + POST lesson job, + GET jobs (ajuste)
-  services/job_store.py      + campo `kind` e `pending_decisions` no job (modifica)
-  services/local_process.py  devolve a saída da CLI (modifica)
-  app.py                     CORS: incluir "PATCH" (modifica)
-  prompts.py                 prompts de criação e de aula, em um lugar só (novo)
-apps/local-server/tests/     (novo) test_status_route.py, test_lesson_job.py
+  routes/courses.py          PATCH status, POST lesson, POST exercises, GET jobs/active
+  services/job_store.py      Job (kind, topic_id, output), trava por curso, pending_decisions
+  services/local_process.py  run + extract_result                                 (feito)
+  prompts.py                 prompts de curso, aula e exercícios
+  utils/atomic_write.py      leitura exata e escrita atômica                      (feito)
+  app.py                     CORS com PATCH                                        (feito)
+apps/local-server/tests/     conftest.py, test_status_route.py, test_lesson_job.py,
+                             test_exercise_job.py, test_active_job.py, ...
 
 apps/client/src/
-  app/api/queries.ts         mutação de status + invalidação (modifica)
+  app/api/queries.ts         mutação de status; POST de aula e exercícios; job ativo
   app/api/schema.d.ts        regenerado
   openapi.json               regenerado (apps/client/openapi.json)
-  ui/components/trail/       botões de status no TopicCard ou na aula (modifica)
-  ui/components/PendingStatusDialog.tsx   (novo)
-  app/i18n/locales/{en,pt-BR}.json        chaves de status e do diálogo (modifica)
+  app/hooks/useGenerationJob.ts      job ativo + polling + invalidação            (novo)
+  ui/components/NotGeneratedCard.tsx botão de gerar e progresso                   (modifica)
+  ui/components/GenerationProgress.tsx  spinner, erro e "tentar de novo"         (novo)
+  ui/components/PendingStatusDialog.tsx                                           (novo)
+  ui/pages/LessonPage.tsx, ExercisesPage.tsx   botões e seletor de status         (modifica)
+  app/i18n/locales/{en,pt-BR}.json   chaves de status, geração e diálogo         (modifica)
 
-skill/SKILL.md               nenhuma mudança de texto esperada; confirmar no Passo 3
+skill/SKILL.md               nenhuma mudança de texto esperada
 ```
 
-`prompts.py` existe para tirar o texto do prompt de dentro de `routes/courses.py`.
-Hoje o prompt de criação está inline; ter dois prompts com regras de modo não
-interativo no mesmo arquivo facilita manter os dois iguais.
+`prompts.py` existe para tirar o texto dos prompts de dentro de
+`routes/courses.py`. Ter os prompts com as regras de modo não interativo no
+mesmo arquivo facilita manter todos iguais.
 
 ## Passos
 
 Cada passo termina em um estado verificável e pode virar um commit. Ordem
-importa: o Passo 1 não depende de nada, e os Passos 4 e 5 dependem do 1 e do 3.
+importa: veja a coluna "Depende de".
 
 | # | Passo | Depende de | Verificação |
 | --- | --- | --- | --- |
-| 1 | Função pura `set_topic_status` no `course-parser` + testes | — | `uv run pytest` |
-| 2 | Rota `PATCH /courses/{slug}/topics/{topic_id}/status` | 1 | teste de rota; `uv run pytest` |
+| 1 ✅ | Função pura `set_topic_status` no `course-parser` + testes | — | `uv run pytest` |
+| 2 ✅ | Rota `PATCH /courses/{slug}/topics/{topic_id}/status` | 1 | teste de rota; `uv run pytest` |
 | 3 ✅ | Modo não interativo: prompt de aula e leitura da saída da CLI | — | teste do texto do prompt; execução manual de uma aula |
 | 4 ✅ | Rota de geração de aula com job | 3 | teste do job com CLI simulada |
-| 5 | Extração de `Pending status decision:` e exposição no job | 3, 4 | teste com saída de exemplo |
-| 6 | Regerar tipos e verificar o contrato | 2, 4 | `npm run generate:types` + `typecheck` |
-| 7 | UI: mutação de status e botões | 6 | `typecheck`, `lint`, `check:i18n`, navegador |
-| 8 | UI: diálogo de decisão pendente | 5, 7 | idem, com saída real da skill |
-| 9 | Teste manual end-to-end e atualização do SPEC | todos | checklist abaixo |
+| 5 | Geração de exercícios com job; trava de um job por curso | 3, 4 | teste do job com CLI simulada |
+| 6 | Consulta do job ativo do curso | 4, 5 | teste de rota |
+| 7 | Extração de `Pending status decision:` e exposição no job de aula | 3, 4 | teste com saída de exemplo |
+| 8 | Regerar tipos e verificar o contrato | 2, 4, 5, 6, 7 | `npm run generate:types` + `typecheck` |
+| 9 | UI: mutação e seletor de status | 8 | `typecheck`, `lint`, `check:i18n`, navegador |
+| 10 | UI: gerar aula e exercícios, com progresso do job | 8 | idem, com um job real em vault de teste |
+| 11 | UI: diálogo de decisão pendente | 7, 9, 10 | idem, com saída real da skill |
+| 12 | Teste manual end-to-end e atualização do SPEC | todos | checklist abaixo |
 
 ### Passo 1 — Função pura de escrita no `course-parser`
 
@@ -199,7 +217,7 @@ e uma checagem de que o arquivo mudou só na linha `status`.
    guardá-lo no job.
 4. Confirmar que o `--output-format json` do Claude Code devolve o texto final
    num campo `result`. **Verificar com uma execução real** antes de depender
-   disso. Se o formato for outro, o parser do Passo 5 muda.
+   disso. Se o formato for outro, o parser do Passo 7 muda.
 
 **Por quê:** o SPEC diz que a skill, sem ninguém do outro lado, não pode
 perguntar. Sem a declaração explícita no prompt, a skill assume que há usuário
@@ -223,14 +241,14 @@ teste, conferindo que a saída não contém pergunta.
   `is_error`.
 - **Formato confirmado com a CLI real:** `claude -p --output-format json`
   imprime um único objeto JSON com `type: "result"`, `is_error` e o texto final
-  em `result`. O Passo 5 pode contar com isso.
+  em `result`. O Passo 7 pode contar com isso.
 - **Armazenar a saída no job ficou para o Passo 4**, junto com os campos novos
   do job (`kind`, `pending_decisions`). Guardar agora criaria campos sem uso.
 - **Execução real em cópia temporária** (fixture `java-para-quem-programa`, com
   o tópico 1.1 em `in_progress`, pedindo a aula do 1.2): a skill não fez
   perguntas, gerou a aula, deixou o 1.1 em `in_progress` e terminou a saída com
   `Pending status decision: 1.1 JVM, JDK e o modelo de execução`. O formato da
-  linha bate com o que o Passo 5 vai extrair.
+  linha bate com o que o Passo 7 vai extrair.
 - **Efeito colateral observado:** a CLI gravou `.claude/model-roles.json` na
   pasta de trabalho (`cwd`), por causa de um hook de início de sessão do
   ambiente do usuário. No servidor, `cwd` é o `VAULT_PATH`, então esse arquivo
@@ -248,12 +266,12 @@ teste, conferindo que a saída não contém pergunta.
 2. `JobStore` ganha o campo `kind` (`course_creation | lesson_generation`) e
    `pending_decisions: list[str]`. Renomear `CourseCreationJob` para `Job` é
    um ajuste pequeno e evita um tipo com nome errado; o OpenAPI muda (ver
-   Passo 6).
+   Passo 8).
 3. A tarefa de background roda `claude -p` com o prompt do Passo 3, em
    `cwd=VAULT_PATH`, com o mesmo timeout de 300 s.
 4. Ao terminar: confirmar que `lessons/<topic_id>-*.md` existe. Se existir, o
    job vira `done`; se não, `error` com a saída da CLI resumida.
-5. Extrair as linhas `Pending status decision:` (Passo 5) e guardá-las no job.
+5. Extrair as linhas `Pending status decision:` (Passo 7) e guardá-las no job.
 
 **Por quê:**
 
@@ -284,30 +302,99 @@ recusar um segundo job para o mesmo `slug` enquanto houver um em `pending` ou
   `get_job`; o caminho `GET /courses/jobs/{job_id}` não mudou, então o
   frontend não precisa mudar por isso.
 - O texto final da CLI fica em `Job.output`, **fora da API** (`exclude=True`;
-  não aparece nem no OpenAPI). É o armazenamento que o Passo 5 vai usar para
+  não aparece nem no OpenAPI). É o armazenamento que o Passo 7 vai usar para
   extrair as decisões pendentes. O campo público `pending_decisions` só nasce
-  no Passo 5.
+  no Passo 7.
 - A trava "um job de aula por curso" é feita dentro do `JobStore`
   (`create_exclusive`, com `threading.Lock`), para duas requisições simultâneas
-  não passarem juntas pela checagem.
+  não passarem juntas pela checagem. Hoje a trava compara também o tipo do job;
+  o Passo 5 a generaliza.
 - O job só vira `done` se o curso recarregado tiver a aula do tópico. Se a CLI
   terminar sem gerá-la, o job vira `error` com o início da resposta do agente.
 - Testes com a CLI simulada, em `tests/test_lesson_job.py`, incluindo uma
   regressão da criação de curso (que não tinha teste). Fixtures comuns foram
   para `tests/conftest.py`, que também dá um `JobStore` novo a cada teste.
 - **Contrato mudou, tipos não:** `openapi.json` e `schema.d.ts` seguem como
-  antes até o Passo 6.
+  antes até o Passo 8.
 
-### Passo 5 — Decisões pendentes
+### Passo 5 — Geração de exercícios com job
+
+**O que fazer:**
+
+1. Em `prompts.py`, criar `build_exercises_prompt(slug, topic_id)` com a mesma
+   validação de entrada de `build_lesson_prompt`. O texto declara o modo não
+   interativo, pede só os **exercícios** do tópico (Workflow 3 da skill), manda
+   não alterar nenhum status e **não** pede linhas `Pending status decision`:
+   gerar exercícios não abre decisão de status.
+2. Em `job_store.py`, novo `JobKind.EXERCISE_GENERATION`. Mudar
+   `create_exclusive` para **ignorar o tipo**: um job ativo por curso, seja de
+   aula ou de exercícios.
+3. `POST /courses/{slug}/topics/{topic_id}/exercises` (`operation_id`
+   `generate_exercises`), `202` com o job. Recusas, nesta ordem: curso ou tópico
+   inexistente (`404`); tópico **sem aula** (`409`, "gere a aula primeiro");
+   tópico que já tem exercícios (`409`); slug fora do formato (`422`); job ativo
+   no curso (`409`).
+4. Generalizar a tarefa de segundo plano: `_run_lesson_generation` vira
+   `_run_generation(job_id, slug, topic_id, prompt, produced)`, onde `produced`
+   recebe o curso recarregado e diz se o artefato esperado existe (aula ou
+   conjunto de exercícios). Aula e exercícios passam pelo mesmo código, sem
+   duplicar o tratamento de erros.
+5. O job só vira `done` se `produced` for verdadeiro; senão `error` com o início
+   da resposta do agente, como na aula.
+
+**Por quê:**
+
+- A skill lê a aula antes de gerar os exercícios. Sem a checagem de `409`, o
+  aluno gastaria uso e esperaria minutos para a execução falhar no fim.
+- A trava por curso ignora o tipo porque aula e exercícios mexem nas mesmas
+  pastas e no mesmo currículo. Duas execuções ao mesmo tempo no mesmo curso é o
+  risco que o Passo 4 já tinha apontado; só estava limitado a aulas.
+- Generalizar a tarefa evita ter duas cópias do mesmo fluxo (rodar, ler, conferir
+  o arquivo, marcar o job), que divergiriam com o tempo.
+
+**Testes (`tests/test_exercise_job.py`):** CLI simulada que escreve o arquivo de
+exercícios. Casos: sucesso (`done` e exercícios visíveis no curso); a CLI termina
+sem gerar o arquivo (`error`); falha da CLI; `404` de curso e de tópico; `409`
+sem aula; `409` com exercícios já existentes; `409` com **job de aula** ativo no
+mesmo curso (e o inverso); `422` para slug inseguro; o prompt recebido contém o
+slug, o tópico e as regras de modo não interativo. Os testes de aula continuam
+passando sem alteração.
+
+### Passo 6 — Consulta do job ativo do curso
+
+**O que fazer:**
+
+1. `JobStore.find_active(slug)`, que devolve o job `pending` ou `running` do
+   curso, ou `None`.
+2. `GET /courses/{slug}/jobs/active` (`operation_id` `get_active_job`), que
+   devolve `Job | None` (corpo `null` quando não há job ativo). Curso
+   inexistente → `404`.
+
+**Por quê:** com um job por curso, o app precisa saber, ao abrir uma página:
+(a) se deve mostrar o progresso de um job que já está rodando, por exemplo
+depois de recarregar o navegador ou de voltar de outra tela; e (b) se deve
+desabilitar os botões de gerar e o seletor de status enquanto isso. Sem essa
+rota, um `409` na hora de gerar deixaria o aluno sem saber o que está
+acontecendo, e o id do job se perderia a cada recarga.
+
+**Limite aceito:** se o job terminou enquanto o aluno estava fora, o app não
+mostra o resultado do job (inclusive um erro). Ele só vê que a aula ou os
+exercícios passaram a existir, ou não. Isso evita guardar histórico de jobs.
+
+**Testes (`tests/test_active_job.py`):** sem job → `null`; com job `pending` e
+`running` → o job; com job `done` ou `error` → `null`; job de outro curso não
+aparece; curso inexistente → `404`.
+
+### Passo 7 — Decisões pendentes
 
 **O que fazer:**
 
 1. Função `parse_pending_decisions(output: str) -> list[PendingDecision]` que
    busca linhas no formato `Pending status decision: <id> <título>`.
-2. Chamar essa função ao concluir o job e gravar o resultado em
-   `pending_decisions`.
-3. Expor `pending_decisions` no `GET /courses/jobs/{job_id}` (agora
-   `GET /jobs/{job_id}`, se o Passo 4 renomear a rota).
+2. Chamar essa função ao concluir um job de **aula** e gravar o resultado em
+   `pending_decisions`. Jobs de exercícios e de criação de curso não têm essa
+   lista.
+3. Expor `pending_decisions` em `GET /courses/jobs/{job_id}` e no job ativo.
 
 **Por quê:** o SPEC diz que a decisão é do aluno e não do LLM. O servidor só
 transporta a informação; quem decide é a UI. Fazer o parse no servidor, e não
@@ -317,19 +404,20 @@ no app, mantém o app livre de conhecer o formato de saída da skill.
 inválida (`Pending status decision` sem id) e texto comum; só as válidas devem
 ser extraídas.
 
-### Passo 6 — Regerar tipos e conferir o contrato
+### Passo 8 — Regerar tipos e conferir o contrato
 
 **O que fazer:** `cd apps/client && npm run generate:types`, depois revisar o
 diff de `openapi.json` e `schema.d.ts` e commitar os dois.
 
 **Por quê:** o CLAUDE.md do projeto exige isso ao mudar rotas ou models. O
 frontend importa tipos só de `@app/api/client`, então o passo é obrigatório
-para o Passo 7 compilar.
+para os Passos 9 a 11 compilarem. Ele vem depois de todas as mudanças de
+contrato do servidor (Passos 5, 6 e 7) para gerar os tipos uma vez só.
 
 **Verificação:** `npm run typecheck`. Um tipo novo sem uso no client já prova
 que o OpenAPI saiu certo.
 
-### Passo 7 — UI: mutação de status
+### Passo 9 — UI: mutação e seletor de status
 
 **O que fazer:**
 
@@ -339,27 +427,69 @@ que o OpenAPI saiu certo.
 2. Mostrar um seletor de status na página de aula (`LessonPage`). Motivo de ser
    nela e não na trilha: o card é um `Link` (Feature 5); um controle dentro de
    um link é HTML inválido, o mesmo problema já corrigido em `TopicCard`.
+   O seletor fica desabilitado enquanto houver job ativo no curso (Passo 6), para
+   não competir com a escrita da skill no currículo.
 3. Tratar `409` com uma mensagem clara ("gere a aula antes de marcar em
    andamento") e não com erro genérico.
 4. Textos em `en.json` e `pt-BR.json`, e `npm run check:i18n`.
 
 **Por quê:** a rota sozinha não entrega valor; o aluno precisa do controle.
 Colocar o seletor na aula, e não no card, segue a regra do SPEC de que o
-`Link` do card não recebe controles.
+`Link` do card não recebe controles. Desabilitar durante um job reduz o risco,
+já registrado, de uma edição de status se perder enquanto a skill escreve.
 
-### Passo 8 — UI: diálogo de decisão pendente
+### Passo 10 — UI: gerar aula e exercícios
+
+**O que fazer:**
+
+1. Em `app/api/queries.ts`: funções `generateLesson(slug, topicId)` e
+   `generateExercises(slug, topicId)` (POST, devolvem o `Job`) e
+   `courseActiveJobQuery(slug)` (consulta do Passo 6). O polling reaproveita
+   `courseJobQuery(jobId)`, que já existe.
+2. Novo hook `useGenerationJob(slug)`, que junta três coisas: o job ativo do
+   curso, o polling desse job e, ao terminar com sucesso, a invalidação das
+   queries do curso, da aula e dos exercícios. Devolve o estado
+   (`idle | running | error`), o erro e as ações `start` e `retry`.
+3. Novo componente `GenerationProgress`: spinner e texto "Gerando… pode levar
+   alguns minutos" enquanto roda; mensagem de erro do job com botão "Tentar de
+   novo" quando falha.
+4. `NotGeneratedCard` ganha o botão de gerar e mostra o `GenerationProgress`
+   enquanto há job. Na `LessonPage` o botão gera a **aula**; na `ExercisesPage`
+   gera os **exercícios**. Se o tópico não tem aula, a `ExercisesPage` não mostra
+   o botão e leva o aluno à página de aula, explicando que os exercícios dependem
+   dela.
+5. Na `LessonPage`, quando a aula existe mas os exercícios não, mostrar o botão
+   "Gerar exercícios" junto do link para a página de exercícios.
+6. Com um job ativo no curso, **todos** os botões de gerar ficam desabilitados e
+   a tela mostra o progresso desse job. Um `409` ao iniciar (outro job começou
+   antes) refaz a consulta do job ativo em vez de mostrar um erro seco.
+7. Textos em `en.json` e `pt-BR.json`, e `npm run check:i18n`.
+
+**Por quê:**
+
+- Os botões ficam onde o aluno já cai ao abrir um tópico sem conteúdo. Pôr
+  controles no card da trilha reabriria o problema do botão dentro do `Link`.
+- Consultar o job ativo, em vez de guardar o id do job só em estado do
+  componente, faz o progresso sobreviver a recarregar a página e a navegar
+  entre telas.
+- Invalidar também a query do curso faz os ícones de aula e de exercícios da
+  trilha aparecerem sem recarregar.
+
+**Verificação:** `typecheck`, `lint`, `check:i18n`, e navegador com um job
+real em um vault de teste (a CLI consome uso e leva minutos; ver Passo 12).
+O client não tem runner de testes, como na Feature 4.
+
+### Passo 11 — UI: diálogo de decisão pendente
 
 **O que fazer:**
 
 1. Criar `PendingStatusDialog`, um `Dialog` do shadcn com uma pergunta por
    decisão e três opções: "Concluí" (`completed`), "Quero revisar" (`review`),
    "Ainda estou estudando" (`in_progress`, sem chamada se já estiver assim).
-2. Abrir o diálogo quando um job de aula terminar com decisões, e quando o
-   aluno abrir o curso e houver decisões ainda não respondidas. Guardar as
-   respostas pendentes no próprio job no servidor? **Não** nesta feature: o
-   diálogo mostra as decisões que vieram do último job; se o aluno fechar o
-   app, a decisão volta a ser pedida na próxima geração. Ver "Decisões em
-   aberto", item 2.
+2. Abrir o diálogo quando um job de **aula** terminar com `pending_decisions`
+   (o `useGenerationJob` do Passo 10 entrega a lista). As decisões vêm do job
+   que acabou de terminar; se o aluno fechar o app, a decisão volta a ser pedida
+   na próxima geração. Ver "Decisões em aberto", item 2.
 3. Cada opção chama a rota do Passo 2 e, depois, fecha a decisão na lista.
 4. Sem resposta, nada muda. O diálogo não tem "fechar = concluir".
 
@@ -370,17 +500,22 @@ foco e ESC, como na Feature 4.
 **Verificação:** `typecheck`, `lint`, `check:i18n`, e navegador com uma
 saída real da skill.
 
-### Passo 9 — Teste end-to-end e fechamento
+### Passo 12 — Teste end-to-end e fechamento
 
 Checklist manual, com um vault de teste (não o vault real):
 
 - [ ] Marcar `pending → completed` pela aula; o arquivo mudou só na linha `status`.
 - [ ] Marcar `in_progress` em tópico sem aula: 409 e mensagem clara.
-- [ ] Gerar aula pelo app: job vai de `pending` a `running` a `done`; a aula aparece.
+- [ ] Gerar a aula pelo app: o progresso aparece, o job vai de `pending` a `running` a `done`, a aula aparece e o ícone do card na trilha muda sem recarregar.
+- [ ] Gerar os exercícios pelo app, em um tópico com aula: mesmo comportamento, com a página de exercícios mostrando o conteúdo.
+- [ ] Na página de exercícios de um tópico sem aula: sem botão de gerar e com o aviso de que falta a aula.
+- [ ] Durante uma geração, todos os botões de gerar e o seletor de status ficam desabilitados.
+- [ ] Recarregar a página durante uma geração: o progresso reaparece (job ativo do curso).
+- [ ] Anotar o tempo real de uma aula e de um conjunto de exercícios, para decidir se os 300 s de timeout bastam.
 - [ ] A saída da skill traz `Pending status decision`; o diálogo abre; cada opção muda o status.
 - [ ] Editar o `00-curriculum.md` no editor com CRLF; a rota preserva CRLF.
-- [ ] Reiniciar o servidor no meio de um job: o job some e a aula pode ser gerada de novo, sem corromper o currículo.
-- [ ] Atualizar o SPEC: marcar os itens da Feature 6, mover o `PATCH` de "Stretch" para "Concluído" (ou remover a duplicata), e registrar as decisões tomadas.
+- [ ] Reiniciar o servidor no meio de um job: o job some e a geração pode ser repetida, sem corromper o currículo.
+- [ ] Atualizar o SPEC: marcar os itens da Feature 6 (incluindo a geração de exercícios e a geração pelo frontend), mover o `PATCH` de "Stretch" para "Concluído" (ou remover a duplicata), e registrar as decisões tomadas.
 
 Rodar antes de encerrar, como manda o CLAUDE.md:
 
@@ -396,12 +531,13 @@ uv run ruff check packages/course-parser apps/local-server && uv run ruff format
 ## Decisões em aberto
 
 Estas decisões precisam do Samuel antes do Passo correspondente. Cada uma tem
-uma recomendação.
+uma recomendação. Os itens 1 a 4 foram aceitos em 2026-10-25; os itens 5 a 7 são
+novos e esperam confirmação.
 
 1. **A rota de status deve também marcar os checkboxes dos subtópicos quando o
    status vira `completed`?** A skill faz isso ao concluir (SKILL.md,
    "Finished"), mas o SPEC restringe a rota à linha `status`.
-   *Recomendação:* não. Manter a rota pequena. Se o aluno marca `completed` no
+   *Aceito:* não. Manter a rota pequena. Se o aluno marca `completed` no
    app, os checkboxes ficam para trás até ele editar à mão ou a skill rodar de
    novo. Isso deixa o estado do currículo inconsistente por um tempo; aceito
    nesta feature, e a inconsistência fica registrada no SPEC.
@@ -409,28 +545,55 @@ uma recomendação.
    passa a editar mais de uma linha, e o risco de erro cresce.
 
 2. **O que acontece com as decisões pendentes se o aluno fechar o app?**
-   *Recomendação:* não persistir. As decisões voltam a aparecer na próxima
+   *Aceito:* não persistir. As decisões voltam a aparecer na próxima
    geração de aula. Persistir exigiria saber quando a decisão expirou, e o
    vault já guarda o status real.
 
 3. **`last_reviewed` deve ser atualizado pela rota?** O SPEC diz que `last_reviewed`
-   é definido ao gerar ou revisar a aula. *Recomendação:* não atualizar nesta
+   é definido ao gerar ou revisar a aula. *Aceito:* não atualizar nesta
    rota; o campo passa a ser atualizado só pela skill, como hoje.
 
 4. **O app deve mostrar o botão "Gerar aula" em tópicos sem aula?**
-   *Recomendação:* sim, na página de aula, com o estado "aula não gerada" já
-   existente (404). É o ponto de entrada natural do Passo 4.
+   *Aceito:* sim, na página de aula, com o estado "aula não gerada" já
+   existente (404). O mesmo vale agora para "Gerar exercícios" (Passo 10).
+
+5. **Um job de geração ativo por curso, de qualquer tipo, ou só um por tipo?**
+   *Recomendação:* um por curso, qualquer tipo. Aula e exercícios mexem nas
+   mesmas pastas e no mesmo currículo. *Custo:* o aluno não gera exercícios de um
+   tópico enquanto a aula de outro está sendo gerada no mesmo curso. *Alternativa:*
+   um por tipo e por curso, que permite gerar em paralelo, mas reabre o risco de
+   escrita simultânea.
+
+6. **Como o app retoma o acompanhamento de um job depois de recarregar?**
+   *Recomendação:* consultar `GET /courses/{slug}/jobs/active` (Passo 6).
+   *Alternativa:* guardar o id do job em `sessionStorage`, sem rota nova. É mais
+   simples, mas não cobre outra aba nem desabilita os botões de forma confiável
+   quando o `409` vem de um job iniciado em outro lugar.
+
+7. **A página de exercícios de um tópico sem aula deve ter botão de gerar?**
+   *Recomendação:* não. Mostrar o aviso de que os exercícios dependem da aula e
+   um link para a página de aula. Gerar exercícios sem aula faria a skill falhar
+   depois de gastar uso.
 
 ## Riscos
 
-- **Formato de saída da CLI.** Se `--output-format json` não devolver o texto
-  final num campo previsível, o Passo 5 precisa de outro parser. Mitigação: o
-  Passo 3 verifica isso antes de qualquer código dependente.
+- **Formato de saída da CLI.** Já confirmado no Passo 3: um objeto JSON com
+  `result`. Se uma versão futura da CLI mudar isso, o `extract_result` e o
+  parser do Passo 7 mudam.
 - **Corrida entre Obsidian e o servidor.** A escrita atômica evita arquivo
   corrompido, mas não impede que o Obsidian sobrescreva a mudança se gravar
   depois. Aceito; é o risco já registrado em "Decisões adiadas".
 - **Skill ignorar o modo não interativo.** Se a skill perguntar mesmo com a
-  declaração, o job trava até o timeout. Mitigação: o Passo 3 testa com uma
-  execução real antes da UI.
-- **Dois jobs no mesmo curso.** Mitigado pela recusa de segundo job por
-  `slug` (Passo 4). Não há lock de arquivo.
+  declaração, o job trava até o timeout. Mitigação: o Passo 3 testou a aula com
+  uma execução real. **A geração de exercícios ainda não foi testada com a CLI
+  real**; fica no Passo 12.
+- **Timeout de 300 s.** Nenhuma geração real foi cronometrada. Se estourar, o
+  job vira `error` e o arquivo pode ficar incompleto. Medir no Passo 12.
+- **Edição de status durante a escrita da skill.** O lock do `PATCH` não alcança
+  o processo da CLI. A UI mitiga desabilitando o seletor durante um job
+  (Passo 9); quem edita o Obsidian à mão continua sujeito ao risco.
+- **Dois jobs no mesmo curso.** Mitigado pela trava por curso no `JobStore`
+  (Passos 4 e 5). Não há lock de arquivo.
+- **Efeito colateral da CLI no vault.** A CLI pode gravar
+  `.claude/model-roles.json` dentro do `VAULT_PATH`, por causa de um hook do
+  ambiente do usuário (Passo 3). Anterior a esta feature; não corrigido.
