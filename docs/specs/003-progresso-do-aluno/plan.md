@@ -44,6 +44,9 @@ ou pelo Obsidian. O app reflete cada mudança sem regenerar nenhum arquivo.
   memória (pendência já listada no SPEC) e guarda os jobs desta execução do
   servidor apenas para o observador de toasts descobrir o resultado.
 - Notificações do sistema operacional (push) e e-mail. Só toast dentro do app.
+- Testes de estresse de concorrência (várias gerações e edições ao mesmo tempo).
+  Ficam para uma etapa própria, depois que a Feature 6 estiver toda implementada;
+  ver o Passo 10.
 
 ## Estado atual (o que já existe e o que falta)
 
@@ -151,7 +154,7 @@ importa: veja a coluna "Depende de".
 | 7 ✅ | Extração de `Pending status decision:` e exposição no job de aula | 3, 4 | teste com saída de exemplo |
 | 8 ✅ | Regerar tipos e verificar o contrato | 2, 4, 5, 6, 7 | `npm run generate:types` + `typecheck` |
 | 9 ✅ | UI: mutação e seletor de status | 8 | `typecheck`, `lint`, `check:i18n`, navegador |
-| 10 | UI: gerar aula e exercícios, com progresso do job | 8 | idem, com um job real em vault de teste |
+| 10 ✅ | UI: gerar aula e exercícios, com progresso do job | 8 | idem, com um job real em vault de teste |
 | 11 | UI: painel de jobs na tela inicial e notificações (toast) | 8, 10 | idem, com jobs reais e simulados |
 | 12 | UI: diálogo de decisão pendente | 7, 9, 11 | idem, com saída real da skill |
 | 13 | Teste manual end-to-end e atualização do SPEC | todos | checklist abaixo |
@@ -660,6 +663,65 @@ para uma cópia de um curso e uma segunda instância do Vite (porta 5173) com
 **Verificação:** `typecheck`, `lint`, `check:i18n`, e navegador com um job
 real em um vault de teste (a CLI consome uso e leva minutos; ver Passo 13).
 O client não tem runner de testes, como na Feature 4.
+
+**Resultado (entregue em 2026-10-25):**
+
+- `queries.ts`: `generateLesson` e `generateExercises` (POST, devolvem o `Job`).
+- `app/hooks/useGeneration.ts`: inicia a geração e acompanha o job do curso
+  (`useJobs({ slug })`). Expõe `start`, `startError`, `busy` (qualquer geração no
+  curso, ou a chamada em curso), `runningHere(kind)` e `runningElsewhere(kind)`.
+  A mutação só termina depois de atualizar a lista de jobs, para o botão não
+  voltar a ficar ativo antes de o job novo aparecer; isso também cobre um `409`
+  (outro job começou antes). Quando o job ativo some da lista, invalida o curso
+  inteiro (`courseKeys.detail(slug)`, sem `exact`), o que refaz o bundle, a aula
+  e os exercícios.
+- `GenerationProgress` (spinner e texto, `role="status"`, sem guardar resultado) e
+  `GenerateButton` (botão que vira progresso quando o job é desse tópico e desse
+  tipo; fica inativo, com aviso, quando outra geração roda no curso; aceita um
+  `disabledReason`; mostra erro com `role="alert"`). `NotGeneratedCard` ganhou
+  `children` para receber o botão.
+- `LessonPage`: o cartão "aula ainda não gerada" tem o botão "Gerar aula"; quando
+  a aula existe e os exercícios não, aparece um cartão "Exercícios ainda não
+  gerados" com o botão "Gerar exercícios", acima da navegação.
+- `ExercisesPage`: o cartão "não gerados" tem o botão "Gerar exercícios". Sem aula
+  ele fica **inativo**, com a explicação e o link "Ir para a aula". A rota segue
+  recusando com `409` chamadas diretas.
+- Textos novos em `generation.*`, `exercises.needsLesson` e `exercises.goToLesson`
+  nos dois idiomas (109 chaves). Os textos "peça ao seu agente para gerá-la"
+  foram trocados por "você pode gerá-la agora".
+- **Desvios do plano:** (1) a invalidação ao fim do job ficou em `useGeneration`,
+  e não em `useJobs`, para não repetir o efeito em cada componente que lê a
+  lista de jobs; (2) o botão "Gerar exercícios" da página de aula ficou em um
+  cartão acima da navegação, e não ao lado do link, porque a célula central da
+  navegação é estreita.
+- **Verificação no navegador** (cópia do vault, servidor e Vite em outras portas;
+  vault real intocado), com um job de aula simulado em andamento no tópico 1.3:
+  no tópico 1.2 o botão "Gerar aula" fica inativo com "Outra geração está em
+  andamento neste curso"; no tópico 1.3 aparece "Gerando a aula…"; na página de
+  exercícios do 1.2 (sem aula) o botão fica inativo, com a explicação e o link
+  para a aula. Com o servidor real e a CLI real, o clique em "Gerar aula" criou o
+  job, mostrou o progresso e travou o seletor de status; o agente escreveu a aula
+  e atualizou o currículo (1.2 passou a `in_progress`).
+- **Verificado pelo Samuel no vault real** (aula 1.1 do curso de algoritmos): a
+  geração da aula e a dos exercícios funcionaram pela tela, cada uma em menos de
+  cerca de 1 min 30 s (tempo estimado, sem cronômetro), e o resultado apareceu
+  como esperado. Isso cobre o que a verificação com a cópia do vault não
+  alcançou: o fim do job no navegador e a geração de exercícios pela tela.
+- **Execução lenta isolada:** na verificação com a cópia do vault, um job de aula
+  ainda constava `running` cerca de 3 min depois do clique, embora os arquivos já
+  tivessem sido escritos cerca de 2 min depois. As execuções reais seguintes
+  (43 s, 68 s e a do vault real, abaixo de 1 min 30 s) foram bem mais rápidas;
+  tratar aquela como um caso fora da curva.
+- **Risco que continua:** se a CLI demorar a encerrar depois de escrever a aula, o
+  job fica `running` até o fim do processo e, passados 300 s, vira `error` mesmo
+  com o arquivo já gravado. Vale decidir se, no timeout, o servidor deve conferir
+  o arquivo antes de marcar erro.
+- **Testes de concorrência ficam para uma etapa futura** (decisão do Samuel em
+  2026-10-25), depois de toda a implementação da Feature 6: duas gerações ao
+  mesmo tempo no mesmo curso (a trava por curso e o `409`), mudança de status
+  durante uma geração, duas abas, edição no Obsidian durante a escrita e
+  reinício do servidor com job em andamento. Hoje a trava por curso só tem teste
+  automatizado de unidade (`JobStore` e rotas com CLI simulada).
 
 ### Passo 11 — UI: painel de jobs na tela inicial e notificações
 

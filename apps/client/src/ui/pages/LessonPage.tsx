@@ -19,6 +19,7 @@ import { flattenTopics, getNeighbors } from '@app/lib/topic';
 import type { Neighbors } from '@app/lib/topic';
 import { ErrorState } from '@ui/components/ErrorState';
 import { Markdown } from '@ui/components/Markdown';
+import { GenerateButton } from '@ui/components/GenerateButton';
 import { StatusSelect } from '@ui/components/StatusSelect';
 import { Badge } from '@ui/components/ui/Badge';
 import { Button } from '@ui/components/ui/Button';
@@ -113,6 +114,15 @@ function LessonView({ slug, bundle, topic, neighbors }: LessonViewProps) {
       <TopicDetails topic={topic} />
 
       <LessonBody slug={slug} topicId={id} />
+
+      {hasLesson && !hasExercises && (
+        <NotGeneratedCard
+          title={t('exercises.notGeneratedTitle')}
+          body={t('exercises.notGeneratedBody')}
+        >
+          <GenerateButton slug={slug} topicId={id} kind="exercises" />
+        </NotGeneratedCard>
+      )}
 
       <LessonNav
         slug={slug}
@@ -217,7 +227,9 @@ function LessonBody({ slug, topicId }: { slug: string; topicId: string }) {
         <NotGeneratedCard
           title={t('lesson.notGeneratedTitle')}
           body={t('lesson.notGeneratedBody')}
-        />
+        >
+          <GenerateButton slug={slug} topicId={topicId} kind="lesson" />
+        </NotGeneratedCard>
       );
     }
     return <ErrorState error={error} onRetry={() => void refetch()} />;

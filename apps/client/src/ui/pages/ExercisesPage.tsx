@@ -11,6 +11,7 @@ import { dateFormatter } from '@app/lib/dateFormatter';
 import { topicPath } from '@app/lib/routes';
 import { flattenTopics } from '@app/lib/topic';
 import { ErrorState } from '@ui/components/ErrorState';
+import { GenerateButton } from '@ui/components/GenerateButton';
 import { Markdown } from '@ui/components/Markdown';
 import { Button } from '@ui/components/ui/Button';
 import { Skeleton } from '@ui/components/ui/Skeleton';
@@ -51,7 +52,11 @@ export function ExercisesPage() {
       </nav>
 
       <ExercisesHeader courseTitle={bundle.course.course} topic={topic} />
-      <ExercisesBody slug={slug} topicId={topicId} />
+      <ExercisesBody
+        slug={slug}
+        topicId={topicId}
+        hasLesson={bundle.lessons.some((lesson) => lesson.topic === topicId)}
+      />
     </div>
   );
 }
@@ -78,7 +83,14 @@ function ExercisesHeader({
   );
 }
 
-function ExercisesBody({ slug, topicId }: { slug: string; topicId: string }) {
+interface ExercisesBodyProps {
+  slug: string;
+  topicId: string;
+  /** The exercises are written from the lesson, so they cannot be generated without one. */
+  hasLesson: boolean;
+}
+
+function ExercisesBody({ slug, topicId, hasLesson }: ExercisesBodyProps) {
   const { t, i18n } = useTranslation();
   const {
     data: exerciseSet,
@@ -95,7 +107,21 @@ function ExercisesBody({ slug, topicId }: { slug: string; topicId: string }) {
         <NotGeneratedCard
           title={t('exercises.notGeneratedTitle')}
           body={t('exercises.notGeneratedBody')}
-        />
+        >
+          <GenerateButton
+            slug={slug}
+            topicId={topicId}
+            kind="exercises"
+            disabledReason={hasLesson ? undefined : t('exercises.needsLesson')}
+          />
+          {!hasLesson && (
+            <Button asChild variant="link" className="h-auto p-0">
+              <Link to={topicPath(slug, topicId)}>
+                {t('exercises.goToLesson')}
+              </Link>
+            </Button>
+          )}
+        </NotGeneratedCard>
       );
     }
     return <ErrorState error={error} onRetry={() => void refetch()} />;

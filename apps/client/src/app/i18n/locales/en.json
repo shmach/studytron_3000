@@ -71,7 +71,7 @@
     "weakPoints": "Weak points",
     "generatedOn": "Generated on {{date}}",
     "notGeneratedTitle": "Lesson not generated yet",
-    "notGeneratedBody": "This topic has no lesson in the vault. Ask your agent to generate it with the course-builder skill, then reload this page.",
+    "notGeneratedBody": "This topic has no lesson yet. You can generate it now; it takes a few minutes.",
     "exercises": "Exercises",
     "goToPrevious": "Previous topic: {{title}}",
     "goToNext": "Next topic: {{title}}"
@@ -82,7 +82,22 @@
     "generatedOn": "Generated on {{date}}",
     "difficultyTarget": "Target difficulty: {{value}}",
     "notGeneratedTitle": "Exercises not generated yet",
-    "notGeneratedBody": "This topic has no exercises in the vault. Ask your agent to generate them with the course-builder skill, then reload this page."
+    "notGeneratedBody": "This topic has no exercises yet. You can generate them now; it takes a few minutes.",
+    "needsLesson": "The exercises are written from the lesson, so generate the lesson first.",
+    "goToLesson": "Go to the lesson"
+  },
+  "generation": {
+    "generate": {
+      "lesson": "Generate lesson",
+      "exercises": "Generate exercises"
+    },
+    "running": {
+      "lesson": "Generating the lesson… this can take a few minutes.",
+      "exercises": "Generating the exercises… this can take a few minutes."
+    },
+    "otherJobRunning": "Another generation is running on this course. Wait for it to finish.",
+    "startConflict": "A generation is already running on this course, or this content already exists.",
+    "startFailed": "Could not start the generation. Try again."
   },
   "deleteCourse": {
     "trigger": "Delete course",

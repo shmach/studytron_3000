@@ -156,6 +156,27 @@ export async function updateTopicStatus(
   );
 }
 
+/**
+ * Start generating the lesson / the exercises of a topic. Both answer 202 with the `Job` to
+ * follow. Errors: 404 (unknown course or topic), 409 (already generated, no lesson yet for
+ * exercises, or another generation is running on the course), 422 (unsafe course name).
+ */
+export async function generateLesson(slug: string, topicId: string) {
+  return unwrap(
+    await api.POST('/courses/{slug}/topics/{topic_id}/lesson', {
+      params: { path: { slug, topic_id: topicId } },
+    }),
+  );
+}
+
+export async function generateExercises(slug: string, topicId: string) {
+  return unwrap(
+    await api.POST('/courses/{slug}/topics/{topic_id}/exercises', {
+      params: { path: { slug, topic_id: topicId } },
+    }),
+  );
+}
+
 export async function createCourseJob(userPrompt: string) {
   return unwrap(
     await api.POST('/courses', {
