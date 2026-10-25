@@ -27,11 +27,15 @@ def build_course_prompt(user_prompt: str) -> str:
     )
 
 
-def build_lesson_prompt(slug: str, topic_id: str) -> str:
+def _check_course_and_topic(slug: str, topic_id: str) -> None:
     if not _SLUG.fullmatch(slug):
         raise ValueError(f"Invalid course slug: {slug!r}")
     if not _TOPIC_ID.fullmatch(topic_id):
         raise ValueError(f"Invalid topic id: {topic_id!r}")
+
+
+def build_lesson_prompt(slug: str, topic_id: str) -> str:
+    _check_course_and_topic(slug, topic_id)
 
     return (
         "Using the skill course-builder, generate the lesson for topic "
@@ -46,4 +50,21 @@ def build_lesson_prompt(slug: str, topic_id: str) -> str:
         "decision from the student, in exactly this format, as plain text (no bullet, no "
         f"quotes, no code formatting): `{PENDING_DECISION_PREFIX} <topic id> <topic title>`. "
         "If no topic needs a decision, write no such line."
+    )
+
+
+def build_exercises_prompt(slug: str, topic_id: str) -> str:
+    _check_course_and_topic(slug, topic_id)
+
+    # No "Pending status decision" line here: writing exercises does not open any status
+    # decision for the student, so the lesson prompt's closing rule is left out on purpose.
+    return (
+        "Using the skill course-builder, generate the exercises for topic "
+        f"{topic_id} of the course in the folder `{slug}` (inside the current directory). "
+        "The lesson for this topic already exists; read it first.\n\n"
+        "This is a non-interactive, single-shot call: no user is present, you cannot ask "
+        "questions and no one will answer them. Follow the skill's non-interactive rules:\n"
+        "- Never ask a question. Use the defaults defined in the workflow.\n"
+        "- Do not change the status of any topic.\n"
+        "- Generate only the exercises, not a new lesson."
     )

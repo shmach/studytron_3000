@@ -15,15 +15,16 @@ class JobStatus(str, Enum):
 class JobKind(str, Enum):
     COURSE_CREATION = "course_creation"
     LESSON_GENERATION = "lesson_generation"
+    EXERCISE_GENERATION = "exercise_generation"
 
 
 class Job(BaseModel):
     id: str
     kind: JobKind = JobKind.COURSE_CREATION
     status: JobStatus
-    # Course creation: filled when the job is done. Lesson generation: the course being edited.
+    # Course creation: filled when the job is done. Generation jobs: the course being edited.
     slug: str | None = None
-    # Lesson generation only.
+    # Generation jobs only (lesson or exercises).
     topic_id: str | None = None
     error: str | None = None
     # Final text printed by the agent CLI. Internal: `exclude=True` keeps it out of API
@@ -60,16 +61,13 @@ class JobStore:
     def create_exclusive(
         self, kind: JobKind, slug: str, topic_id: str | None = None
     ) -> Job | None:
-        """Create a job unless one of the same `kind` is already active for `slug`.
+        """Create a job unless any job is already active for `slug`, whatever its kind.
 
-        Returns `None` when there is one. Used to keep a single agent run per course, because
-        the agent rewrites the same curriculum file every time.
+        Returns `None` when there is one. Used to keep a single agent run per course: lessons
+        and exercises touch the same folders and the agent rewrites the same curriculum file.
         """
         with self._lock:
-            if any(
-                j.kind == kind and j.slug == slug and j.status in _ACTIVE
-                for j in self._jobs.values()
-            ):
+            if any(j.slug == slug and j.status in _ACTIVE for j in self._jobs.values()):
                 return None
             return self.create(kind=kind, slug=slug, topic_id=topic_id)
 

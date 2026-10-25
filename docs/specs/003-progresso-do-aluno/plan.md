@@ -54,7 +54,7 @@ ou pelo Obsidian. O app reflete cada mudança sem regenerar nenhum arquivo.
 | Rota de status | **pronta** (`PATCH`, CORS liberado) | `apps/local-server/src/local_server/routes/courses.py` |
 | Prompt e leitura da saída da CLI | **prontos** (`build_lesson_prompt`, `extract_result`) | `prompts.py`, `services/local_process.py` |
 | Geração de aula | **pronta** (`POST .../lesson`, com job) | `routes/courses.py` |
-| Geração de exercícios | **não existe** | — |
+| Geração de exercícios | **pronta** (`POST .../exercises`, com job) | `routes/courses.py` |
 | Listagem de jobs | **não existe** (só consulta por id) | `services/job_store.py` |
 | Decisões pendentes | **não existem**; a saída da CLI fica em `Job.output`, fora da API | `services/job_store.py` |
 | Tipos gerados | **desatualizados** (`openapi.json` + `schema.d.ts`) | `apps/client/package.json` (`generate:types`) |
@@ -146,7 +146,7 @@ importa: veja a coluna "Depende de".
 | 2 ✅ | Rota `PATCH /courses/{slug}/topics/{topic_id}/status` | 1 | teste de rota; `uv run pytest` |
 | 3 ✅ | Modo não interativo: prompt de aula e leitura da saída da CLI | — | teste do texto do prompt; execução manual de uma aula |
 | 4 ✅ | Rota de geração de aula com job | 3 | teste do job com CLI simulada |
-| 5 | Geração de exercícios com job; trava de um job por curso | 3, 4 | teste do job com CLI simulada |
+| 5 ✅ | Geração de exercícios com job; trava de um job por curso | 3, 4 | teste do job com CLI simulada |
 | 6 | Listagem de jobs (`GET /jobs`) | 4, 5 | teste de rota |
 | 7 | Extração de `Pending status decision:` e exposição no job de aula | 3, 4 | teste com saída de exemplo |
 | 8 | Regerar tipos e verificar o contrato | 2, 4, 5, 6, 7 | `npm run generate:types` + `typecheck` |
@@ -384,6 +384,34 @@ mesmo curso (e o inverso); `422` para slug inseguro; o prompt recebido contém o
 slug, o tópico e as regras de modo não interativo; uma exceção inesperada na CLI
 (como `FileNotFoundError`) deixa o job em `error`, e o mesmo para a criação de
 curso. Os testes de aula continuam passando sem alteração.
+
+**Resultado (entregue em 2026-10-25):**
+
+- `POST /courses/{slug}/topics/{topic_id}/exercises` (`operation_id`
+  `generate_exercises`) responde `202` com o job. Recusa, nesta ordem: curso ou
+  tópico inexistente (`404`), tópico sem aula (`409`), tópico que já tem
+  exercícios (`409`), slug fora do formato do prompt (`422`) e job de geração
+  ativo no curso (`409`).
+- `build_exercises_prompt` declara o modo não interativo, pede só os exercícios,
+  manda não alterar nenhum status e **não** pede linhas `Pending status
+  decision`. A validação de `slug` e `topic_id` virou uma função compartilhada
+  com o prompt de aula.
+- A tarefa de segundo plano ficou única: `_run_generation(...)`, com
+  `produced(course)` para conferir o arquivo gerado (aula ou exercícios). A rota
+  de aula passou a usá-la, sem mudar seu comportamento.
+- `create_exclusive` ignora o tipo do job: um job ativo por curso, de qualquer
+  tipo. Há `JobKind.EXERCISE_GENERATION`.
+- **Nenhum job fica `running` para sempre:** qualquer exceção da tarefa
+  (como `FileNotFoundError` com o `claude` fora do `PATH`) marca o job como
+  `error` e registra o erro no log. O mesmo vale para a criação de curso.
+- O simulador de CLI foi para o `conftest.py` (fixture `fake_cli`) e ganhou o
+  modo `exercises`. Novos testes em `tests/test_exercise_job.py`; os de aula
+  ganharam a trava entre tipos e o caso de exceção inesperada.
+- **Execução real** (cópia temporária da fixture, sem os exercícios do tópico
+  1.1, pela própria rota): o job terminou `done` em cerca de **43 s**; a skill não
+  fez perguntas, escreveu o arquivo de exercícios (parseável, `GET` devolveu
+  `200`), não alterou nenhum status nem o `00-curriculum.md`, e usou o resultado
+  da tentativa anterior para calibrar a dificuldade.
 
 ### Passo 6 — Listagem de jobs
 
@@ -685,10 +713,10 @@ pendente; a seção fica como registro do que foi decidido e por quê.
   depois. Aceito; é o risco já registrado em "Decisões adiadas".
 - **Skill ignorar o modo não interativo.** Se a skill perguntar mesmo com a
   declaração, o job trava até o timeout. Mitigação: o Passo 3 testou a aula com
-  uma execução real. **A geração de exercícios ainda não foi testada com a CLI
-  real**; fica no Passo 13.
-- **Timeout de 300 s.** Nenhuma geração real foi cronometrada. Se estourar, o
-  job vira `error` e o arquivo pode ficar incompleto. Medir no Passo 13.
+  uma execução real, e o Passo 5 fez o mesmo com os exercícios.
+- **Timeout de 300 s.** Os exercícios levaram cerca de 43 s em uma execução real
+  (Passo 5); a aula ainda não foi cronometrada. Se estourar, o job vira `error` e
+  o arquivo pode ficar incompleto. Medir a aula no Passo 13.
 - **Job preso em `running`.** Uma exceção que não seja `RuntimeError` (por
   exemplo, o `claude` fora do `PATH`) mata a tarefa e deixa o job `running` para
   sempre, o que travaria o curso (trava por curso) e confundiria o painel.
