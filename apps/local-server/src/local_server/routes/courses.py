@@ -1,12 +1,24 @@
+import threading
 from pathlib import Path
 
-from course_parser import CourseBundle, ExerciseSet, Lesson, vault
+from course_parser import (
+    CourseBundle,
+    ExerciseSet,
+    Lesson,
+    Topic,
+    TopicNotFoundError,
+    TopicStatus,
+    set_topic_status,
+    vault,
+)
 from dotenv import load_dotenv
 from fastapi import APIRouter, BackgroundTasks, HTTPException
+from pydantic import BaseModel
 
 from local_server.config.env import Env
 from local_server.services.job_store import CourseCreationJob, job_store
 from local_server.services.local_process import InvalidPromptException, LocalProcess
+from local_server.utils.atomic_write import read_text_exact, write_text_atomic
 from local_server.utils.existing_slugs import _existing_slugs
 
 load_dotenv()
@@ -14,6 +26,15 @@ load_dotenv()
 router = APIRouter(prefix="/courses", tags=["courses"])
 
 env = Env()
+
+# Status updates read the curriculum, change one line and write it back. Without a lock, two
+# requests at the same time could both read the old text and the second write would undo the
+# first. One lock for the whole process is enough: the local server runs a single worker.
+_curriculum_write_lock = threading.Lock()
+
+
+class TopicStatusUpdate(BaseModel):
+    status: TopicStatus
 
 
 def _course_dir_or_404(slug: str) -> Path:
@@ -83,6 +104,49 @@ def get_exercise_by_topic(slug: str, topic_id: str) -> ExerciseSet:
         raise HTTPException(404, "Exercise not found")
 
     return exercise
+
+
+def _find_topic(course: CourseBundle, topic_id: str) -> Topic | None:
+    return next(
+        (t for m in course.course.modules for t in m.topics if t.meta.id == topic_id),
+        None,
+    )
+
+
+@router.patch("/{slug}/topics/{topic_id}/status", operation_id="update_topic_status")
+def update_topic_status(slug: str, topic_id: str, body: TopicStatusUpdate) -> Topic:
+    course_content = _load_course_or_404(slug)
+
+    if _find_topic(course_content, topic_id) is None:
+        raise HTTPException(404, "Topic not found")
+
+    # A topic is only `in_progress` while its lesson is being studied (docs/SPEC.md, section 3).
+    if body.status == "in_progress" and not any(
+        lesson.topic == topic_id for lesson in course_content.lessons
+    ):
+        raise HTTPException(
+            409, "Generate the lesson before marking the topic as in progress"
+        )
+
+    curriculum_path = _course_dir_or_404(slug) / vault.CURRICULUM_FILENAME
+
+    with _curriculum_write_lock:
+        try:
+            updated_text = set_topic_status(
+                read_text_exact(curriculum_path), topic_id, body.status
+            )
+        except TopicNotFoundError as exc:
+            raise HTTPException(404, "Topic not found") from exc
+        except ValueError as exc:
+            raise HTTPException(500, f"Malformed curriculum: {exc}") from exc
+
+        write_text_atomic(curriculum_path, updated_text)
+
+    # Answer with what the file says now, not with what we expect it to say.
+    topic = _find_topic(_load_course_or_404(slug), topic_id)
+    if topic is None:
+        raise HTTPException(500, "Topic disappeared after the update")
+    return topic
 
 
 async def _run_course_creation(job_id: str, prompt: str) -> None:

@@ -11,6 +11,7 @@ from course_parser.models import (
     Subtopic,
     Topic,
     TopicMeta,
+    TopicStatus,
 )
 from course_parser.parsers.curriculum import parse_curriculum
 from course_parser.parsers.exercises import parse_attempt, parse_exercise_file, parse_exercise_set
@@ -29,6 +30,7 @@ __all__ = [
     'Topic',
     'TopicMeta',
     'TopicNotFoundError',
+    'TopicStatus',
     'list_course_dirs',
     'load_course',
     'load_vault',
