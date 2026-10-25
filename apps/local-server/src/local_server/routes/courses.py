@@ -26,6 +26,7 @@ from local_server.prompts import (
 )
 from local_server.services.job_store import Job, JobKind, job_store
 from local_server.services.local_process import (
+    CliTimeoutError,
     InvalidPromptException,
     LocalProcess,
     extract_result,
@@ -215,10 +216,18 @@ async def _run_generation(
     """
     job_store.mark_running(job_id)
 
+    timeout_error: CliTimeoutError | None = None
     try:
         local_process = LocalProcess(tool="claude", prompt=prompt)
         stdout = await local_process.run(cwd=env.VAULT_PATH)
         output = extract_result(stdout)
+    except CliTimeoutError as exc:
+        # The CLI can take minutes to exit after it has already written the file. The file is
+        # the proof of the work, so keep going and check for it; the timeout only becomes the
+        # job's error if the file is missing. The agent's answer is lost with the killed
+        # process, so there is no output and no pending decisions to read.
+        timeout_error = exc
+        output = ""
     except (InvalidPromptException, RuntimeError) as exc:
         job_store.mark_error(job_id, str(exc))
         return
@@ -241,12 +250,27 @@ async def _run_generation(
         return
 
     if not produced(course_content):
+        if timeout_error is not None:
+            job_store.mark_error(
+                job_id,
+                f"{timeout_error}, and no {artifact} for topic {topic_id} was written",
+            )
+            return
         job_store.mark_error(
             job_id,
             f"The agent finished but wrote no {artifact} for topic {topic_id}. "
             f"Its answer: {_summarize(output)}",
         )
         return
+
+    if timeout_error is not None:
+        logger.warning(
+            "Job %s: %s, but the %s for topic %s was written; marking it done",
+            job_id,
+            timeout_error,
+            artifact,
+            topic_id,
+        )
 
     if collects_decisions:
         job_store.set_pending_decisions(

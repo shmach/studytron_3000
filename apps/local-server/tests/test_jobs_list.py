@@ -1,3 +1,5 @@
+from datetime import UTC, datetime, timedelta
+
 from conftest import SLUG
 from fastapi.testclient import TestClient
 from local_server.app import app
@@ -19,6 +21,14 @@ def _lesson(store, slug: str = SLUG, topic_id: str = "1.2"):
 class TestListJobs:
     def test_no_jobs_is_an_empty_list(self, client):
         assert _get(client) == []
+
+    def test_jobs_carry_their_creation_time_in_utc(self, client, fresh_job_store):
+        _lesson(fresh_job_store)
+
+        created_at = datetime.fromisoformat(_get(client)[0]["created_at"])
+
+        assert created_at.utcoffset() == timedelta(0)
+        assert abs(datetime.now(UTC) - created_at) < timedelta(seconds=30)
 
     def test_newest_first(self, client, fresh_job_store):
         first = _lesson(fresh_job_store, topic_id="1.2")
@@ -125,6 +135,7 @@ class TestListJobs:
             "slug": SLUG,
             "topic_id": "1.2",
             "error": None,
+            "created_at": job.created_at.isoformat().replace("+00:00", "Z"),
             "pending_decisions": [],
         }
 

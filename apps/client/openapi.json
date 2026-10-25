@@ -804,6 +804,11 @@
             ],
             "title": "Error"
           },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
           "pending_decisions": {
             "items": {
               "$ref": "#/components/schemas/PendingDecision"

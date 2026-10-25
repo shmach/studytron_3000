@@ -55,7 +55,7 @@ def fake_cli(monkeypatch, vault_dir):
     """Replace the real agent CLI. `fake_cli(...)` returns the list of prompts it receives.
 
     `writes` is what the fake "skill" puts in the vault for `topic_id`: `"lesson"`,
-    `"exercises"` or `None` (writes nothing). `raises` makes the CLI fail with that exception.
+    `"exercises"` or `None` (writes nothing). `raises` makes the CLI fail with that exception (after `writes`, if both are given).
     """
 
     def install(
@@ -70,8 +70,6 @@ def fake_cli(monkeypatch, vault_dir):
 
         async def fake_run(self, cwd):
             prompts.append(self.prompt)
-            if raises is not None:
-                raise raises
             if writes is not None:
                 # Read the sample from the fixtures, not from the vault copy, which a test
                 # may have changed.
@@ -84,6 +82,10 @@ def fake_cli(monkeypatch, vault_dir):
                     vault_dir / SLUG / folder / f"{topic_id.replace('.', '-')}-fake.md"
                 )
                 path.write_bytes(text.encode("utf-8"))
+            # Raised after the write, so a test can fake a CLI that wrote its file and then
+            # hung until the timeout.
+            if raises is not None:
+                raise raises
             return json.dumps(
                 {"type": "result", "is_error": is_error, "result": result}
             )
