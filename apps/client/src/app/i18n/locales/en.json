@@ -18,6 +18,13 @@
     "completed": "Completed",
     "review": "Review"
   },
+  "statusSelect": {
+    "label": "Change topic status (current: {{status}})",
+    "needsLesson": "\"In progress\" is available once the lesson has been generated.",
+    "jobRunning": "Wait for the generation to finish to change the status.",
+    "lessonRequired": "Generate the lesson before marking this topic as in progress.",
+    "failed": "Could not change the status. Try again."
+  },
   "error": {
     "title": "Could not load data",
     "unknown": "Unknown error",

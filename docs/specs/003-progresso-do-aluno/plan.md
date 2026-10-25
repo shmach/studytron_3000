@@ -57,7 +57,7 @@ ou pelo Obsidian. O app reflete cada mudança sem regenerar nenhum arquivo.
 | Geração de exercícios | **pronta** (`POST .../exercises`, com job) | `routes/courses.py` |
 | Listagem de jobs | **pronta** (`GET /jobs`) | `routes/jobs.py`, `services/job_store.py` |
 | Decisões pendentes | **prontas** (`Job.pending_decisions`, só em jobs de aula); a saída da CLI segue em `Job.output`, fora da API | `services/pending_decisions.py`, `services/job_store.py` |
-| Tipos gerados | **desatualizados** (`openapi.json` + `schema.d.ts`) | `apps/client/package.json` (`generate:types`) |
+| Tipos gerados | **atualizados** no Passo 8 (`openapi.json` + `schema.d.ts`) | `apps/client/package.json` (`generate:types`) |
 | Frontend | somente leitura; já tem polling de job (`courseJobQuery`) e o cartão "não gerado". **Não há biblioteca de toast** instalada | `apps/client/src/app/api/queries.ts`, `ui/components/NotGeneratedCard.tsx`, `ui/components/AppLayout.tsx` |
 
 Contrato que não muda: o formato do `topic-meta` e os valores de `status`
@@ -149,8 +149,8 @@ importa: veja a coluna "Depende de".
 | 5 ✅ | Geração de exercícios com job; trava de um job por curso | 3, 4 | teste do job com CLI simulada |
 | 6 ✅ | Listagem de jobs (`GET /jobs`) | 4, 5 | teste de rota |
 | 7 ✅ | Extração de `Pending status decision:` e exposição no job de aula | 3, 4 | teste com saída de exemplo |
-| 8 | Regerar tipos e verificar o contrato | 2, 4, 5, 6, 7 | `npm run generate:types` + `typecheck` |
-| 9 | UI: mutação e seletor de status | 8 | `typecheck`, `lint`, `check:i18n`, navegador |
+| 8 ✅ | Regerar tipos e verificar o contrato | 2, 4, 5, 6, 7 | `npm run generate:types` + `typecheck` |
+| 9 ✅ | UI: mutação e seletor de status | 8 | `typecheck`, `lint`, `check:i18n`, navegador |
 | 10 | UI: gerar aula e exercícios, com progresso do job | 8 | idem, com um job real em vault de teste |
 | 11 | UI: painel de jobs na tela inicial e notificações (toast) | 8, 10 | idem, com jobs reais e simulados |
 | 12 | UI: diálogo de decisão pendente | 7, 9, 11 | idem, com saída real da skill |
@@ -528,39 +528,104 @@ contrato do servidor (Passos 5, 6 e 7) para gerar os tipos uma vez só.
 **Verificação:** `npm run typecheck`. Um tipo novo sem uso no client já prova
 que o OpenAPI saiu certo.
 
+**Resultado (entregue em 2026-10-25):**
+
+- `openapi.json` e `schema.d.ts` regerados com `npm run generate:types`. O
+  contrato novo inclui as rotas `update_topic_status`, `generate_lesson`,
+  `generate_exercises`, `list_jobs` e `get_job`, e os tipos `Job`, `JobKind` e
+  `PendingDecision` (com `Job.pending_decisions`).
+- O tipo `CourseCreationJob` deixou de existir. O alias em `app/api/client.ts`
+  virou `export type Job = components['schemas']['Job']`; nenhum outro arquivo
+  do frontend usava o nome antigo.
+- O gerador escreve o `schema.d.ts` com aspas duplas e 4 espaços; o hook de commit
+  roda `prettier --write` nos `*.ts`, que devolve o formato do projeto (aspas
+  simples, 2 espaços). Formatar antes de commitar deixa o diff só com as mudanças
+  reais (269 linhas, em vez de ~1260).
+- Verificação: `typecheck` e `check:i18n` passam; o `lint` só mostra avisos que
+  já existiam, em arquivos que esta feature não tocou.
+
 ### Passo 9 — UI: mutação e seletor de status
 
 **O que fazer:**
 
-1. Em `app/api/queries.ts`, criar `useUpdateTopicStatus(slug)`: mutação com a
-   rota do Passo 2 via `openapi-fetch`, e, ao concluir, invalidar a query do
-   curso para a trilha e os badges refletirem o status novo.
-2. Mostrar um seletor de status na página de aula (`LessonPage`). Motivo de ser
-   nela e não na trilha: o card é um `Link` (Feature 5); um controle dentro de
-   um link é HTML inválido, o mesmo problema já corrigido em `TopicCard`.
-   O seletor fica desabilitado enquanto houver job ativo no curso (Passo 6), para
-   não competir com a escrita da skill no currículo.
-3. Tratar `409` com uma mensagem clara ("gere a aula antes de marcar em
-   andamento") e não com erro genérico.
-4. Textos em `en.json` e `pt-BR.json`, e `npm run check:i18n`.
+1. **Camada de dados.** Em `app/api/queries.ts`: `updateTopicStatus(slug,
+   topicId, status)`, que chama `PATCH /courses/{slug}/topics/{topic_id}/status`
+   via `openapi-fetch`; e `jobsQuery({ slug, active })` para `GET /jobs`, com
+   `refetchInterval` de 2 s **só enquanto há job ativo** (sem job ativo, só ao
+   focar a janela). Novos hooks, no padrão de `useDeleteCourse`:
+   `useUpdateTopicStatus(slug)`, que ao concluir invalida o curso
+   (`courseKeys.detail(slug)` com `exact: true`) e a lista de cursos, e
+   `useJobs(filtro)`.
+2. **Componente `StatusSelect`.** Um botão que mostra o status atual, no visual do
+   `StatusBadge` (ícone e cor de `ui/utils/statusStyle.ts`) com uma seta, e abre
+   um menu (`DropdownMenu`, que já existe no projeto) com os quatro status.
+   - A opção "Em andamento" fica inativa quando o tópico não tem aula, com a
+     explicação "gere a aula antes". A rota continua recusando com `409`, e esse
+     erro também é tratado.
+   - O controle inteiro fica inativo enquanto há job ativo no curso
+     (`useJobs({ slug, active: true })`), com o texto "Aguarde a geração
+     terminar", para não competir com a escrita da skill no currículo.
+   - Enquanto a chamada está em curso o botão fica inativo e mostra que está
+     salvando. Se ela falha, uma mensagem de erro (com `role="alert"`) aparece
+     abaixo do cabeçalho; o toast só chega no Passo 11.
+3. **Página de aula.** Em `LessonView`, o `StatusBadge` do cabeçalho passa a ser o
+   `StatusSelect`. A trilha e o resto do app continuam usando o `StatusBadge`.
+   Motivo de ser na aula e não no card: o card é um `Link` (Feature 5); um
+   controle dentro de um link é HTML inválido, o mesmo problema já corrigido em
+   `TopicCard`.
+4. **Textos** em `en.json` e `pt-BR.json`, e `npm run check:i18n`.
 
 **Por quê:** a rota sozinha não entrega valor; o aluno precisa do controle.
 Colocar o seletor na aula, e não no card, segue a regra do SPEC de que o
 `Link` do card não recebe controles. Desabilitar durante um job reduz o risco,
-já registrado, de uma edição de status se perder enquanto a skill escreve.
+já registrado, de uma edição de status se perder enquanto a skill escreve. A
+consulta de jobs nasce aqui, e não no Passo 10, porque o seletor já depende dela.
+Invalidar o curso com `exact: true` evita refazer a consulta da aula e a dos
+exercícios, que ficam aninhadas na mesma chave e não mudaram.
+
+**Verificação:** `typecheck`, `lint`, `check:i18n` e navegador. Para não tocar no
+vault real, a verificação usa um segundo `local-server` (porta 8001) apontando
+para uma cópia de um curso e uma segunda instância do Vite (porta 5173) com
+`VITE_API_BASE_URL` apontando para ele.
+
+**Resultado (entregue em 2026-10-25):**
+
+- `queries.ts` ganhou `updateTopicStatus`, `jobsQuery` (com `JobsFilter` e
+  `jobKeys`) e a consulta que se repete a cada 2 s só enquanto algum job da
+  resposta está `pending` ou `running`. Hooks novos: `useUpdateTopicStatus`
+  (invalida o curso com `exact: true` e a lista de cursos) e `useJobs`.
+- `ui/components/StatusSelect.tsx`: botão com o visual do `StatusBadge`, seta e
+  menu com os quatro status (`DropdownMenu` já existente, nenhuma dependência
+  nova). "Em andamento" fica inativo sem aula, com o aviso permanente "Em
+  andamento fica disponível depois que a aula for gerada". O controle todo fica
+  inativo enquanto há job ativo no curso, com o aviso "Aguarde a geração
+  terminar". Durante a chamada o botão mostra um spinner; falhas aparecem com
+  `role="alert"` (`409` tem texto próprio).
+- `LessonPage` usa o `StatusSelect` no lugar do `StatusBadge` no cabeçalho; o
+  resto do app segue com o `StatusBadge`. Textos novos em `statusSelect.*` nos
+  dois idiomas (100 chaves em sincronia).
+- Verificação: `typecheck`, `lint` (sem avisos novos) e `check:i18n`. No
+  navegador, com um segundo servidor e um segundo Vite apontando para uma cópia
+  do curso (o vault real não foi tocado): o menu abre com "Em andamento" inativo
+  no tópico sem aula; escolher "Concluído" deixou o botão verde e mudou **uma
+  única linha** do `00-curriculum.md` (`pending` → `completed`); com um job de
+  aula em andamento no curso, o botão ficou inativo (`disabled`) e mostrou o
+  aviso. O caminho de erro (`409`/`failed`) e o spinner não foram exercitados no
+  navegador.
+- A porta 8001 já estava ocupada na máquina; o servidor de teste subiu na 8003 e
+  o Vite de teste apontou para ela.
 
 ### Passo 10 — UI: gerar aula e exercícios
 
 **O que fazer:**
 
 1. Em `app/api/queries.ts`: funções `generateLesson(slug, topicId)` e
-   `generateExercises(slug, topicId)` (POST, devolvem o `Job`) e a consulta
-   `jobsQuery({ slug, active })` (rota `GET /jobs` do Passo 6).
-2. Novo hook `useJobs(filtro)`, que consulta `GET /jobs` e repete a consulta a
-   cada 2 s **enquanto houver job ativo**; sem job ativo, só consulta ao focar a
-   janela. Ao terminar um job com sucesso, invalida as queries do curso, da aula
-   e dos exercícios. Depois de um `POST` de geração, invalida a lista de jobs
-   para o job novo aparecer na hora.
+   `generateExercises(slug, topicId)` (POST, devolvem o `Job`). A consulta
+   `jobsQuery` e o hook `useJobs` **já existem**: foram criados no Passo 9 para o
+   seletor de status.
+2. Estender o `useJobs` para, ao ver um job terminar com sucesso, invalidar as
+   queries do curso, da aula e dos exercícios. Depois de um `POST` de geração,
+   invalidar a lista de jobs para o job novo aparecer na hora.
 3. Novo componente `GenerationProgress`: spinner e texto "Gerando… pode levar
    alguns minutos" enquanto o job roda. Ele **não guarda resultado**: quando o
    job termina, o componente some. Se falhou, o erro chega pelo toast do

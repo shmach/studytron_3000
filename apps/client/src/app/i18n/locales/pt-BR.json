@@ -18,6 +18,13 @@
     "completed": "Concluído",
     "review": "Revisão"
   },
+  "statusSelect": {
+    "label": "Alterar o status do tópico (atual: {{status}})",
+    "needsLesson": "\"Em andamento\" fica disponível depois que a aula for gerada.",
+    "jobRunning": "Aguarde a geração terminar para alterar o status.",
+    "lessonRequired": "Gere a aula antes de marcar este tópico como em andamento.",
+    "failed": "Não foi possível alterar o status. Tente novamente."
+  },
   "error": {
     "title": "Não foi possível carregar os dados",
     "unknown": "Erro desconhecido",
