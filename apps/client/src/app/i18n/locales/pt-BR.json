@@ -1,7 +1,8 @@
 {
   "common": {
     "cancel": "Cancelar",
-    "tryAgain": "Tentar novamente"
+    "tryAgain": "Tentar novamente",
+    "close": "Fechar"
   },
   "theme": {
     "label": "Alterar tema",
@@ -152,6 +153,46 @@
     "language": {
       "title": "Em que idioma o curso deve ser escrito?",
       "description": "Termos técnicos podem continuar no original."
+    }
+  },
+  "jobs": {
+    "panel": {
+      "title": "Em andamento",
+      "openCourse": "Abrir curso"
+    },
+    "kind": {
+      "course_creation": "Criando um curso",
+      "lesson_generation": "Aula {{topic}}",
+      "exercise_generation": "Exercícios {{topic}}"
+    },
+    "toast": {
+      "open": "Abrir",
+      "started": {
+        "course_creation": "Criando o curso…",
+        "lesson_generation": "Gerando a aula {{topic}}…",
+        "exercise_generation": "Gerando os exercícios {{topic}}…"
+      },
+      "done": {
+        "course_creation": "Curso criado",
+        "lesson_generation": "A aula {{topic}} está pronta",
+        "exercise_generation": "Os exercícios {{topic}} estão prontos"
+      },
+      "failed": {
+        "course_creation": "Não foi possível criar o curso",
+        "lesson_generation": "Não foi possível gerar a aula {{topic}}",
+        "exercise_generation": "Não foi possível gerar os exercícios {{topic}}"
+      }
+    }
+  },
+  "pendingDecision": {
+    "title": "E os tópicos que você estava estudando?",
+    "description_one": "A nova aula está pronta, mas este tópico ainda está marcado como em andamento. Conte como foi.",
+    "description_other": "A nova aula está pronta, mas estes tópicos ainda estão marcados como em andamento. Conte como foi cada um.",
+    "question": "Você concluiu este tópico?",
+    "option": {
+      "completed": "Concluí",
+      "review": "Quero revisar",
+      "keep": "Ainda estou estudando"
     }
   }
 }

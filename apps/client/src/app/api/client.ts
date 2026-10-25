@@ -25,6 +25,9 @@ export type Lesson = components['schemas']['Lesson'];
 export type ExerciseSet = components['schemas']['ExerciseSet'];
 export type Attempt = components['schemas']['Attempt'];
 export type Job = components['schemas']['Job'];
+export type JobKind = components['schemas']['JobKind'];
+export type JobStatus = components['schemas']['JobStatus'];
+export type PendingDecision = components['schemas']['PendingDecision'];
 
 /** Error thrown by the hooks when the API answers with a non-2xx status. */
 export class ApiError extends Error {
