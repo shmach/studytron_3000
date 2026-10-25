@@ -125,6 +125,7 @@ class TestListJobs:
             "slug": SLUG,
             "topic_id": "1.2",
             "error": None,
+            "pending_decisions": [],
         }
 
     def test_is_in_the_openapi_contract(self):

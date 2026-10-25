@@ -56,7 +56,7 @@ ou pelo Obsidian. O app reflete cada mudança sem regenerar nenhum arquivo.
 | Geração de aula | **pronta** (`POST .../lesson`, com job) | `routes/courses.py` |
 | Geração de exercícios | **pronta** (`POST .../exercises`, com job) | `routes/courses.py` |
 | Listagem de jobs | **pronta** (`GET /jobs`) | `routes/jobs.py`, `services/job_store.py` |
-| Decisões pendentes | **não existem**; a saída da CLI fica em `Job.output`, fora da API | `services/job_store.py` |
+| Decisões pendentes | **prontas** (`Job.pending_decisions`, só em jobs de aula); a saída da CLI segue em `Job.output`, fora da API | `services/pending_decisions.py`, `services/job_store.py` |
 | Tipos gerados | **desatualizados** (`openapi.json` + `schema.d.ts`) | `apps/client/package.json` (`generate:types`) |
 | Frontend | somente leitura; já tem polling de job (`courseJobQuery`) e o cartão "não gerado". **Não há biblioteca de toast** instalada | `apps/client/src/app/api/queries.ts`, `ui/components/NotGeneratedCard.tsx`, `ui/components/AppLayout.tsx` |
 
@@ -148,7 +148,7 @@ importa: veja a coluna "Depende de".
 | 4 ✅ | Rota de geração de aula com job | 3 | teste do job com CLI simulada |
 | 5 ✅ | Geração de exercícios com job; trava de um job por curso | 3, 4 | teste do job com CLI simulada |
 | 6 ✅ | Listagem de jobs (`GET /jobs`) | 4, 5 | teste de rota |
-| 7 | Extração de `Pending status decision:` e exposição no job de aula | 3, 4 | teste com saída de exemplo |
+| 7 ✅ | Extração de `Pending status decision:` e exposição no job de aula | 3, 4 | teste com saída de exemplo |
 | 8 | Regerar tipos e verificar o contrato | 2, 4, 5, 6, 7 | `npm run generate:types` + `typecheck` |
 | 9 | UI: mutação e seletor de status | 8 | `typecheck`, `lint`, `check:i18n`, navegador |
 | 10 | UI: gerar aula e exercícios, com progresso do job | 8 | idem, com um job real em vault de teste |
@@ -489,6 +489,32 @@ no app, mantém o app livre de conhecer o formato de saída da skill.
 inválida (`Pending status decision` sem id) e texto comum; só as válidas devem
 ser extraídas.
 
+**Resultado (entregue em 2026-10-25):**
+
+- `Job.pending_decisions` é uma lista de `PendingDecision` (`topic_id` e `title`),
+  vazia por padrão e preenchida só em jobs de **aula** que terminam em `done`.
+  Aparece em `GET /courses/jobs/{job_id}` e em `GET /jobs`. Jobs de exercícios,
+  de criação de curso e jobs com erro têm sempre `[]`.
+- `services/pending_decisions.py`: `parse_pending_decision_ids` lê as linhas
+  `Pending status decision: <id> ...` (prefixo exato no início da linha, id
+  numérico válido, sem repetição, na ordem em que aparecem). Tolera marcador de
+  lista, `**` e crases, e `\r\n`.
+- **O texto do agente é só uma pista.** `pending_decisions_from` confere cada id
+  contra o currículo recarregado: o tópico precisa existir, estar `in_progress`
+  naquele momento e **não** ser o tópico cuja aula acabou de ser gerada. O título
+  vem do currículo, não da linha do agente.
+- `_run_generation` ganhou `collects_decisions`, ligado só na rota de aula.
+- **Execução real** (cópia temporária, tópico 1.1 em `in_progress`, aula do 1.2
+  pela rota): o job terminou `done` em cerca de **68 s** com
+  `pending_decisions = [{1.1, "JVM, JDK e o modelo de execução"}]`. O agente
+  listou **duas** linhas (a do 1.1 e a do próprio 1.2, que ele marca
+  `in_progress` ao escrever a aula); o filtro descartou a do 1.2, o que
+  confirmou a necessidade da validação contra o currículo.
+- A CLI gravou de novo `.claude/model-roles.json` na pasta de trabalho (efeito
+  colateral já registrado no Passo 3) e citou o caminho na resposta.
+- **Contrato mudou, tipos não:** `openapi.json` e `schema.d.ts` seguem como
+  antes até o Passo 8.
+
 ### Passo 8 — Regerar tipos e conferir o contrato
 
 **O que fazer:** `cd apps/client && npm run generate:types`, depois revisar o
@@ -734,9 +760,10 @@ pendente; a seção fica como registro do que foi decidido e por quê.
 - **Skill ignorar o modo não interativo.** Se a skill perguntar mesmo com a
   declaração, o job trava até o timeout. Mitigação: o Passo 3 testou a aula com
   uma execução real, e o Passo 5 fez o mesmo com os exercícios.
-- **Timeout de 300 s.** Os exercícios levaram cerca de 43 s em uma execução real
-  (Passo 5); a aula ainda não foi cronometrada. Se estourar, o job vira `error` e
-  o arquivo pode ficar incompleto. Medir a aula no Passo 13.
+- **Timeout de 300 s.** Em execuções reais, os exercícios levaram cerca de 43 s
+  (Passo 5) e a aula cerca de 68 s (Passo 7), ambas em cursos de teste. Há folga,
+  mas um tópico grande pode demorar mais. Se estourar, o job vira `error` e o
+  arquivo pode ficar incompleto.
 - **Job preso em `running`.** Uma exceção que não seja `RuntimeError` (por
   exemplo, o `claude` fora do `PATH`) mata a tarefa e deixa o job `running` para
   sempre, o que travaria o curso (trava por curso) e confundiria o painel.

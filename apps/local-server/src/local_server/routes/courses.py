@@ -30,6 +30,7 @@ from local_server.services.local_process import (
     LocalProcess,
     extract_result,
 )
+from local_server.services.pending_decisions import pending_decisions_from
 from local_server.utils.atomic_write import read_text_exact, write_text_atomic
 from local_server.utils.existing_slugs import _existing_slugs
 
@@ -204,11 +205,13 @@ async def _run_generation(
     prompt: str,
     artifact: str,
     produced: Callable[[CourseBundle], bool],
+    collects_decisions: bool = False,
 ) -> None:
     """Run the agent for a lesson or an exercise set and check that it wrote the file.
 
     `artifact` names what is being generated (for messages); `produced` says whether the
-    reloaded course already contains it.
+    reloaded course already contains it. With `collects_decisions` (lessons only), the
+    topics the agent left waiting for a status decision are saved in the job.
     """
     job_store.mark_running(job_id)
 
@@ -245,6 +248,12 @@ async def _run_generation(
         )
         return
 
+    if collects_decisions:
+        job_store.set_pending_decisions(
+            job_id,
+            pending_decisions_from(output, course_content, generated_topic_id=topic_id),
+        )
+
     job_store.mark_done(job_id)
 
 
@@ -262,6 +271,7 @@ def _start_generation(
     prompt: str,
     artifact: str,
     produced: Callable[[CourseBundle], bool],
+    collects_decisions: bool = False,
 ) -> Job:
     """Create the job (refusing a second one for the course) and queue the background run."""
     job = job_store.create_exclusive(kind, slug, topic_id)
@@ -269,7 +279,14 @@ def _start_generation(
         raise HTTPException(409, "A generation is already running for this course")
 
     background_tasks.add_task(
-        _run_generation, job.id, slug, topic_id, prompt, artifact, produced
+        _run_generation,
+        job.id,
+        slug,
+        topic_id,
+        prompt,
+        artifact,
+        produced,
+        collects_decisions,
     )
     return job
 
@@ -299,6 +316,7 @@ def generate_lesson(slug: str, topic_id: str, background_tasks: BackgroundTasks)
         produced=lambda course: any(
             lesson.topic == topic_id for lesson in course.lessons
         ),
+        collects_decisions=True,
     )
 
 

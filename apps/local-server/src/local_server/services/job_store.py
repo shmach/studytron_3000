@@ -18,6 +18,13 @@ class JobKind(str, Enum):
     EXERCISE_GENERATION = "exercise_generation"
 
 
+class PendingDecision(BaseModel):
+    """A topic that is still `in_progress` and needs the student to say what happened to it."""
+
+    topic_id: str
+    title: str
+
+
 class Job(BaseModel):
     id: str
     kind: JobKind = JobKind.COURSE_CREATION
@@ -27,6 +34,9 @@ class Job(BaseModel):
     # Generation jobs only (lesson or exercises).
     topic_id: str | None = None
     error: str | None = None
+    # Lesson generation only: topics the agent left `in_progress` because it could not ask
+    # the student. The app asks, then answers through the status route. Empty otherwise.
+    pending_decisions: list[PendingDecision] = []
     # Final text printed by the agent CLI. Internal: `exclude=True` keeps it out of API
     # responses (it can be long and is only meant for the server).
     output: str | None = Field(default=None, exclude=True)
@@ -99,6 +109,11 @@ class JobStore:
 
     def set_output(self, job_id: str, output: str) -> None:
         self._jobs[job_id].output = output
+
+    def set_pending_decisions(
+        self, job_id: str, decisions: list[PendingDecision]
+    ) -> None:
+        self._jobs[job_id].pending_decisions = decisions
 
     def mark_done(self, job_id: str, slug: str | None = None) -> None:
         self._jobs[job_id].status = JobStatus.DONE
