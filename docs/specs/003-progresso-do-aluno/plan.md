@@ -55,7 +55,7 @@ ou pelo Obsidian. O app reflete cada mudança sem regenerar nenhum arquivo.
 | Prompt e leitura da saída da CLI | **prontos** (`build_lesson_prompt`, `extract_result`) | `prompts.py`, `services/local_process.py` |
 | Geração de aula | **pronta** (`POST .../lesson`, com job) | `routes/courses.py` |
 | Geração de exercícios | **pronta** (`POST .../exercises`, com job) | `routes/courses.py` |
-| Listagem de jobs | **não existe** (só consulta por id) | `services/job_store.py` |
+| Listagem de jobs | **pronta** (`GET /jobs`) | `routes/jobs.py`, `services/job_store.py` |
 | Decisões pendentes | **não existem**; a saída da CLI fica em `Job.output`, fora da API | `services/job_store.py` |
 | Tipos gerados | **desatualizados** (`openapi.json` + `schema.d.ts`) | `apps/client/package.json` (`generate:types`) |
 | Frontend | somente leitura; já tem polling de job (`courseJobQuery`) e o cartão "não gerado". **Não há biblioteca de toast** instalada | `apps/client/src/app/api/queries.ts`, `ui/components/NotGeneratedCard.tsx`, `ui/components/AppLayout.tsx` |
@@ -147,7 +147,7 @@ importa: veja a coluna "Depende de".
 | 3 ✅ | Modo não interativo: prompt de aula e leitura da saída da CLI | — | teste do texto do prompt; execução manual de uma aula |
 | 4 ✅ | Rota de geração de aula com job | 3 | teste do job com CLI simulada |
 | 5 ✅ | Geração de exercícios com job; trava de um job por curso | 3, 4 | teste do job com CLI simulada |
-| 6 | Listagem de jobs (`GET /jobs`) | 4, 5 | teste de rota |
+| 6 ✅ | Listagem de jobs (`GET /jobs`) | 4, 5 | teste de rota |
 | 7 | Extração de `Pending status decision:` e exposição no job de aula | 3, 4 | teste com saída de exemplo |
 | 8 | Regerar tipos e verificar o contrato | 2, 4, 5, 6, 7 | `npm run generate:types` + `typecheck` |
 | 9 | UI: mutação e seletor de status | 8 | `typecheck`, `lint`, `check:i18n`, navegador |
@@ -417,10 +417,11 @@ curso. Os testes de aula continuam passando sem alteração.
 
 **O que fazer:**
 
-1. `JobStore.list(slug=None, active=None)`, que devolve os jobs do mais novo para
-   o mais antigo. O filtro `slug` limita ao curso; `active=true` limita aos jobs
-   `pending` ou `running`. A ordem vem de um contador de criação guardado no
-   job, não do `id` (que é aleatório).
+1. `JobStore.list_jobs(slug=None, active=None, limit=50)`, que devolve os jobs do
+   mais novo para o mais antigo. O filtro `slug` limita ao curso; `active=true`
+   limita aos jobs `pending` ou `running`; `active=false`, aos terminados. A ordem
+   vem da ordem de inserção do dicionário (o `id` é aleatório e não serve), então
+   não é preciso um campo novo no job.
 2. Novo roteador `routes/jobs.py` com `GET /jobs` (`operation_id` `list_jobs`),
    que aceita `slug` e `active` como parâmetros de consulta e devolve no máximo
    os 50 jobs mais novos. Registrar o roteador em `app.py`.
@@ -449,6 +450,25 @@ que o job termina; se o aluno estava com o app fechado, ele não vê o resultado
 **Testes (`tests/test_jobs_list.py`):** lista vazia; ordem do mais novo para o
 mais antigo; filtro `slug`; filtro `active` (exclui `done` e `error`); o limite de
 50; o campo `output` continua fora da resposta.
+
+**Resultado (entregue em 2026-10-25):**
+
+- `GET /jobs` (`operation_id` `list_jobs`), em `routes/jobs.py`, registrado em
+  `app.py`. Aceita `slug` e `active` como parâmetros de consulta opcionais e
+  devolve `list[Job]`. Um `slug` desconhecido devolve lista vazia (é só um
+  filtro de texto); um `active` que não seja booleano devolve `422`.
+- O método do `JobStore` se chama `list_jobs`, e não `list`: um método chamado
+  `list` dentro da classe esconderia o tipo `list[Job]` usado nas anotações dos
+  métodos seguintes.
+- O limite de 50 é fixo e vale **depois** dos filtros. Os jobs terminados fazem
+  parte da resposta sem filtro, para o observador de toasts saber o desfecho.
+- O `conftest.py` agora troca o `JobStore` de `courses.py` **e** o de `jobs.py`
+  pela mesma instância nova de cada teste (a fixture devolve essa instância,
+  para os testes criarem jobs direto).
+- Conferido também no servidor de desenvolvimento em execução: `GET /jobs`
+  devolve `[]`, e `?active=maybe` devolve `422`.
+- **Contrato mudou, tipos não:** `openapi.json` e `schema.d.ts` seguem como antes
+  até o Passo 8.
 
 ### Passo 7 — Decisões pendentes
 

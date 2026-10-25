@@ -74,6 +74,26 @@ class JobStore:
     def get(self, job_id: str) -> Job | None:
         return self._jobs.get(job_id)
 
+    def list_jobs(
+        self, slug: str | None = None, active: bool | None = None, limit: int = 50
+    ) -> list[Job]:
+        """Return jobs from the newest to the oldest, after applying the filters.
+
+        `slug` keeps the jobs of one course; `active=True` keeps `pending` and `running`
+        jobs, `active=False` keeps the finished ones. `limit` applies after the filters.
+        """
+        # A dict keeps insertion order, so reversing it gives newest first. `list(...)` takes
+        # a snapshot: another thread may be adding a job while this request reads.
+        jobs = reversed(list(self._jobs.values()))
+
+        matching = [
+            job
+            for job in jobs
+            if (slug is None or job.slug == slug)
+            and (active is None or (job.status in _ACTIVE) == active)
+        ]
+        return matching[:limit]
+
     def mark_running(self, job_id: str) -> None:
         self._jobs[job_id].status = JobStatus.RUNNING
 

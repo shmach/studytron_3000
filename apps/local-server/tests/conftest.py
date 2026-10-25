@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from local_server.app import app
-from local_server.routes import courses
+from local_server.routes import courses, jobs
 from local_server.services.job_store import JobStore
 
 # The parser package already ships real courses as fixtures; reuse them instead of copying.
@@ -27,8 +27,14 @@ def vault_dir(tmp_path, monkeypatch):
 @pytest.fixture(autouse=True)
 def fresh_job_store(monkeypatch):
     """Jobs live in a module-level singleton; give every test an empty one so a job left
-    running by one test cannot block another."""
-    monkeypatch.setattr(courses, "job_store", JobStore())
+    running by one test cannot block another.
+
+    Each route module imported the store by name, so both references are replaced, with the
+    same new instance. Returns it so tests can create jobs directly."""
+    store = JobStore()
+    monkeypatch.setattr(courses, "job_store", store)
+    monkeypatch.setattr(jobs, "job_store", store)
+    return store
 
 
 @pytest.fixture
