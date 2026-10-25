@@ -1,12 +1,13 @@
 # Plan: Feature 6 — Progresso do aluno pelo app
 
-> **Status: em andamento.** Passos 1 a 4 entregues. Em 2026-10-25 o plano foi
-> ampliado duas vezes: a geração de **exercícios** e a **geração de aula e de
-> exercícios pelo frontend** entraram no escopo (Passos 5, 6 e 10), e depois
-> entraram o **painel de jobs na tela inicial** e as **notificações (toast)** de
-> início e fim de job (Passo 11). Os passos seguintes foram renumerados.
+> **Status: encerrada em 2026-10-25.** Passos 1 a 10 entregues. Os Passos 11 a 13
+> (painel de jobs e toasts, diálogo de decisão pendente e teste de ponta a ponta)
+> passaram para a Feature 7:
+> [`004-feedback-de-jobs`](../004-feedback-de-jobs/plan.md). Durante a feature o plano
+> foi ampliado: a geração de **exercícios** e a **geração de aula e de exercícios pelo
+> frontend** entraram no escopo (Passos 5, 6 e 10).
 > Especificação de origem: [`docs/SPEC.md`](../../SPEC.md), seção 9, "Feature 6
-> — Progresso do aluno pelo app". O SPEC é atualizado no último passo.
+> — Progresso do aluno pelo app", já atualizada com o que foi entregue.
 
 ## Contexto
 
@@ -155,9 +156,9 @@ importa: veja a coluna "Depende de".
 | 8 ✅ | Regerar tipos e verificar o contrato | 2, 4, 5, 6, 7 | `npm run generate:types` + `typecheck` |
 | 9 ✅ | UI: mutação e seletor de status | 8 | `typecheck`, `lint`, `check:i18n`, navegador |
 | 10 ✅ | UI: gerar aula e exercícios, com progresso do job | 8 | idem, com um job real em vault de teste |
-| 11 | UI: painel de jobs na tela inicial e notificações (toast) | 8, 10 | idem, com jobs reais e simulados |
-| 12 | UI: diálogo de decisão pendente | 7, 9, 11 | idem, com saída real da skill |
-| 13 | Teste manual end-to-end e atualização do SPEC | todos | checklist abaixo |
+| 11 → F7 | UI: painel de jobs na tela inicial e notificações (toast) | 8, 10 | movido para a Feature 7 (Passo 1) |
+| 12 → F7 | UI: diálogo de decisão pendente | 7, 9, 11 | movido para a Feature 7 (Passo 2) |
+| 13 → F7 | Teste manual end-to-end | todos | movido para a Feature 7 (Passo 4); o SPEC já foi atualizado |
 
 ### Passo 1 — Função pura de escrita no `course-parser`
 
@@ -570,7 +571,7 @@ que o OpenAPI saiu certo.
      terminar", para não competir com a escrita da skill no currículo.
    - Enquanto a chamada está em curso o botão fica inativo e mostra que está
      salvando. Se ela falha, uma mensagem de erro (com `role="alert"`) aparece
-     abaixo do cabeçalho; o toast só chega no Passo 11.
+     abaixo do cabeçalho; o toast só chega na Feature 7 (Passo 1).
 3. **Página de aula.** Em `LessonView`, o `StatusBadge` do cabeçalho passa a ser o
    `StatusSelect`. A trilha e o resto do app continuam usando o `StatusBadge`.
    Motivo de ser na aula e não no card: o card é um `Link` (Feature 5); um
@@ -631,8 +632,8 @@ para uma cópia de um curso e uma segunda instância do Vite (porta 5173) com
    invalidar a lista de jobs para o job novo aparecer na hora.
 3. Novo componente `GenerationProgress`: spinner e texto "Gerando… pode levar
    alguns minutos" enquanto o job roda. Ele **não guarda resultado**: quando o
-   job termina, o componente some. Se falhou, o erro chega pelo toast do
-   Passo 11 e a página volta ao estado "não gerado", com o botão de gerar ativo
+   job termina, o componente some. Se falhou, o erro chega pelo toast da
+   Feature 7 (Passo 1) e a página volta ao estado "não gerado", com o botão de gerar ativo
    de novo (repetir é clicar outra vez).
 4. `NotGeneratedCard` ganha o botão de gerar e mostra o `GenerationProgress`
    enquanto há job. Na `LessonPage` o botão gera a **aula**; na `ExercisesPage`
@@ -661,7 +662,7 @@ para uma cópia de um curso e uma segunda instância do Vite (porta 5173) com
   tentativa, a outra protege contra chamadas diretas.
 
 **Verificação:** `typecheck`, `lint`, `check:i18n`, e navegador com um job
-real em um vault de teste (a CLI consome uso e leva minutos; ver Passo 13).
+real em um vault de teste (a CLI consome uso e leva minutos; ver Passo 4 da Feature 7).
 O client não tem runner de testes, como na Feature 4.
 
 **Resultado (entregue em 2026-10-25):**
@@ -723,109 +724,24 @@ O client não tem runner de testes, como na Feature 4.
   reinício do servidor com job em andamento. Hoje a trava por curso só tem teste
   automatizado de unidade (`JobStore` e rotas com CLI simulada).
 
-### Passo 11 — UI: painel de jobs na tela inicial e notificações
+### Passos 11, 12 e 13 — movidos para a Feature 7
 
-**O que fazer:**
+Em 2026-10-25 a Feature 6 foi encerrada com os Passos 1 a 10 entregues. Os três passos
+que faltavam passaram para a Feature 7, em
+[`004-feedback-de-jobs`](../004-feedback-de-jobs/plan.md), com o texto completo de cada
+um (o que fazer, por quê e como verificar):
 
-1. **Toast.** Antes de qualquer `add`, rodar `npx shadcn@latest info --cwd
-   apps/client` (regra do CLAUDE.md) e então adicionar o componente `sonner`
-   com `--cwd apps/client`. Isso instala uma dependência nova (`sonner`). O
-   componente do shadcn assume `next-themes`; ajustá-lo para o seletor de tema
-   do projeto (claro, escuro, sistema), e salvá-lo como `Sonner.tsx`, respeitando
-   a capitalização dos outros arquivos de `ui/components/ui/`. Montar o
-   `<Toaster />` em `AppLayout`.
-2. **Painel.** Novo componente `JobsPanel`, montado em `CoursesPage` (a tela
-   inicial), usando `useJobs()`. Ele mostra **somente os jobs em andamento**
-   (`pending` ou `running`). Cada linha traz o tipo e o alvo ("Aula 1.2 — Java
-   para quem já programa", "Exercícios 1.2", "Criação de curso"), o tempo
-   decorrido e um link para o curso. **Não há histórico:** assim que o job
-   termina, a linha some; sucesso ou erro são avisados só pelo toast. O painel
-   se esconde quando não há jobs. Os nomes de curso e de tópico vêm dos cursos
-   que a página já carrega.
-3. **Observador de notificações.** Novo hook `useJobsWatcher`, montado em
-   `AppLayout` (vale para qualquer tela). Guarda o estado anterior de cada job
-   pelo `id` e compara a cada consulta:
-   - job novo em `pending` ou `running` → toast **"Geração iniciada"**;
-   - job que passou a `done` → toast de sucesso, com ação "Abrir" (aula,
-     exercícios ou curso);
-   - job que passou a `error` → toast de erro com a mensagem do job.
-   A **primeira** consulta só registra o estado, sem avisar, para não
-   notificar jobs que já estavam rodando ao abrir o app.
-4. **Todos os tipos de job** entram no painel e nos toasts, inclusive a criação
-   de curso. O diálogo de criação de curso mantém o acompanhamento que já tem; o
-   toast de fim de job vale para quem saiu dessa tela.
-5. Textos em `en.json` e `pt-BR.json`, e `npm run check:i18n`.
+| Passo daqui | Onde ficou | O que é |
+| --- | --- | --- |
+| 11 | Passo 1 da Feature 7 | painel de jobs na tela inicial e toasts de início e fim |
+| 12 | Passo 2 da Feature 7 | diálogo de decisão pendente |
+| 13 | Passo 4 da Feature 7 | teste manual de ponta a ponta |
 
-**Por quê:**
-
-- Um observador no layout, e não em cada página, é a única forma de avisar do
-  fim de um job quando o aluno já está em outra tela.
-- Uma só fonte de eventos (a comparação de estados do observador) evita avisos
-  duplicados, por exemplo um toast de início vindo do botão e outro vindo do
-  observador.
-- Começar sem avisar na primeira consulta evita uma enxurrada de toasts ao
-  abrir o app com jobs já em andamento.
-- `sonner` é o componente de toast que o shadcn já oferece; segue o padrão do
-  projeto em vez de uma implementação própria.
-
-**Verificação:** `typecheck`, `lint`, `check:i18n` e navegador. O ciclo
-completo (início, progresso, fim) precisa de um job real em um vault de teste.
-Para ver o toast de **erro** sem gastar uso da CLI, iniciar o servidor com um
-`PATH` em que o `claude` não exista: a geração falha na hora e o job vira `error`
-(isso depende do tratamento de exceções do Passo 5).
-
-### Passo 12 — UI: diálogo de decisão pendente
-
-**O que fazer:**
-
-1. Criar `PendingStatusDialog`, um `Dialog` do shadcn com uma pergunta por
-   decisão e três opções: "Concluí" (`completed`), "Quero revisar" (`review`),
-   "Ainda estou estudando" (`in_progress`, sem chamada se já estiver assim).
-2. Montar o diálogo em `AppLayout` e abri-lo pelo observador do Passo 11 quando
-   um job de **aula** passar a `done` com `pending_decisions`. As decisões vêm do
-   job que acabou de terminar; se o aluno fechar o app, a decisão volta a ser
-   pedida na próxima geração. Ver "Decisões em aberto", item 2.
-3. Cada opção chama a rota do Passo 2 e, depois, fecha a decisão na lista.
-4. Sem resposta, nada muda. O diálogo não tem "fechar = concluir".
-
-**Por quê:** a decisão de concluir é do aluno. Um diálogo que assumisse
-"concluir" por padrão quebraria essa regra. Usar `Dialog` (Radix) já cuida de
-foco e ESC, como na Feature 4. Montá-lo no layout, e não na página da aula, faz
-a pergunta aparecer mesmo se o aluno saiu da tela enquanto a aula era gerada.
-
-**Verificação:** `typecheck`, `lint`, `check:i18n`, e navegador com uma
-saída real da skill.
-
-### Passo 13 — Teste end-to-end e fechamento
-
-Checklist manual, com um vault de teste (não o vault real):
-
-- [ ] Marcar `pending → completed` pela aula; o arquivo mudou só na linha `status`.
-- [ ] Marcar `in_progress` em tópico sem aula: 409 e mensagem clara.
-- [ ] Gerar a aula pelo app: o progresso aparece, o job vai de `pending` a `running` a `done`, a aula aparece e o ícone do card na trilha muda sem recarregar.
-- [ ] Gerar os exercícios pelo app, em um tópico com aula: mesmo comportamento, com a página de exercícios mostrando o conteúdo.
-- [ ] Na página de exercícios de um tópico sem aula: botão inativo, com o aviso de que falta a aula e o link para a aula. Chamar a rota direto na API devolve `409`.
-- [ ] Durante uma geração, todos os botões de gerar e o seletor de status do curso ficam inativos; um segundo `POST` direto na API devolve `409`.
-- [ ] Recarregar a página durante uma geração: o progresso reaparece (lista de jobs).
-- [ ] O painel da tela inicial lista o job em andamento e **some** quando o job termina (sucesso ou erro), sem deixar histórico; o resultado aparece só no toast.
-- [ ] Toast de início ao disparar uma geração e toast de fim (sucesso) ao terminar, inclusive com o aluno em outra tela. Abrir o app com um job já rodando **não** dispara toast de início.
-- [ ] Toast de erro quando a geração falha (ex.: servidor iniciado sem o `claude` no `PATH`), com a mensagem do job.
-- [ ] Anotar o tempo real de uma aula e de um conjunto de exercícios, para decidir se os 300 s de timeout bastam.
-- [ ] A saída da skill traz `Pending status decision`; o diálogo abre; cada opção muda o status.
-- [ ] Editar o `00-curriculum.md` no editor com CRLF; a rota preserva CRLF.
-- [ ] Reiniciar o servidor no meio de um job: o job some e a geração pode ser repetida, sem corromper o currículo.
-- [ ] Atualizar o SPEC: marcar os itens da Feature 6 (incluindo a geração de exercícios e a geração pelo frontend), mover o `PATCH` de "Stretch" para "Concluído" (ou remover a duplicata), e registrar as decisões tomadas.
-
-Rodar antes de encerrar, como manda o CLAUDE.md:
-
-```sh
-# frontend (em apps/client)
-npm run typecheck && npm run lint && npm run check:i18n
-
-# Python (na raiz)
-uv run pytest
-uv run ruff check packages/course-parser apps/local-server && uv run ruff format --check packages/course-parser apps/local-server
-```
+O fechamento do SPEC, que era a última parte do Passo 13, foi feito junto com o
+encerramento: a Feature 6 está marcada como encerrada em `docs/SPEC.md`, que também
+passou a descrever as rotas, os jobs e a API do parser novos. Os testes de concorrência
+e a decisão sobre o timeout depois de o arquivo ser escrito entraram na Feature 7 como
+passos próprios.
 
 ## Decisões em aberto
 
@@ -863,7 +779,7 @@ pendente; a seção fica como registro do que foi decidido e por quê.
 6. **Como o app acompanha os jobs, inclusive depois de recarregar?**
    *Decidido:* um componente na tela inicial que exibe o job em andamento
    (`JobsPanel`, **sem histórico**: o job some do painel ao terminar) e
-   notificações em toast quando um job começa e quando termina (Passo 11). Isso
+   notificações em toast quando um job começa e quando termina (Feature 7, Passo 1). Isso
    trocou a proposta original (uma rota de job ativo por curso) por uma listagem
    de jobs (`GET /jobs`, Passo 6), que serve ao painel, aos toasts e ao bloqueio
    dos botões. *Escolhas do plano dentro dessa decisão, ajustáveis:* o painel e
