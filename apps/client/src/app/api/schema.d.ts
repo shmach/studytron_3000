@@ -91,6 +91,57 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/courses/{slug}/topics/{topic_id}/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update Topic Status */
+    patch: operations['update_topic_status'];
+    trace?: never;
+  };
+  '/courses/{slug}/topics/{topic_id}/lesson': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Generate Lesson */
+    post: operations['generate_lesson'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/courses/{slug}/topics/{topic_id}/exercises': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Generate Exercises */
+    post: operations['generate_exercises'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/courses/jobs/{job_id}': {
     parameters: {
       query?: never;
@@ -98,8 +149,32 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Get Course Creation Job */
-    get: operations['get_course_creation_job'];
+    /** Get Job */
+    get: operations['get_job'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/jobs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Jobs
+     * @description Jobs of this server run, newest first (at most 50).
+     *
+     *     Finished jobs are included on purpose: the app compares one answer with the next to tell
+     *     whether a job that left the "active" list ended well or badly. `output` never leaves the
+     *     server (see `Job`).
+     */
+    get: operations['list_jobs'];
     put?: never;
     post?: never;
     delete?: never;
@@ -189,16 +264,6 @@ export interface components {
        */
       attempts: components['schemas']['Attempt'][];
     };
-    /** CourseCreationJob */
-    CourseCreationJob: {
-      /** Id */
-      id: string;
-      status: components['schemas']['JobStatus'];
-      /** Slug */
-      slug?: string | null;
-      /** Error */
-      error?: string | null;
-    };
     /** ExerciseSet */
     ExerciseSet: {
       /** Course */
@@ -220,6 +285,30 @@ export interface components {
       /** Detail */
       detail?: components['schemas']['ValidationError'][];
     };
+    /** Job */
+    Job: {
+      /** Id */
+      id: string;
+      /** @default course_creation */
+      kind: components['schemas']['JobKind'];
+      status: components['schemas']['JobStatus'];
+      /** Slug */
+      slug?: string | null;
+      /** Topic Id */
+      topic_id?: string | null;
+      /** Error */
+      error?: string | null;
+      /**
+       * Pending Decisions
+       * @default []
+       */
+      pending_decisions: components['schemas']['PendingDecision'][];
+    };
+    /**
+     * JobKind
+     * @enum {string}
+     */
+    JobKind: 'course_creation' | 'lesson_generation' | 'exercise_generation';
     /**
      * JobStatus
      * @enum {string}
@@ -251,6 +340,16 @@ export interface components {
       description: string;
       /** Topics */
       topics: components['schemas']['Topic'][];
+    };
+    /**
+     * PendingDecision
+     * @description A topic that is still `in_progress` and needs the student to say what happened to it.
+     */
+    PendingDecision: {
+      /** Topic Id */
+      topic_id: string;
+      /** Title */
+      title: string;
     };
     /** Subtopic */
     Subtopic: {
@@ -293,6 +392,14 @@ export interface components {
       weak_points: string[];
       /** Last Reviewed */
       last_reviewed?: string | null;
+    };
+    /** TopicStatusUpdate */
+    TopicStatusUpdate: {
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'pending' | 'in_progress' | 'completed' | 'review';
     };
     /** ValidationError */
     ValidationError: {
@@ -373,7 +480,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['CourseCreationJob'];
+          'application/json': components['schemas']['Job'];
         };
       };
       /** @description Validation Error */
@@ -511,7 +618,107 @@ export interface operations {
       };
     };
   };
-  get_course_creation_job: {
+  update_topic_status: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+        topic_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TopicStatusUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Topic'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  generate_lesson: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+        topic_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Job'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  generate_exercises: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+        topic_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Job'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_job: {
     parameters: {
       query?: never;
       header?: never;
@@ -528,7 +735,39 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['CourseCreationJob'];
+          'application/json': components['schemas']['Job'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_jobs: {
+    parameters: {
+      query?: {
+        slug?: string | null;
+        active?: boolean | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Job'][];
         };
       };
       /** @description Validation Error */

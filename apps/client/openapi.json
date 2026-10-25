@@ -82,7 +82,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CourseCreationJob"
+                  "$ref": "#/components/schemas/Job"
                 }
               }
             }
@@ -277,13 +277,176 @@
         }
       }
     },
+    "/courses/{slug}/topics/{topic_id}/status": {
+      "patch": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Update Topic Status",
+        "operationId": "update_topic_status",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TopicStatusUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Topic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courses/{slug}/topics/{topic_id}/lesson": {
+      "post": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Generate Lesson",
+        "operationId": "generate_lesson",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courses/{slug}/topics/{topic_id}/exercises": {
+      "post": {
+        "tags": [
+          "courses"
+        ],
+        "summary": "Generate Exercises",
+        "operationId": "generate_exercises",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/courses/jobs/{job_id}": {
       "get": {
         "tags": [
           "courses"
         ],
-        "summary": "Get Course Creation Job",
-        "operationId": "get_course_creation_job",
+        "summary": "Get Job",
+        "operationId": "get_job",
         "parameters": [
           {
             "name": "job_id",
@@ -301,7 +464,77 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CourseCreationJob"
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "List Jobs",
+        "description": "Jobs of this server run, newest first (at most 50).\n\nFinished jobs are included on purpose: the app compares one answer with the next to tell\nwhether a job that left the \"active\" list ended well or badly. `output` never leaves the\nserver (see `Job`).",
+        "operationId": "list_jobs",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Active"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Job"
+                  },
+                  "title": "Response List Jobs"
                 }
               }
             }
@@ -478,45 +711,6 @@
         "title": "CourseBundle",
         "description": "Everything the vault holds for one course: curriculum plus generated content."
       },
-      "CourseCreationJob": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "status": {
-            "$ref": "#/components/schemas/JobStatus"
-          },
-          "slug": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Slug"
-          },
-          "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "status"
-        ],
-        "title": "CourseCreationJob"
-      },
       "ExerciseSet": {
         "properties": {
           "course": {
@@ -563,6 +757,77 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "Job": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/JobKind",
+            "default": "course_creation"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "topic_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Topic Id"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "pending_decisions": {
+            "items": {
+              "$ref": "#/components/schemas/PendingDecision"
+            },
+            "type": "array",
+            "title": "Pending Decisions",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status"
+        ],
+        "title": "Job"
+      },
+      "JobKind": {
+        "type": "string",
+        "enum": [
+          "course_creation",
+          "lesson_generation",
+          "exercise_generation"
+        ],
+        "title": "JobKind"
       },
       "JobStatus": {
         "type": "string",
@@ -641,6 +906,25 @@
           "topics"
         ],
         "title": "Module"
+      },
+      "PendingDecision": {
+        "properties": {
+          "topic_id": {
+            "type": "string",
+            "title": "Topic Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "topic_id",
+          "title"
+        ],
+        "title": "PendingDecision",
+        "description": "A topic that is still `in_progress` and needs the student to say what happened to it."
       },
       "Subtopic": {
         "properties": {
@@ -754,6 +1038,25 @@
           "id"
         ],
         "title": "TopicMeta"
+      },
+      "TopicStatusUpdate": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in_progress",
+              "completed",
+              "review"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "TopicStatusUpdate"
       },
       "ValidationError": {
         "properties": {

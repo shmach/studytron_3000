@@ -18,6 +18,13 @@
     "completed": "Concluído",
     "review": "Revisão"
   },
+  "statusSelect": {
+    "label": "Alterar o status do tópico (atual: {{status}})",
+    "needsLesson": "\"Em andamento\" fica disponível depois que a aula for gerada.",
+    "jobRunning": "Aguarde a geração terminar para alterar o status.",
+    "lessonRequired": "Gere a aula antes de marcar este tópico como em andamento.",
+    "failed": "Não foi possível alterar o status. Tente novamente."
+  },
   "error": {
     "title": "Não foi possível carregar os dados",
     "unknown": "Erro desconhecido",
@@ -64,7 +71,7 @@
     "weakPoints": "Pontos fracos",
     "generatedOn": "Gerada em {{date}}",
     "notGeneratedTitle": "Aula ainda não gerada",
-    "notGeneratedBody": "Este tópico não tem aula no vault. Peça ao seu agente para gerá-la com a skill course-builder e recarregue esta página.",
+    "notGeneratedBody": "Este tópico ainda não tem aula. Você pode gerá-la agora; leva alguns minutos.",
     "exercises": "Exercícios",
     "goToPrevious": "Tópico anterior: {{title}}",
     "goToNext": "Próximo tópico: {{title}}"
@@ -75,7 +82,22 @@
     "generatedOn": "Gerados em {{date}}",
     "difficultyTarget": "Dificuldade-alvo: {{value}}",
     "notGeneratedTitle": "Exercícios ainda não gerados",
-    "notGeneratedBody": "Este tópico não tem exercícios no vault. Peça ao seu agente para gerá-los com a skill course-builder e recarregue esta página."
+    "notGeneratedBody": "Este tópico ainda não tem exercícios. Você pode gerá-los agora; leva alguns minutos.",
+    "needsLesson": "Os exercícios são escritos a partir da aula, então gere a aula primeiro.",
+    "goToLesson": "Ir para a aula"
+  },
+  "generation": {
+    "generate": {
+      "lesson": "Gerar aula",
+      "exercises": "Gerar exercícios"
+    },
+    "running": {
+      "lesson": "Gerando a aula… isso pode levar alguns minutos.",
+      "exercises": "Gerando os exercícios… isso pode levar alguns minutos."
+    },
+    "otherJobRunning": "Outra geração está em andamento neste curso. Aguarde o fim dela.",
+    "startConflict": "Já há uma geração em andamento neste curso, ou este conteúdo já existe.",
+    "startFailed": "Não foi possível iniciar a geração. Tente novamente."
   },
   "deleteCourse": {
     "trigger": "Excluir curso",

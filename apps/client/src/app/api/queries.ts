@@ -1,6 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 
 import { api, ApiError } from './client';
+import type { TopicStatus } from './client';
 
 /**
  * Query key factory. Keeping keys in one place makes invalidation predictable
@@ -109,6 +110,72 @@ export const courseJobQuery = (jobId: string) =>
       return status === 'done' || status === 'error' ? false : 2000;
     },
   });
+
+export const jobKeys = {
+  all: ['jobs'] as const,
+  list: (filter: JobsFilter) => [...jobKeys.all, 'list', filter] as const,
+};
+
+/** `slug` keeps one course's jobs; `active` keeps only running (true) or only finished (false) jobs. */
+export interface JobsFilter {
+  slug?: string;
+  active?: boolean;
+}
+
+const POLL_JOBS_EVERY_MS = 2000;
+
+/**
+ * Jobs of this server run, newest first. While any of the returned jobs is still running the
+ * query repeats every 2 s; with nothing running it only refreshes on window focus or when
+ * something invalidates `jobKeys`, so an idle app does not keep calling the server.
+ */
+export const jobsQuery = (filter: JobsFilter = {}) =>
+  queryOptions({
+    queryKey: jobKeys.list(filter),
+    queryFn: async ({ signal }) =>
+      unwrap(await api.GET('/jobs', { params: { query: filter }, signal })),
+    refetchInterval: (query) =>
+      query.state.data?.some(
+        (job) => job.status === 'pending' || job.status === 'running',
+      )
+        ? POLL_JOBS_EVERY_MS
+        : false,
+  });
+
+/** Returns the updated topic. Errors: 404 (unknown topic), 409 (`in_progress` without a lesson). */
+export async function updateTopicStatus(
+  slug: string,
+  topicId: string,
+  status: TopicStatus,
+) {
+  return unwrap(
+    await api.PATCH('/courses/{slug}/topics/{topic_id}/status', {
+      params: { path: { slug, topic_id: topicId } },
+      body: { status },
+    }),
+  );
+}
+
+/**
+ * Start generating the lesson / the exercises of a topic. Both answer 202 with the `Job` to
+ * follow. Errors: 404 (unknown course or topic), 409 (already generated, no lesson yet for
+ * exercises, or another generation is running on the course), 422 (unsafe course name).
+ */
+export async function generateLesson(slug: string, topicId: string) {
+  return unwrap(
+    await api.POST('/courses/{slug}/topics/{topic_id}/lesson', {
+      params: { path: { slug, topic_id: topicId } },
+    }),
+  );
+}
+
+export async function generateExercises(slug: string, topicId: string) {
+  return unwrap(
+    await api.POST('/courses/{slug}/topics/{topic_id}/exercises', {
+      params: { path: { slug, topic_id: topicId } },
+    }),
+  );
+}
 
 export async function createCourseJob(userPrompt: string) {
   return unwrap(

@@ -9,7 +9,7 @@ FIXTURES_DIR = Path(__file__).parent / 'fixtures'
 
 
 def _read_fixture(relative_path: str) -> str:
-    return (FIXTURES_DIR / relative_path).read_text()
+    return (FIXTURES_DIR / relative_path).read_text(encoding='utf-8')
 
 
 def test_splits_metadata_and_body():

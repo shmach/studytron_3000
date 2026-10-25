@@ -18,13 +18,15 @@ Três partes desacopladas por um contrato de storage:
 | --- | --- | --- |
 | Skill de agente de IA | `skill/` | Gera o curso (esqueleto + aulas + exercícios sob demanda) e escreve Markdown no vault |
 | Parser | `packages/course-parser/` | Converte o Markdown do vault em modelos Pydantic |
-| Servidor local | `apps/local-server/` | FastAPI sobre o parser; expõe o vault via HTTP e dispara a criação de cursos |
-| Frontend | `apps/client/` | React + Vite; lista cursos, mostra o currículo, cria e apaga cursos |
+| Servidor local | `apps/local-server/` | FastAPI sobre o parser; expõe o vault via HTTP, dispara a criação de cursos e a geração de aulas e exercícios, e altera o status de um tópico |
+| Frontend | `apps/client/` | React + Vite; lista cursos, mostra o currículo, aulas e exercícios, cria e apaga cursos, gera aulas e exercícios e muda o status dos tópicos |
 
 **Regra central:** os arquivos Markdown no vault são a única fonte de verdade.
-A skill escreve; o servidor/app lê (e apaga cursos inteiros). Nenhum lado guarda
-estado que não esteja no vault. O vault precisa continuar sendo um conjunto de
-notas Obsidian válidas (sem HTML, sem sintaxe proprietária).
+A skill escreve; o servidor/app lê (apaga cursos inteiros e altera **só a linha
+`status`** do `topic-meta` de um tópico). Nenhum lado guarda estado que não
+esteja no vault, com uma exceção deliberada: os jobs em andamento ficam na memória
+do servidor (seção 5). O vault precisa continuar sendo um conjunto de notas
+Obsidian válidas (sem HTML, sem sintaxe proprietária).
 
 ## 2. Arquitetura
 
@@ -33,7 +35,7 @@ notas Obsidian válidas (sem HTML, sem sintaxe proprietária).
                                                         ▲
  apps/client (React) ──HTTP──▶ apps/local-server (FastAPI) ─┤ lê via course-parser
         ▲                          │                    │
-        └── tipos TS gerados ◀─ OpenAPI                 └─ cria curso: subprocess do CLI do agente
+        └── tipos TS gerados ◀─ OpenAPI                 └─ cria curso, gera aula e exercícios: subprocess do CLI do agente
 ```
 
 ### Storage adapter
@@ -60,6 +62,8 @@ studytron_3000/
     SPEC.md                      este arquivo
     specs/001-web-app-i18n/      plano da internacionalização do client (concluído)
     specs/002-interactive-trail/ plano da Feature 4, trilha interativa (encerrada com escopo reduzido)
+    specs/003-progresso-do-aluno/ plano da Feature 6, progresso do aluno pelo app (encerrada; Passos 11 a 13 passaram para a Feature 7)
+    specs/004-feedback-de-jobs/  plano da Feature 7, feedback de jobs e decisões pendentes (a fazer)
   run.sh                         sobe servidor + frontend juntos
   pyproject.toml                 workspace uv: packages/* e apps/local-server
   CLAUDE.md                      instruções para agentes de IA
@@ -165,13 +169,14 @@ conversa.
 Python ≥ 3.13, Pydantic v2 + PyYAML. Núcleo compartilhado entre o servidor local
 e, no futuro, as Lambdas do SaaS (mesma linguagem do backend serverless já
 planejado — daí a escolha de Python). **Somente leitura**, exceto
-`delete_course`.
+`delete_course` e `set_topic_status` (que só troca a linha `status` de um tópico).
 
 ### Modelos (`models.py`)
 
 | Modelo | Campos |
 | --- | --- |
-| `TopicMeta` | `id`, `status` (default `pending`), `perceived_difficulty \| None`, `weak_points=[]`, `last_reviewed \| None` |
+| `TopicMeta` | `id`, `status: TopicStatus` (default `pending`), `perceived_difficulty \| None`, `weak_points=[]`, `last_reviewed \| None` |
+| `TopicStatus` | alias de `Literal['pending', 'in_progress', 'completed', 'review']`; fonte única dos valores válidos, usada pelo modelo, pelo escritor e pela API |
 | `Subtopic` | `id`, `title`, `description`, `completed=False` |
 | `Topic` | `meta: TopicMeta`, `title`, `subtopics` |
 | `Module` | `title`, `description`, `topics` |
@@ -186,7 +191,8 @@ planejado — daí a escolha de Python). **Somente leitura**, exceto
 `parse_curriculum`, `parse_lesson`, `parse_exercise_set`, `parse_attempt`,
 `parse_exercise_file` (decide set vs. attempt pela presença do campo `attempt`),
 `list_course_dirs`, `load_course`, `load_vault`, `delete_course` (em
-`course_parser.vault`), `main` (CLI).
+`course_parser.vault`), `set_topic_status` e `TopicNotFoundError` (em
+`course_parser.writers`), `TopicStatus`, `main` (CLI).
 
 ### Comportamento relevante
 
@@ -200,6 +206,17 @@ planejado — daí a escolha de Python). **Somente leitura**, exceto
 - `delete_course` recusa diretórios sem `00-curriculum.md` (`shutil.rmtree`).
 - Normaliza CRLF → LF antes do parse.
 
+### Escrita de status (`writers/topic_status.py`)
+
+`set_topic_status(text, topic_id, status) -> str` é uma **função pura de texto**:
+recebe o conteúdo do `00-curriculum.md` e devolve o conteúdo novo, trocando só a
+linha `status:` do bloco `topic-meta` do tópico pedido. Todo o resto do arquivo
+sai idêntico, byte a byte (preserva `\r\n` e o comentário que vier depois do
+valor). O id é escapado antes de virar regex, então `1.1` nunca casa `1.10`.
+`TopicNotFoundError` (subclasse de `ValueError`) para id inexistente; `ValueError`
+para status inválido, tópico sem `topic-meta` ou bloco sem linha `status`. Quem lê
+e grava o arquivo é o chamador (o servidor).
+
 ### CLI
 
 ```sh
@@ -211,7 +228,9 @@ JSON em stdout (datas ISO, `ensure_ascii=False`); erros em stderr, exit 1.
 ### Testes
 
 `packages/course-parser/tests/`: `test_models`, `test_frontmatter`,
-`test_curriculum`, `test_content_parsers`, `test_vault`, `test_cli`. Fixtures
+`test_curriculum`, `test_content_parsers`, `test_vault`, `test_cli`,
+`test_topic_status`. Os testes leem e escrevem arquivos em UTF-8 de forma
+explícita (no Windows o padrão do Python é cp1252). Fixtures
 reais gerados pela skill em `tests/fixtures/` (`arduino-cpp`,
 `java-para-quem-programa`) — **funcionam como spec que o parser deve continuar
 aceitando**. Rodar: `uv run pytest` na raiz.
@@ -239,34 +258,87 @@ respondem 500.
 | `DELETE /courses/{slug}` | `delete_course` | 204; apaga a pasta do curso |
 | `GET /courses/{slug}/lessons/{topic_id}` | `get_lesson` | `Lesson` |
 | `GET /courses/{slug}/exercises/{topic_id}` | `get_exercise_set` | `ExerciseSet` |
-| `POST /courses?user_prompt=…` | `create_course` | `CourseCreationJob` (`user_prompt` é *query param*) |
-| `GET /courses/jobs/{job_id}` | `get_course_creation_job` | `CourseCreationJob` |
+| `PATCH /courses/{slug}/topics/{topic_id}/status` | `update_topic_status` | `Topic` atualizado. Corpo `{"status": TopicStatus}`; altera só a linha `status` do `topic-meta`. `404` curso/tópico inexistente, `409` se `in_progress` e o tópico não tem aula, `422` status inválido |
+| `POST /courses/{slug}/topics/{topic_id}/lesson` | `generate_lesson` | `Job` (`202`). `404` curso/tópico, `409` se já tem aula ou há geração ativa no curso, `422` slug fora do formato do prompt |
+| `POST /courses/{slug}/topics/{topic_id}/exercises` | `generate_exercises` | `Job` (`202`). Mesmas recusas, e `409` também se o tópico **não tem aula** ou já tem exercícios |
+| `POST /courses?user_prompt=…` | `create_course` | `Job` (`user_prompt` é *query param*) |
+| `GET /courses/jobs/{job_id}` | `get_job` | `Job` (`404` se não existe) |
+| `GET /jobs?slug=…&active=…` | `list_jobs` | `Job[]`, do mais novo ao mais antigo, no máximo 50. `slug` filtra por curso; `active=true` só `pending`/`running`, `false` só os terminados |
 
 `slug` vazio, `.`, `..` ou contendo `/` ou `\` vira 404 (proteção contra sair
 do vault). Documentação interativa em `http://localhost:8000/docs`.
 
-### Criação de curso (jobs)
+### Jobs
+
+Criar curso, gerar aula e gerar exercícios são **jobs**: a rota responde logo com
+um `Job` e a CLI do agente roda em segundo plano (`BackgroundTasks`).
+
+`Job`: `id`, `kind` (`course_creation | lesson_generation | exercise_generation`),
+`status` (`pending | running | done | error`), `slug`, `topic_id`, `error` e
+`pending_decisions` (`PendingDecision[]`: `topic_id` e `title`; só em jobs de aula).
+O texto final da CLI fica em `Job.output`, **fora da API** (`exclude=True`).
+
+**Criação de curso**
 
 1. `POST /courses` valida o prompt e o `VAULT_PATH`, cria um job `pending` e
-   agenda `_run_course_creation` em `BackgroundTasks`.
-2. A tarefa marca `running`, guarda o conjunto de pastas do vault, e roda
-   o CLI do agente em modo headless (hoje só o Claude Code está implementado:
-   `claude -p <prompt> --output-format json --dangerously-skip-permissions`)
-   com `cwd=VAULT_PATH` (`LocalProcess`, via `asyncio.to_thread(subprocess.run)`,
+   agenda `_run_course_creation`.
+2. A tarefa marca `running`, guarda o conjunto de pastas do vault e roda o CLI do
+   agente em modo headless (hoje só o Claude Code está implementado:
+   `claude -p <prompt> --output-format json --dangerously-skip-permissions`) com
+   `cwd=VAULT_PATH` (`LocalProcess.run`, via `asyncio.to_thread(subprocess.run)`,
    timeout de 300 s).
-3. O prompt embrulha o pedido do usuário instruindo a skill `course-builder` a
-   operar de forma não interativa (inferir defaults em vez de perguntar).
+3. O prompt (`prompts.build_course_prompt`) embrulha o pedido do usuário
+   instruindo a skill `course-builder` a operar de forma não interativa.
 4. Ao terminar, o slug do novo curso é detectado pela **diferença** entre as
-   pastas antes/depois; o job vira `done` (com `slug`) ou `error` (com mensagem).
+   pastas antes/depois; o job vira `done` (com `slug`) ou `error`.
 
-`JobStatus`: `pending | running | done | error`. `JobStore` é um dicionário em
-memória — jobs somem ao reiniciar o servidor.
+**Geração de aula e de exercícios** (`_run_generation`)
+
+1. A rota confere curso, tópico e pré-condições de forma síncrona, monta o prompt
+   (`build_lesson_prompt` / `build_exercises_prompt`, que recusam `slug` e
+   `topic_id` fora do formato esperado) e cria o job com `create_exclusive`.
+2. **Um job de geração ativo por curso, de qualquer tipo**: a skill reescreve o
+   mesmo `00-curriculum.md`. Um segundo pedido recebe `409`.
+3. O prompt declara que **não há usuário presente** (modo não interativo da
+   skill): não perguntar, não mudar o status de tópicos `in_progress`. O prompt de
+   aula pede ainda uma linha `Pending status decision: <id> <título>` por tópico
+   que espera decisão do aluno.
+4. A saída da CLI é lida por `extract_result` (objeto JSON com `result` e
+   `is_error`). O job só vira `done` se o curso recarregado **tiver o arquivo
+   esperado** (a aula ou os exercícios do tópico); o relato do agente não basta.
+5. Em jobs de aula, `pending_decisions_from` lê as linhas `Pending status
+   decision:` e as confere contra o currículo: o tópico precisa existir, estar
+   `in_progress` agora e não ser o tópico cuja aula acabou de ser gerada. O
+   título vem do currículo, não do texto do agente.
+6. Qualquer exceção da tarefa vira job `error` (e vai para o log), para nenhum job
+   ficar `running` para sempre, por exemplo com o `claude` fora do `PATH`.
+
+`JobStore` é um dicionário em memória: jobs somem ao reiniciar o servidor, e
+`GET /jobs` guarda também os terminados da execução atual.
+
+### Status de tópico
+
+`PATCH …/status` lê o `00-curriculum.md` **como bytes** (preserva `\r\n`), chama
+`set_topic_status` e grava por arquivo temporário + `os.replace` (nunca um arquivo
+pela metade). Um `threading.Lock` cobre o ciclo ler-alterar-gravar entre
+requisições. O lock não alcança o processo da CLI: a UI evita a corrida
+desabilitando o seletor enquanto há job ativo no curso.
 
 ### CORS e execução
 
 CORS liberado para `http://localhost:3000` e `http://localhost:5173`, métodos
-`GET`, `POST`, `DELETE`. Entrada: `apps/local-server/main.py` (re-exporta
-`app`); `uv run local-server` roda uvicorn com reload em `127.0.0.1:8000`.
+`GET`, `POST`, `PATCH`, `DELETE`. Entrada: `apps/local-server/main.py`
+(re-exporta `app`); `uv run local-server` roda uvicorn com reload em
+`127.0.0.1:8000`.
+
+### Testes
+
+`apps/local-server/tests/` (`uv run pytest` na raiz): `test_status_route`,
+`test_lesson_job`, `test_exercise_job`, `test_jobs_list`, `test_pending_decisions`,
+`test_prompts`, `test_local_process`. Usam `TestClient`, um vault temporário
+copiado das fixtures do `course-parser` e uma CLI simulada (`fake_cli` no
+`conftest.py`): nenhum teste chama o agente de verdade, e nenhum toca o vault do
+`.env`.
 
 ### Contrato OpenAPI
 
@@ -292,15 +364,18 @@ src/
     api/ client.ts queries.ts schema.d.ts(gerado)
     context/ThemeContext.tsx
     hooks/   useCourses useCourse useCreateCourse useCourseJob useDeleteCourse useDebounce useIsMobile
+             useLesson useExerciseSet useJobs useUpdateTopicStatus useGeneration
     i18n/    index.ts i18next.d.ts locales/{en,pt-BR}.json
-    lib/     progress.ts courseSearch.ts query-client.ts utils.ts
+    lib/     progress.ts courseSearch.ts query-client.ts routes.ts topic.ts utils.ts
   ui/
     components/  AppLayout, LanguageSelector, ThemeSelector, CourseQuestionnaireDialog,
-                 DeleteCourseDialog, error-state, status-badge,
-                 trail/ (Trail, ModuleSection, TopicCard, statusStyle)
+                 DeleteCourseDialog, ErrorState, StatusBadge, StatusSelect, Markdown,
+                 NotGeneratedCard, GenerateButton, GenerationProgress, BodySkeleton,
+                 trail/ (Trail, ModuleSection, TopicCard)
     components/ui/  primitivas shadcn (AlertDialog, DropdownMenu, Input, Textarea,
                     badge, button, card, skeleton, questionnaire)
-    pages/       CoursesPage, CoursePage, not-found-page
+    utils/       statusStyle.ts
+    pages/       CoursesPage, CoursePage, LessonPage, ExercisesPage, NotFoundPage
     styles/index.css
 ```
 
@@ -313,7 +388,9 @@ src/
 | Path | Componente | Conteúdo |
 | --- | --- | --- |
 | `/` | `CoursesPage` | busca (debounce, sem acentos), lista de cursos, estado vazio com criação via questionário |
-| `/courses/:slug` | `CoursePage` | metadados, progresso, visão geral, trilha do currículo (módulos → tópicos coloridos por status), exclusão |
+| `/courses/:slug` | `CoursePage` | metadados, progresso, visão geral, trilha do currículo (módulos → tópicos coloridos por status, com indicadores de aula e exercícios), exclusão |
+| `/courses/:slug/topics/:topicId` | `LessonPage` | aula em Markdown, detalhes do tópico, seletor de status, anterior/próximo, botão para gerar a aula e, quando só ela existe, os exercícios (carregada com `lazy`) |
+| `/courses/:slug/topics/:topicId/exercises` | `ExercisesPage` | exercícios em Markdown (somente leitura), botão para gerá-los (inativo sem aula) (carregada com `lazy`) |
 | `*` | `NotFoundPage` | 404 |
 
 Todas dentro de `AppLayout` (header com seletores de idioma e tema + `<Outlet/>`).
@@ -326,8 +403,15 @@ Todas dentro de `AppLayout` (header com seletores de idioma e tema + `<Outlet/>`
   O resto do app **não** importa de `schema.d.ts` diretamente.
 - `api/queries.ts`: `courseKeys` (fábrica de query keys), `unwrap` (normaliza
   `{data,error,response}` em data-ou-throw), `coursesListQuery`,
-  `courseDetailQuery`, `courseJobQuery` (polling de 2 s até `done`/`error`),
-  `createCourseJob`, `deleteCourse` (204 sem corpo).
+  `courseDetailQuery`, `courseLessonQuery`, `courseExercisesQuery`,
+  `courseJobQuery` (polling de 2 s até `done`/`error`), `jobsQuery` (`GET /jobs`,
+  repete a cada 2 s **só enquanto algum job da resposta está rodando**; sem job
+  ativo, só ao focar a janela), `createCourseJob`, `generateLesson`,
+  `generateExercises`, `updateTopicStatus`, `deleteCourse` (204 sem corpo).
+- Hooks de escrita: `useUpdateTopicStatus` (invalida o curso com `exact: true` e a
+  lista de cursos, sem refazer aula e exercícios) e `useGeneration` (inicia a
+  geração, acompanha os jobs do curso e, quando o job ativo some da lista,
+  invalida o curso, a aula e os exercícios).
 - `lib/query-client.ts`: `staleTime` 30 s, `retry` 1.
 - `lib/progress.ts`: `computeProgress(course)` → totais por status e percentual
   de tópicos `completed`.
@@ -339,6 +423,12 @@ Todas dentro de `AppLayout` (header com seletores de idioma e tema + `<Outlet/>`
   (`Create a course about: …`, `Student level:`, `Depth:`, …) → `POST /courses`
   → polling do job → ao `done`, invalida `courseKeys.list()`.
 - **Excluir curso:** `DeleteCourseDialog` (AlertDialog) → `DELETE` → volta a `/`.
+- **Mudar o status de um tópico:** `StatusSelect` no cabeçalho da `LessonPage`
+  (menu com os quatro status). "Em andamento" fica inativo sem aula; o controle
+  inteiro fica inativo enquanto há job ativo no curso.
+- **Gerar aula ou exercícios:** `GenerateButton` nos cartões "ainda não gerado".
+  Com o job do tópico rodando mostra o `GenerationProgress`; com outra geração
+  rodando no curso, fica inativo. Ao fim do job a tela atualiza sozinha.
 - **Progresso exibido:** `% = completed / total tópicos`; badges por status e
   presença de aula/exercícios por tópico.
 
@@ -380,7 +470,7 @@ Regerar sempre que models Pydantic ou rotas mudarem.
 | --- | --- | --- |
 | Python | `uv` | workspace na raiz; `.python-version`; `uv.lock` |
 | Python lint/format | `ruff` | config em `packages/course-parser/pyproject.toml` (linha 100, aspas simples, regras `E,F,I,UP,B`), rodado via `.pre-commit-config.yaml` |
-| Python testes | `pytest` | grupo `dev` do workspace |
+| Python testes | `pytest` | grupo `dev` do workspace; cobre o `course-parser` e o `local-server` (seção 5) |
 | JS lint/format | `oxlint` + `prettier` | `lint-staged` nos arquivos staged |
 | Commits | `commitlint` (conventional) | hook `commit-msg` do husky |
 | Hooks | husky + pre-commit | `.husky/pre-commit` roda `uvx pre-commit run` e `lint-staged`; o hook do pre-commit **não é versionado** em `.git/hooks` |
@@ -397,7 +487,9 @@ Scripts do client: `dev`, `build` (`tsc -b && vite build`), `preview`, `typechec
 
 Verificação padrão antes de entregar mudança no client: `npm run typecheck`,
 `npm run lint`, `npm run check:i18n`. No Python: `uv run pytest`,
-`uv run ruff check`, `uv run ruff format`.
+`uv run ruff check`, `uv run ruff format`. Ao regerar os tipos
+(`npm run generate:types`), o `schema.d.ts` sai com aspas duplas e 4 espaços; o
+hook de commit roda `prettier --write` e devolve o formato do projeto.
 
 ## 8. Como rodar
 
@@ -423,11 +515,12 @@ cd apps/client && npm install && npm run dev                                # Vi
 | --- | --- |
 | Skill `course-builder` | 5 workflows, formatos em `skill/references/`; validada com cursos reais |
 | `course-parser` | modelos, parsers, loader do vault, CLI, testes com fixtures reais |
-| `local-server` | leitura de cursos/aulas/exercícios, exclusão, criação por job, CORS, export OpenAPI |
+| `local-server` | leitura de cursos/aulas/exercícios, exclusão, criação de curso e geração de aula e exercícios por job, mudança de status, listagem de jobs, CORS, export OpenAPI; testes com CLI simulada |
 | Frontend base | Vite + Tailwind + shadcn, tipos gerados, TanStack Query, roteamento |
 | Lista e detalhe de curso | busca, progresso, visão geral |
 | Trilha do currículo | Feature 4 (escopo reduzido): timeline em `CoursePage`, substitui a lista antiga; o clique no card leva à página de aula |
 | Página de aula | Feature 5 (parcial): `LessonPage` com Markdown + Shiki, detalhes do tópico, navegação anterior/próximo, estados de carregamento/erro/aula não gerada; carregada com `lazy` no router. Página de exercícios somente leitura e indicadores de aula/exercícios nos cards. Links do Markdown e LaTeX adiados |
+| Progresso do aluno pelo app | Feature 6 (encerrada): seletor de status na `LessonPage`; botões para gerar aula e exercícios, com progresso do job; `PATCH` de status, rotas de geração, `GET /jobs` e `pending_decisions` no servidor. Painel de jobs, toasts e diálogo de decisão ficaram para a Feature 7 |
 | Criar/excluir curso pela UI | questionário → job → polling |
 | i18n EN + pt-BR | plano `001` concluído |
 | Tema claro/escuro/sistema | |
@@ -513,42 +606,69 @@ Notas de design:
 - Exercícios não contêm respostas; a correção continua sendo feita pela skill
   (o app só lê no MVP).
 
-#### Feature 6 — Progresso do aluno pelo app
+#### Feature 6 — Progresso do aluno pelo app — encerrada
 
-Status do tópico passa a ser marcado pelo aluno (manualmente no Obsidian ou pelo app).
-A skill já documenta o modo não interativo ([skill/SKILL.md](../skill/SKILL.md), seção
-"Interaction mode"); falta o lado do servidor e do app.
+Encerrada em 2026-10-25 com os Passos 1 a 10 entregues. Os Passos 11 a 13 passaram
+para a Feature 7. Histórico, decisões e resultados de cada passo em
+`docs/specs/003-progresso-do-aluno/plan.md`.
 
-- [ ] Rota `PATCH /courses/{slug}/topics/{topic_id}/status`: altera só a linha `status`
-      do bloco `topic-meta` em `00-curriculum.md`, sem regenerar o arquivo. Aceita só
+- [x] Rota `PATCH /courses/{slug}/topics/{topic_id}/status`: altera só a linha `status`
+      do bloco `topic-meta`, sem regenerar o arquivo (`course_parser.writers`). Aceita só
       `pending | in_progress | completed | review`. Recusa `in_progress` se a aula do
-      tópico não existir.
-- [ ] Prompt de geração de aula no servidor declara o modo não interativo (a skill
-      não pode perguntar com ninguém do outro lado).
-- [ ] App lê as linhas `Pending status decision: <id> <título>` da saída da skill e mostra
-      um diálogo com três opções (concluí / quero revisar / ainda estou estudando), que
-      chamam a rota de PATCH. A decisão é do aluno e não passa pelo LLM.
-- [ ] Rota de geração de aula (ainda não existe; hoje só a criação de curso roda a skill).
+      tópico não existir (`409`).
+- [x] Prompts de aula e de exercícios declaram o modo não interativo (a skill não
+      pode perguntar com ninguém do outro lado) e a CLI é lida por `extract_result`.
+- [x] Rotas `POST …/lesson` e `POST …/exercises`, com job; um job de geração ativo por
+      curso; o job só termina bem se o arquivo esperado existir.
+- [x] `GET /jobs` (lista de jobs, com filtros) e `Job.pending_decisions`: o servidor lê as
+      linhas `Pending status decision: <id> <título>` e as confere contra o currículo.
+- [x] Tipos TS regerados e `Job` no lugar de `CourseCreationJob`.
+- [x] `StatusSelect` na página de aula e botões "Gerar aula" / "Gerar exercícios" com
+      progresso do job.
 
-**Entrega:** o aluno muda o status de um tópico pelo app ou pelo Obsidian, e o app
-reflete a mudança sem regenerar nenhum arquivo.
+**Entrega:** o aluno gera a aula e os exercícios de um tópico e muda o status dele pelo
+app ou pelo Obsidian, e o app reflete a mudança sem regenerar nenhum arquivo.
 
 Notas de design:
 
 - A correção de exercícios continua marcando `completed` quando o resultado é `good`
   ([skill/references/exercises-format.md](../skill/references/exercises-format.md)).
   Isso é aceito: o aluno pode sempre corrigir o status à mão.
+- A rota de status **não** marca os checkboxes dos subtópicos nem mexe em
+  `last_reviewed`. Ao marcar `completed` pelo app, os checkboxes ficam desmarcados até o
+  aluno editar à mão ou a skill rodar de novo; é uma inconsistência aceita.
+- As decisões pendentes não são persistidas: vivem no job (em memória) e voltam a ser
+  pedidas na próxima geração de aula.
 - Edição concorrente com o Obsidian continua em aberto (ver "Decisões adiadas").
+- Tempos medidos de geração: exercícios ≈ 43 s, aula entre ≈ 68 s e ≈ 90 s; em uma
+  execução isolada a CLI levou mais de 3 min para encerrar. O timeout é de 300 s.
+
+#### Feature 7 — Feedback de jobs e decisões pendentes
+
+Fecha a parte de interface da Feature 6: o aluno acompanha os jobs sem abrir cada curso,
+é avisado quando terminam e responde às decisões pendentes. O servidor e os tipos já estão
+prontos. Plano e passos em `docs/specs/004-feedback-de-jobs/plan.md`.
+
+- [ ] **Painel de jobs na tela inicial** (`JobsPanel`): só os jobs em andamento, de todos os
+      tipos; o job some do painel ao terminar (sem histórico).
+- [ ] **Toasts** (`sonner`, via shadcn) quando um job começa e quando termina (sucesso ou
+      erro), por um observador global (`useJobsWatcher`) no `AppLayout`; a primeira
+      consulta só registra o estado, sem avisar.
+- [ ] **Diálogo de decisão pendente** (`PendingStatusDialog`): ao terminar uma aula com
+      `pending_decisions`, pergunta ao aluno (concluí / quero revisar / ainda estou
+      estudando); cada opção chama a rota de status. Sem resposta, nada muda.
+- [ ] **Teste ponta a ponta** com um vault de teste e checklist final.
+- [ ] **Testes de concorrência** (etapa própria, depois do resto): duas gerações no mesmo
+      curso, status durante uma geração, duas abas, edição no Obsidian durante a escrita,
+      reinício do servidor com job em andamento.
+- [ ] Decidir o que fazer quando a CLI estoura o timeout **depois** de escrever o arquivo
+      (hoje o job vira `error` mesmo com a aula gravada).
 
 #### Stretch (pós-protótipo)
 
 - [ ] **Atualização em tempo real:** `watchfiles` observando o vault + SSE do
       FastAPI, para o frontend refletir o que a skill gera sem F5. Hoje o app
       depende de `staleTime` (30 s), refetch no foco e do polling dos jobs.
-- [ ] **Write-back de status pela UI:** rota `PATCH /courses/{slug}/topics/{topic_id}/status`
-      alterando só a linha `status` do bloco `topic-meta` em `00-curriculum.md`. Escopo
-      limitado a status; edição concorrente com o Obsidian continua em aberto (ver
-      "Decisões adiadas").
 - [ ] **Empacotamento desktop (Tauri)**.
 - [ ] **Publicar `course-parser` no PyPI** como pacote independente.
 
@@ -562,8 +682,9 @@ Notas de design:
   `.md` do vault aparecem quebrados em `Markdown.tsx`; links externos estão sem
   `rel="noopener noreferrer"`. Retomar mais adiante, junto com a definição de como
   o app resolve links entre notas do vault.
-- **Write-back pela UI:** edição concorrente do mesmo arquivo que o usuário
-  edita no Obsidian — só depois do resto estável.
+- **Edição concorrente com o Obsidian:** o write-back de status já existe (só a linha
+  `status`, com escrita atômica), mas continua sujeito a o Obsidian sobrescrever a
+  mudança se gravar o mesmo arquivo depois. Resolver só depois do resto estável.
 - **Tauri:** alternativa/evolução ao servidor local + navegador.
 - **File System Access API** (`showDirectoryPicker`): modo "zero instalação",
   só Chromium.
@@ -579,10 +700,17 @@ Notas de design:
 
 ## 10. Pontos de atenção conhecidos
 
-- Criação de curso usa `--dangerously-skip-permissions` e executa o CLI
-  do agente (hoje `claude`) no vault; adequado apenas para uso local/de confiança.
-- `JobStore` em memória e detecção do slug por diff de pastas (vulnerável a
-  criações simultâneas e a reinício do servidor).
+- Criação de curso e geração de aula e de exercícios usam
+  `--dangerously-skip-permissions` e executam o CLI do agente (hoje `claude`) no
+  vault; adequado apenas para uso local/de confiança.
+- `JobStore` em memória e detecção do slug por diff de pastas na criação de curso
+  (vulnerável a criações simultâneas e a reinício do servidor). Os jobs de geração
+  têm trava de um por curso, mas ela só foi coberta por testes de unidade.
+- O timeout de 300 s vale para o processo da CLI: se ele demorar a encerrar depois de
+  escrever o arquivo, o job vira `error` mesmo com a aula ou os exercícios gravados.
+- A CLI pode gravar `.claude/model-roles.json` dentro do `VAULT_PATH`, por causa de
+  um hook de início de sessão do ambiente do usuário. Anterior à Feature 6; não
+  corrigido.
 - `create_course` recebe `user_prompt` como query string (prompts longos podem
   esbarrar em limites de URL).
 - Resquícios de debug: `print` em `routes/courses.py`, `console.log(job)` e

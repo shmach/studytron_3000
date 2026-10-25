@@ -19,7 +19,8 @@ import { flattenTopics, getNeighbors } from '@app/lib/topic';
 import type { Neighbors } from '@app/lib/topic';
 import { ErrorState } from '@ui/components/ErrorState';
 import { Markdown } from '@ui/components/Markdown';
-import { StatusBadge } from '@ui/components/StatusBadge';
+import { GenerateButton } from '@ui/components/GenerateButton';
+import { StatusSelect } from '@ui/components/StatusSelect';
 import { Badge } from '@ui/components/ui/Badge';
 import { Button } from '@ui/components/ui/Button';
 import {
@@ -73,6 +74,7 @@ function LessonView({ slug, bundle, topic, neighbors }: LessonViewProps) {
   const { t } = useTranslation();
   const { id } = topic.meta;
   const hasExercises = bundle.exercise_sets.some((set) => set.topic === id);
+  const hasLesson = bundle.lessons.some((lesson) => lesson.topic === id);
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -100,13 +102,27 @@ function LessonView({ slug, bundle, topic, neighbors }: LessonViewProps) {
             </span>{' '}
             {topic.title}
           </h1>
-          <StatusBadge status={topic.meta.status} />
+          <StatusSelect
+            slug={slug}
+            topicId={id}
+            status={topic.meta.status}
+            hasLesson={hasLesson}
+          />
         </div>
       </header>
 
       <TopicDetails topic={topic} />
 
       <LessonBody slug={slug} topicId={id} />
+
+      {hasLesson && !hasExercises && (
+        <NotGeneratedCard
+          title={t('exercises.notGeneratedTitle')}
+          body={t('exercises.notGeneratedBody')}
+        >
+          <GenerateButton slug={slug} topicId={id} kind="exercises" />
+        </NotGeneratedCard>
+      )}
 
       <LessonNav
         slug={slug}
@@ -211,7 +227,9 @@ function LessonBody({ slug, topicId }: { slug: string; topicId: string }) {
         <NotGeneratedCard
           title={t('lesson.notGeneratedTitle')}
           body={t('lesson.notGeneratedBody')}
-        />
+        >
+          <GenerateButton slug={slug} topicId={topicId} kind="lesson" />
+        </NotGeneratedCard>
       );
     }
     return <ErrorState error={error} onRetry={() => void refetch()} />;
