@@ -1,12 +1,142 @@
-import { useParams } from 'react-router';
+import { ArrowLeft } from 'lucide-react';
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link, useParams } from 'react-router';
 
-// Placeholder: the real exercises page is implemented in a later plan step.
+import { ApiError } from '@app/api/client';
+import type { Topic } from '@app/api/client';
+import { useCourse } from '@app/hooks/useCourse';
+import { useExerciseSet } from '@app/hooks/useExerciseSet';
+import { dateFormatter } from '@app/lib/dateFormatter';
+import { topicPath } from '@app/lib/routes';
+import { flattenTopics } from '@app/lib/topic';
+import { ErrorState } from '@ui/components/ErrorState';
+import { Markdown } from '@ui/components/Markdown';
+import { Button } from '@ui/components/ui/Button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@ui/components/ui/Card';
+import { Skeleton } from '@ui/components/ui/Skeleton';
+import { NotFoundPage } from '@ui/pages/NotFoundPage';
+
 export function ExercisesPage() {
+  const { t } = useTranslation();
   const { slug, topicId } = useParams<{ slug: string; topicId: string }>();
+  const { data: bundle, isPending, error, refetch } = useCourse(slug);
+
+  const topic = useMemo(
+    () =>
+      bundle
+        ? flattenTopics(bundle.course).find((t) => t.meta.id === topicId)
+        : undefined,
+    [bundle, topicId],
+  );
+
+  if (!slug || !topicId) return <NotFoundPage />;
+  if (isPending) return <ExercisesSkeleton />;
+  if (error) return <ErrorState error={error} onRetry={() => void refetch()} />;
+  if (!topic) return <NotFoundPage />;
 
   return (
-    <p className="font-mono text-sm">
-      exercises: {slug} / {topicId}
-    </p>
+    <div className="flex w-full flex-col gap-6">
+      <nav>
+        <Button asChild variant="ghost" size="sm" className="-ml-2">
+          <Link to={topicPath(slug, topicId)}>
+            <ArrowLeft />
+            {t('exercises.backToLesson')}
+          </Link>
+        </Button>
+      </nav>
+
+      <ExercisesHeader courseTitle={bundle.course.course} topic={topic} />
+      <ExercisesBody slug={slug} topicId={topicId} />
+    </div>
+  );
+}
+
+function ExercisesHeader({
+  courseTitle,
+  topic,
+}: {
+  courseTitle: string;
+  topic: Topic;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <header className="space-y-3">
+      <span className="text-muted-foreground text-sm">{courseTitle}</span>
+      <h1 className="text-3xl font-semibold tracking-tight">
+        <span className="text-muted-foreground font-mono text-2xl">
+          {topic.meta.id}
+        </span>{' '}
+        {t('exercises.title', { title: topic.title })}
+      </h1>
+    </header>
+  );
+}
+
+function ExercisesBody({ slug, topicId }: { slug: string; topicId: string }) {
+  const { t, i18n } = useTranslation();
+  const {
+    data: exerciseSet,
+    isPending,
+    error,
+    refetch,
+  } = useExerciseSet(slug, topicId);
+
+  if (isPending) return <BodySkeleton />;
+
+  if (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('exercises.notGeneratedTitle')}</CardTitle>
+          </CardHeader>
+          <CardContent className="text-muted-foreground text-sm">
+            {t('exercises.notGeneratedBody')}
+          </CardContent>
+        </Card>
+      );
+    }
+    return <ErrorState error={error} onRetry={() => void refetch()} />;
+  }
+
+  return (
+    <article className="space-y-4">
+      <p className="text-muted-foreground text-sm">
+        {t('exercises.generatedOn', {
+          date: dateFormatter(exerciseSet.generated, i18n.resolvedLanguage),
+        })}{' '}
+        ·{' '}
+        {t('exercises.difficultyTarget', {
+          value: exerciseSet.difficulty_target,
+        })}
+      </p>
+      <Markdown>{exerciseSet.content}</Markdown>
+    </article>
+  );
+}
+
+function BodySkeleton() {
+  return (
+    <div className="space-y-3">
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-5/6" />
+      <Skeleton className="h-4 w-2/3" />
+    </div>
+  );
+}
+
+function ExercisesSkeleton() {
+  return (
+    <div className="space-y-6">
+      <Skeleton className="h-8 w-1/2" />
+      <BodySkeleton />
+    </div>
   );
 }

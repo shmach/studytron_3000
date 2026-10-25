@@ -427,7 +427,7 @@ cd apps/client && npm install && npm run dev                                # Vi
 | Frontend base | Vite + Tailwind + shadcn, tipos gerados, TanStack Query, roteamento |
 | Lista e detalhe de curso | busca, progresso, visão geral |
 | Trilha do currículo | Feature 4 (escopo reduzido): timeline em `CoursePage`, substitui a lista antiga; o clique no card leva à página de aula |
-| Página de aula | Feature 5 (parcial): `LessonPage` com Markdown + Shiki, detalhes do tópico, navegação anterior/próximo, estados de carregamento/erro/aula não gerada; carregada com `lazy` no router. Falta a página de exercícios e os badges nos cards |
+| Página de aula | Feature 5 (parcial): `LessonPage` com Markdown + Shiki, detalhes do tópico, navegação anterior/próximo, estados de carregamento/erro/aula não gerada; carregada com `lazy` no router. Página de exercícios somente leitura entregue. Faltam os badges de aula/exercícios nos cards |
 | Criar/excluir curso pela UI | questionário → job → polling |
 | i18n EN + pt-BR | plano `001` concluído |
 | Tema claro/escuro/sistema | |
@@ -496,8 +496,9 @@ Notas de design:
       tópico (subtópicos, weak points, dificuldade percebida), que antes iriam
       para um painel lateral. Trata carregamento, erro com retry, tópico
       inexistente e aula não gerada (404).
-- [ ] Página de exercícios — **somente leitura**, sem correção pela UI.
-      `ExercisesPage` hoje é um placeholder; `useExerciseSet` ainda não é usado.
+- [x] Página de exercícios (`ui/pages/ExercisesPage.tsx`) — **somente leitura**,
+      sem correção pela UI. Mesmos estados da aula (skeleton, erro com retry,
+      404 "não gerado") e volta para a aula do tópico.
 - [ ] *Pendência:* links no Markdown — wikilinks `[[...]]` e links relativos
       para `.md` do vault aparecem quebrados; links externos sem
       `rel="noopener noreferrer"`.

@@ -68,6 +68,14 @@
     "goToPrevious": "Previous topic: {{title}}",
     "goToNext": "Next topic: {{title}}"
   },
+  "exercises": {
+    "backToLesson": "Back to lesson",
+    "title": "Exercises: {{title}}",
+    "generatedOn": "Generated on {{date}}",
+    "difficultyTarget": "Target difficulty: {{value}}",
+    "notGeneratedTitle": "Exercises not generated yet",
+    "notGeneratedBody": "This topic has no exercises in the vault. Ask your agent to generate them with the course-builder skill, then reload this page."
+  },
   "deleteCourse": {
     "trigger": "Delete course",
     "title": "Delete the course “{{name}}”?",

@@ -68,6 +68,14 @@
     "goToPrevious": "Tópico anterior: {{title}}",
     "goToNext": "Próximo tópico: {{title}}"
   },
+  "exercises": {
+    "backToLesson": "Voltar à aula",
+    "title": "Exercícios: {{title}}",
+    "generatedOn": "Gerados em {{date}}",
+    "difficultyTarget": "Dificuldade-alvo: {{value}}",
+    "notGeneratedTitle": "Exercícios ainda não gerados",
+    "notGeneratedBody": "Este tópico não tem exercícios no vault. Peça ao seu agente para gerá-los com a skill course-builder e recarregue esta página."
+  },
   "deleteCourse": {
     "trigger": "Excluir curso",
     "title": "Excluir o curso “{{name}}”?",
