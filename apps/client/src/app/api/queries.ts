@@ -65,9 +65,14 @@ export const courseDetailQuery = (slug: string) =>
       ),
   });
 
+/** A missing lesson/exercise set is a normal state (not generated yet), so don't retry on 404. */
+const retryUnlessMissing = (failureCount: number, error: Error) =>
+  retryUnlessNotFound(error) && failureCount < 3;
+
 export const courseLessonQuery = (slug: string, topicId: string) =>
   queryOptions({
     queryKey: courseKeys.lesson(slug, topicId),
+    retry: retryUnlessMissing,
     queryFn: async ({ signal }) =>
       unwrap(
         await api.GET('/courses/{slug}/lessons/{topic_id}', {
@@ -80,6 +85,7 @@ export const courseLessonQuery = (slug: string, topicId: string) =>
 export const courseExercisesQuery = (slug: string, topicId: string) =>
   queryOptions({
     queryKey: courseKeys.exercises(slug, topicId),
+    retry: retryUnlessMissing,
     queryFn: async ({ signal }) =>
       unwrap(
         await api.GET('/courses/{slug}/exercises/{topic_id}', {

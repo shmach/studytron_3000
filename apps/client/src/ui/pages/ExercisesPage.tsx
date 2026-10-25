@@ -13,19 +13,18 @@ import { flattenTopics } from '@app/lib/topic';
 import { ErrorState } from '@ui/components/ErrorState';
 import { Markdown } from '@ui/components/Markdown';
 import { Button } from '@ui/components/ui/Button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@ui/components/ui/Card';
 import { Skeleton } from '@ui/components/ui/Skeleton';
+import { BodySkeleton } from '@ui/components/BodySkeleton';
+import { NotGeneratedCard } from '@ui/components/NotGeneratedCard';
 import { NotFoundPage } from '@ui/pages/NotFoundPage';
 
 export function ExercisesPage() {
   const { t } = useTranslation();
   const { slug, topicId } = useParams<{ slug: string; topicId: string }>();
   const { data: bundle, isPending, error, refetch } = useCourse(slug);
+  // Start the exercises request alongside the course bundle instead of after it;
+  // ExercisesBody reads the same query from the cache.
+  useExerciseSet(slug, topicId);
 
   const topic = useMemo(
     () =>
@@ -93,14 +92,10 @@ function ExercisesBody({ slug, topicId }: { slug: string; topicId: string }) {
   if (error) {
     if (error instanceof ApiError && error.status === 404) {
       return (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('exercises.notGeneratedTitle')}</CardTitle>
-          </CardHeader>
-          <CardContent className="text-muted-foreground text-sm">
-            {t('exercises.notGeneratedBody')}
-          </CardContent>
-        </Card>
+        <NotGeneratedCard
+          title={t('exercises.notGeneratedTitle')}
+          body={t('exercises.notGeneratedBody')}
+        />
       );
     }
     return <ErrorState error={error} onRetry={() => void refetch()} />;
@@ -119,16 +114,6 @@ function ExercisesBody({ slug, topicId }: { slug: string; topicId: string }) {
       </p>
       <Markdown>{exerciseSet.content}</Markdown>
     </article>
-  );
-}
-
-function BodySkeleton() {
-  return (
-    <div className="space-y-3">
-      <Skeleton className="h-4 w-full" />
-      <Skeleton className="h-4 w-5/6" />
-      <Skeleton className="h-4 w-2/3" />
-    </div>
   );
 }
 

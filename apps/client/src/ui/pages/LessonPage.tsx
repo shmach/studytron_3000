@@ -5,7 +5,7 @@ import {
   ChevronRight,
   Circle,
 } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 
@@ -29,20 +29,21 @@ import {
   CardTitle,
 } from '@ui/components/ui/Card';
 import { Skeleton } from '@ui/components/ui/Skeleton';
+import { BodySkeleton } from '@ui/components/BodySkeleton';
+import { NotGeneratedCard } from '@ui/components/NotGeneratedCard';
 import { NotFoundPage } from '@ui/pages/NotFoundPage';
 
 export function LessonPage() {
   const { slug, topicId } = useParams<{ slug: string; topicId: string }>();
   const { data: bundle, isPending, error, refetch } = useCourse(slug);
+  // Start the lesson request alongside the course bundle instead of after it;
+  // LessonBody reads the same query from the cache.
+  useLesson(slug, topicId);
 
   const topics = useMemo(
     () => (bundle ? flattenTopics(bundle.course) : []),
     [bundle],
   );
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [topicId]);
 
   if (!slug || !topicId) return <NotFoundPage />;
   if (isPending) return <LessonSkeleton />;
@@ -55,7 +56,7 @@ export function LessonPage() {
     <LessonView
       slug={slug}
       bundle={bundle}
-      topic={topics[neighbors.index]}
+      topic={neighbors.current}
       neighbors={neighbors}
     />
   );
@@ -151,15 +152,25 @@ function TopicDetails({ topic }: { topic: Topic }) {
               {subtopics.map((subtopic) => (
                 <li key={subtopic.id} className="flex items-start gap-2">
                   {subtopic.completed ? (
-                    <Check
-                      className="text-primary mt-0.5 size-4 shrink-0"
-                      aria-label={t('lesson.subtopicDone')}
-                    />
+                    <>
+                      <Check
+                        className="text-primary mt-0.5 size-4 shrink-0"
+                        aria-hidden
+                      />
+                      <span className="sr-only">
+                        {t('lesson.subtopicDone')}
+                      </span>
+                    </>
                   ) : (
-                    <Circle
-                      className="text-muted-foreground mt-0.5 size-4 shrink-0"
-                      aria-label={t('lesson.subtopicPending')}
-                    />
+                    <>
+                      <Circle
+                        className="text-muted-foreground mt-0.5 size-4 shrink-0"
+                        aria-hidden
+                      />
+                      <span className="sr-only">
+                        {t('lesson.subtopicPending')}
+                      </span>
+                    </>
                   )}
                   <span>
                     <span className="text-muted-foreground font-mono text-xs">
@@ -197,14 +208,10 @@ function LessonBody({ slug, topicId }: { slug: string; topicId: string }) {
   if (error) {
     if (error instanceof ApiError && error.status === 404) {
       return (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('lesson.notGeneratedTitle')}</CardTitle>
-          </CardHeader>
-          <CardContent className="text-muted-foreground text-sm">
-            {t('lesson.notGeneratedBody')}
-          </CardContent>
-        </Card>
+        <NotGeneratedCard
+          title={t('lesson.notGeneratedTitle')}
+          body={t('lesson.notGeneratedBody')}
+        />
       );
     }
     return <ErrorState error={error} onRetry={() => void refetch()} />;
@@ -281,16 +288,6 @@ function LessonNav({ slug, topicId, neighbors, hasExercises }: LessonNavProps) {
         <span />
       )}
     </nav>
-  );
-}
-
-function BodySkeleton() {
-  return (
-    <div className="space-y-3">
-      <Skeleton className="h-4 w-full" />
-      <Skeleton className="h-4 w-5/6" />
-      <Skeleton className="h-4 w-2/3" />
-    </div>
   );
 }
 

@@ -1,4 +1,4 @@
-import { courseExercisesQuery, retryUnlessNotFound } from '@app/api/queries';
+import { courseExercisesQuery } from '@app/api/queries';
 import { useQuery } from '@tanstack/react-query';
 
 export function useExerciseSet(
@@ -8,7 +8,5 @@ export function useExerciseSet(
   return useQuery({
     ...courseExercisesQuery(slug ?? '', topicId ?? ''),
     enabled: Boolean(slug) && Boolean(topicId),
-    retry: (failureCount, error) =>
-      retryUnlessNotFound(error) && failureCount < 3,
   });
 }

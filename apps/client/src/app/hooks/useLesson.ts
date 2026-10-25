@@ -1,4 +1,4 @@
-import { courseLessonQuery, retryUnlessNotFound } from '@app/api/queries';
+import { courseLessonQuery } from '@app/api/queries';
 import { useQuery } from '@tanstack/react-query';
 
 export function useLesson(
@@ -8,7 +8,5 @@ export function useLesson(
   return useQuery({
     ...courseLessonQuery(slug ?? '', topicId ?? ''),
     enabled: Boolean(slug) && Boolean(topicId),
-    retry: (failureCount, error) =>
-      retryUnlessNotFound(error) && failureCount < 3,
   });
 }

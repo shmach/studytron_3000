@@ -6,6 +6,7 @@ export function flattenTopics(course: Course): Topic[] {
 
 export interface Neighbors {
   index: number;
+  current: Topic;
   prev: Topic | null;
   next: Topic | null;
   total: number;
@@ -29,5 +30,5 @@ export function getNeighbors(
   }
 
   if (index === null) return null;
-  return { index, prev, next, total: topics.length };
+  return { index, current: topics[index], prev, next, total: topics.length };
 }
