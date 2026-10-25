@@ -427,7 +427,7 @@ cd apps/client && npm install && npm run dev                                # Vi
 | Frontend base | Vite + Tailwind + shadcn, tipos gerados, TanStack Query, roteamento |
 | Lista e detalhe de curso | busca, progresso, visão geral |
 | Trilha do currículo | Feature 4 (escopo reduzido): timeline em `CoursePage`, substitui a lista antiga; o clique no card leva à página de aula |
-| Página de aula | Feature 5 (parcial): `LessonPage` com Markdown + Shiki, detalhes do tópico, navegação anterior/próximo, estados de carregamento/erro/aula não gerada; carregada com `lazy` no router. Página de exercícios somente leitura e indicadores de aula/exercícios nos cards. Faltam links do Markdown e LaTeX |
+| Página de aula | Feature 5 (parcial): `LessonPage` com Markdown + Shiki, detalhes do tópico, navegação anterior/próximo, estados de carregamento/erro/aula não gerada; carregada com `lazy` no router. Página de exercícios somente leitura e indicadores de aula/exercícios nos cards. Links do Markdown e LaTeX adiados |
 | Criar/excluir curso pela UI | questionário → job → polling |
 | i18n EN + pt-BR | plano `001` concluído |
 | Tema claro/escuro/sistema | |
@@ -483,9 +483,6 @@ Notas de design:
 - [x] Renderização de Markdown com `react-markdown` + Shiki (syntax highlighting):
       `ui/components/Markdown.tsx` (GFM, tema claro/escuro via CSS variables,
       blocos sem linguagem caem em texto simples).
-- [ ] *Pendência:* suporte a LaTeX inline (`$\rightarrow$`), usado em aulas do
-      vault (ex.: `ai-engineer` 1.1) e hoje exibido como texto literal. Exigiria
-      `remark-math` + `rehype-katex` + CSS do KaTeX.
 - [x] Páginas de aula e exercícios importadas com `lazy` no router
       (`router/index.tsx`), para o Shiki não pesar no bundle da lista de cursos.
 - [x] Página de aula (`ui/pages/LessonPage.tsx`) com navegação anterior/próximo
@@ -496,9 +493,6 @@ Notas de design:
 - [x] Página de exercícios (`ui/pages/ExercisesPage.tsx`) — **somente leitura**,
       sem correção pela UI. Mesmos estados da aula (skeleton, erro com retry,
       404 "não gerado") e volta para a aula do tópico.
-- [ ] *Pendência:* links no Markdown — wikilinks `[[...]]` e links relativos
-      para `.md` do vault aparecem quebrados; links externos sem
-      `rel="noopener noreferrer"`.
 
 **Entrega:** fluxo completo trilha → tópico → aula → exercícios, lendo o vault
 real pela API.
@@ -560,6 +554,14 @@ Notas de design:
 
 ### Decisões adiadas (não descartadas)
 
+- **Suporte a LaTeX no Markdown:** fórmulas inline (`$\rightarrow$`), usadas em
+  aulas do vault (ex.: `ai-engineer` 1.1), hoje aparecem como texto literal.
+  Exigiria `remark-math` + `rehype-katex` + CSS do KaTeX. Só retomar se virar um
+  problema real de leitura.
+- **Links no Markdown renderizado:** wikilinks `[[...]]` e links relativos para
+  `.md` do vault aparecem quebrados em `Markdown.tsx`; links externos estão sem
+  `rel="noopener noreferrer"`. Retomar mais adiante, junto com a definição de como
+  o app resolve links entre notas do vault.
 - **Write-back pela UI:** edição concorrente do mesmo arquivo que o usuário
   edita no Obsidian — só depois do resto estável.
 - **Tauri:** alternativa/evolução ao servidor local + navegador.
