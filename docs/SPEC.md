@@ -63,7 +63,8 @@ studytron_3000/
     specs/001-web-app-i18n/      plano da internacionalização do client (concluído)
     specs/002-interactive-trail/ plano da Feature 4, trilha interativa (encerrada com escopo reduzido)
     specs/003-progresso-do-aluno/ plano da Feature 6, progresso do aluno pelo app (encerrada; Passos 11 a 13 passaram para a Feature 7)
-    specs/004-feedback-de-jobs/  plano da Feature 7, feedback de jobs e decisões pendentes (em andamento: interface e timeout entregues; faltam o teste manual com a CLI real e os testes de concorrência)
+    specs/004-feedback-de-jobs/  plano da Feature 7, feedback de jobs e decisões pendentes (encerrada; teste manual e concorrência passaram para a revisão final)
+    specs/005-revisao-final/     plano da revisão final das Features 6 e 7: teste manual com a CLI real e testes de concorrência (a fazer; não é feature)
   run.sh                         sobe servidor + frontend juntos
   pyproject.toml                 workspace uv: packages/* e apps/local-server
   CLAUDE.md                      instruções para agentes de IA
@@ -533,7 +534,7 @@ cd apps/client && npm install && npm run dev                                # Vi
 | Trilha do currículo | Feature 4 (escopo reduzido): timeline em `CoursePage`, substitui a lista antiga; o clique no card leva à página de aula |
 | Página de aula | Feature 5 (parcial): `LessonPage` com Markdown + Shiki, detalhes do tópico, navegação anterior/próximo, estados de carregamento/erro/aula não gerada; carregada com `lazy` no router. Página de exercícios somente leitura e indicadores de aula/exercícios nos cards. Links do Markdown e LaTeX adiados |
 | Progresso do aluno pelo app | Feature 6 (encerrada): seletor de status na `LessonPage`; botões para gerar aula e exercícios, com progresso do job; `PATCH` de status, rotas de geração, `GET /jobs` e `pending_decisions` no servidor. Painel de jobs, toasts e diálogo de decisão ficaram para a Feature 7 |
-| Feedback de jobs | Feature 7 (parcial): `JobsPanel` na tela inicial, toasts de início e fim, `PendingStatusDialog`, `Job.created_at` e aceite do arquivo gravado quando a CLI estoura o timeout. Faltam o teste manual com a CLI real e os testes de concorrência |
+| Feedback de jobs | Feature 7 (encerrada): `JobsPanel` na tela inicial, toasts de início e fim, `PendingStatusDialog`, `Job.created_at` e aceite do arquivo gravado quando a CLI estoura o timeout. A validação com a CLI real e a concorrência estão na revisão final |
 | Criar/excluir curso pela UI | questionário → job → polling |
 | i18n EN + pt-BR | plano `001` concluído |
 | Tema claro/escuro/sistema | |
@@ -656,7 +657,7 @@ Notas de design:
 - Tempos medidos de geração: exercícios ≈ 43 s, aula entre ≈ 68 s e ≈ 90 s; em uma
   execução isolada a CLI levou mais de 3 min para encerrar. O timeout é de 300 s.
 
-#### Feature 7 — Feedback de jobs e decisões pendentes
+#### Feature 7 — Feedback de jobs e decisões pendentes — encerrada
 
 Fecha a parte de interface da Feature 6: o aluno acompanha os jobs sem abrir cada curso,
 é avisado quando terminam e responde às decisões pendentes. O servidor e os tipos já estão
@@ -670,14 +671,24 @@ prontos. Plano e passos em `docs/specs/004-feedback-de-jobs/plan.md`.
 - [x] **Diálogo de decisão pendente** (`PendingStatusDialog`): ao terminar uma aula com
       `pending_decisions`, pergunta ao aluno (concluí / quero revisar / ainda estou
       estudando); cada opção chama a rota de status. Sem resposta, nada muda.
-- [ ] **Teste ponta a ponta** com um vault de teste e checklist final. O fluxo de
-      interface foi conferido no navegador com uma CLI simulada; falta o checklist
-      com a CLI real (`docs/specs/004-feedback-de-jobs/plan.md`, Passo 4).
-- [ ] **Testes de concorrência** (etapa própria, depois do resto): duas gerações no mesmo
-      curso, status durante uma geração, duas abas, edição no Obsidian durante a escrita,
-      reinício do servidor com job em andamento.
 - [x] Timeout **depois** de escrever o arquivo: decidido (opção A) e implementado; o job
       vira `done` se o arquivo existe. Ver "Jobs".
+
+#### Revisão final (não é feature)
+
+Etapa de validação das Features 6 e 7, sem código novo: o que só a CLI real e o uso
+simultâneo mostram. Um bug achado aqui vira correção avulsa. Checklist e roteiro em
+`docs/specs/005-revisao-final/plan.md`.
+
+- [ ] **Teste manual de ponta a ponta** com um vault de teste e a CLI real (13 itens:
+      status, geração de aula e exercícios, painel, toasts, diálogo de decisão, CRLF e
+      tempos reais de geração). O fluxo de interface já foi conferido no navegador com uma
+      CLI simulada.
+- [ ] **Testes de concorrência:** duas gerações no mesmo curso, status durante uma geração,
+      duas abas, edição no Obsidian durante a escrita, reinício do servidor com job em
+      andamento, `PATCH` em paralelo. Critério: nenhum arquivo corrompido e nenhum job
+      preso em `running`.
+- [ ] Rodar a verificação completa do CLAUDE.md e atualizar "Tempos medidos de geração".
 
 #### Stretch (pós-protótipo)
 
