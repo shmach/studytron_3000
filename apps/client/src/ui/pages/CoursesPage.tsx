@@ -15,12 +15,20 @@ import { Skeleton } from '@ui/components/ui/Skeleton';
 import { useCourses } from '@app/hooks/useCourses';
 import { computeProgress } from '@app/lib/progress';
 import { useEffect, useMemo, useState } from 'react';
-import { Search } from 'lucide-react';
+import {
+  BookOpen,
+  Calendar,
+  CircleCheck,
+  Dumbbell,
+  Layers,
+  Search,
+} from 'lucide-react';
 import { Button } from '@ui/components/ui/Button';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCreateCourse } from '@app/hooks/useCreateCourse';
 import { useCourseJob } from '@app/hooks/useCourseJob';
 import { courseKeys } from '@app/api/queries';
+import { dateFormatter } from '@app/lib/dateFormatter';
 import { Input } from '@ui/components/ui/Input';
 import { useDebounce } from '@app/hooks/useDebounce';
 import { filterCourses } from '@app/lib/courseSearch';
@@ -68,8 +76,8 @@ export function CoursesPage() {
   );
 
   return (
-    <div className="min-h-full min-w-full md:min-w-[70%] lg:min-w-3xl space-y-6 flex flex-col gap-8 grow justify-center items-center">
-      <h1 className="text-4xl font-bold text-center m-0">
+    <div className="min-h-full w-full space-y-6 flex flex-col gap-8 grow justify-center items-center">
+      <h1 className="from-cyan-400 via-blue-500 to-violet-500 bg-linear-to-r bg-clip-text text-4xl font-bold text-center text-transparent m-0">
         {t('courses.heading')}
       </h1>
       <div className="min-w-full bg-transparent dark:bg-input/30 shadow-sm py-2 px-4 rounded-lg flex justify-center items-center border dark:border-none m-0">
@@ -83,7 +91,7 @@ export function CoursesPage() {
 
       <JobsPanel />
 
-      <div className="min-w-full flex flex-col">
+      <div className="w-full flex flex-col">
         {isPending && <CourseListSkeleton />}
         {isError && <ErrorState error={error} onRetry={() => void refetch()} />}
 
@@ -116,9 +124,9 @@ export function CoursesPage() {
           )}
 
         {filteredCourses && filteredCourses.length > 0 && (
-          <ul className="max-h-[40vh] flex flex-col gap-4 overflow-y-auto pr-1">
+          <ul className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
             {filteredCourses?.map((bundle) => (
-              <li key={bundle.course.slug}>
+              <li key={bundle.course.slug} className="h-full">
                 <CourseCard bundle={bundle} />
               </li>
             ))}
@@ -130,36 +138,102 @@ export function CoursesPage() {
 }
 
 function CourseCard({ bundle }: { bundle: CourseBundle }) {
-  const { t } = useTranslation();
-  const { course, lessons } = bundle;
+  const { t, i18n } = useTranslation();
+  const { course, lessons, exercise_sets } = bundle;
   const progress = computeProgress(course);
 
   return (
-    <Link to={`/courses/${course.slug}`} className="block h-full">
-      <Card className="h-full transition-colors hover:bg-accent/40">
+    <Link
+      to={`/courses/${course.slug}`}
+      className="group block h-full rounded-xl focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"
+    >
+      <Card className="relative h-full gap-4 overflow-hidden py-5 transition-all duration-200 group-hover:-translate-y-1 group-hover:border-blue-500/50 group-hover:shadow-lg group-hover:shadow-blue-500/10">
+        <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-cyan-400 via-blue-500 to-violet-500" />
         <CardHeader>
-          <CardTitle>{course.course}</CardTitle>
-          <CardDescription className="line-clamp-2">
-            {course.goal}
-          </CardDescription>
+          <div className="flex items-start gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-cyan-400/20 via-blue-500/20 to-violet-500/20 text-blue-500 ring-1 ring-blue-500/20">
+              <BookOpen className="size-5" />
+            </div>
+            <div className="min-w-0 space-y-1.5">
+              <CardTitle className="line-clamp-2 leading-snug">
+                {course.course}
+              </CardTitle>
+              <CardDescription className="line-clamp-3">
+                {course.goal}
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="mt-auto space-y-4">
           <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary">{course.level}</Badge>
-            <Badge variant="outline">{course.depth}</Badge>
+            <Badge className="border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-300">
+              {course.level}
+            </Badge>
+            <Badge className="border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-300">
+              {course.depth}
+            </Badge>
             <Badge variant="outline">{course.language}</Badge>
           </div>
-          <ProgressBar percent={progress.percent} />
-          <p className="text-muted-foreground text-xs">
-            {t('courses.cardSummary', {
-              count: lessons.length,
-              completed: progress.completedTopics,
-              total: progress.totalTopics,
+
+          <dl className="text-muted-foreground grid grid-cols-3 gap-2 text-xs">
+            <Stat
+              icon={<Layers />}
+              value={course.modules.length}
+              label={t('courses.stats.modules')}
+            />
+            <Stat
+              icon={<BookOpen />}
+              value={lessons.length}
+              label={t('courses.stats.lessons')}
+            />
+            <Stat
+              icon={<Dumbbell />}
+              value={exercise_sets.length}
+              label={t('courses.stats.exercises')}
+            />
+          </dl>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground flex items-center gap-1">
+                <CircleCheck className="size-3.5" />
+                {t('courses.topicsCompleted', {
+                  completed: progress.completedTopics,
+                  total: progress.totalTopics,
+                })}
+              </span>
+              <span className="font-semibold">{progress.percent}%</span>
+            </div>
+            <ProgressBar percent={progress.percent} />
+          </div>
+
+          <p className="text-muted-foreground flex items-center gap-1 text-xs">
+            <Calendar className="size-3.5" />
+            {t('course.created', {
+              date: dateFormatter(course.created, i18n.language),
             })}
           </p>
         </CardContent>
       </Card>
     </Link>
+  );
+}
+
+function Stat({
+  icon,
+  value,
+  label,
+}: {
+  icon: React.ReactNode;
+  value: number;
+  label: string;
+}) {
+  return (
+    <div className="bg-muted/50 flex flex-col items-center gap-0.5 rounded-lg px-2 py-2 [&>svg]:size-4 [&>svg]:text-blue-500">
+      {icon}
+      <dd className="text-foreground text-sm font-semibold">{value}</dd>
+      <dt>{label}</dt>
+    </div>
   );
 }
 
@@ -173,7 +247,7 @@ export function ProgressBar({ percent }: { percent: number }) {
       aria-valuemax={100}
     >
       <div
-        className="bg-primary h-full transition-all"
+        className="h-full bg-linear-to-r from-cyan-400 via-blue-500 to-violet-500 transition-all"
         style={{ width: `${percent}%` }}
       />
     </div>
@@ -182,8 +256,8 @@ export function ProgressBar({ percent }: { percent: number }) {
 
 function CourseListSkeleton() {
   return (
-    <div className="flex gap-4 flex-col">
-      {Array.from({ length: 2 }, (_, index) => (
+    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 3 }, (_, index) => (
         <Card key={index}>
           <CardHeader>
             <Skeleton className="h-5 w-2/3" />

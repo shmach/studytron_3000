@@ -41,7 +41,13 @@
     "notFoundDescription": "We couldn't find a course for this topic. Want to create one?",
     "createAbout": "Create course about: {{topic}}",
     "cardSummary_one": "{{completed}}/{{total}} topics completed · {{count}} lesson generated",
-    "cardSummary_other": "{{completed}}/{{total}} topics completed · {{count}} lessons generated"
+    "cardSummary_other": "{{completed}}/{{total}} topics completed · {{count}} lessons generated",
+    "topicsCompleted": "{{completed}}/{{total}} topics",
+    "stats": {
+      "modules": "Modules",
+      "lessons": "Lessons",
+      "exercises": "Exercises"
+    }
   },
   "course": {
     "allCourses": "All courses",
@@ -193,5 +199,9 @@
       "review": "I want to review it",
       "keep": "Still studying"
     }
+  },
+  "footer": {
+    "madeBy": "Made by",
+    "repository": "Repository"
   }
 }
