@@ -1,6 +1,8 @@
 # Plan: Feature 7 — Feedback de jobs e decisões pendentes
 
-> **Status: planejado (não iniciado).** Criado em 2026-10-25 ao encerrar a Feature 6:
+> **Status: encerrada.** Passos 1 a 3 entregues em 2026-10-25. Os antigos Passos 4 (checklist
+> com a CLI real) e 5 (concorrência) saíram desta feature e viraram a etapa
+> [`005-revisao-final`](../005-revisao-final/plan.md). Criado ao encerrar a Feature 6:
 > reúne os Passos 11 a 13 do plano
 > [`003-progresso-do-aluno`](../003-progresso-do-aluno/plan.md) e os pontos que
 > ficaram adiados. Especificação de origem: [`docs/SPEC.md`](../../SPEC.md), seção 9,
@@ -22,8 +24,8 @@ A Feature 7 dá ao aluno três coisas:
 3. um **diálogo** que pergunta o que fazer com cada decisão de status pendente.
 
 **Entrega:** o aluno acompanha os jobs de qualquer tela, é avisado do resultado e
-responde às decisões pendentes pelo app; o fluxo completo foi conferido de ponta a ponta
-em um vault de teste.
+responde às decisões pendentes pelo app. O fluxo de interface foi conferido no navegador
+com uma CLI simulada; a conferência com a CLI real fica na revisão final.
 
 **Fora do escopo:**
 
@@ -80,11 +82,11 @@ apps/client/src/
 
 | # | Passo | Depende de | Verificação |
 | --- | --- | --- | --- |
-| 1 | Painel de jobs na tela inicial e toasts | — (Feature 6) | `typecheck`, `lint`, `check:i18n`, navegador |
-| 2 | Diálogo de decisão pendente | 1 | idem, com saída real da skill |
-| 3 | Decidir o comportamento no timeout depois de o arquivo ser escrito | — | teste de servidor com CLI simulada |
-| 4 | Teste manual de ponta a ponta | 1, 2 | checklist abaixo |
-| 5 | Testes de concorrência (etapa própria, depois dos demais) | 1 a 4 | roteiro abaixo |
+| 1 | Painel de jobs na tela inicial e toasts | — (Feature 6) | **feito**; `typecheck`, `lint`, `check:i18n`, navegador com CLI simulada |
+| 2 | Diálogo de decisão pendente | 1 | **feito**; idem. Falta conferir com a saída real da skill |
+| 3 | Decidir o comportamento no timeout depois de o arquivo ser escrito | — | **feito** (opção A); testes de servidor com CLI simulada |
+| 4 | Teste manual de ponta a ponta | 1, 2 | movido para a [revisão final](../005-revisao-final/plan.md) |
+| 5 | Testes de concorrência | 1 a 4 | movido para a [revisão final](../005-revisao-final/plan.md) |
 
 ### Passo 1 — Painel de jobs e toasts
 
@@ -179,55 +181,16 @@ levanta `RuntimeError`), e `_run_generation` passa a conferir `produced(curso)` 
 nesse caminho. Teste com a CLI simulada: timeout com arquivo gravado e timeout sem
 arquivo.
 
-### Passo 4 — Teste manual de ponta a ponta
+### Passos 4 e 5 — movidos para a revisão final
 
-Checklist, com um vault de teste (não o vault real), cobrindo a Feature 6 e a Feature 7:
-
-- [ ] Marcar `pending → completed` pela aula; o arquivo mudou só na linha `status`.
-- [ ] Marcar `in_progress` em tópico sem aula: opção inativa; chamar a rota direto devolve `409`.
-- [ ] Gerar a aula pelo app: o progresso aparece, o job vai de `pending` a `running` a `done`, a aula aparece e o ícone do card na trilha muda sem recarregar.
-- [ ] Gerar os exercícios pelo app, em um tópico com aula: mesmo comportamento.
-- [ ] Na página de exercícios de um tópico sem aula: botão inativo, com o aviso e o link para a aula.
-- [ ] Durante uma geração, todos os botões de gerar e o seletor de status do curso ficam inativos; um segundo `POST` direto na API devolve `409`.
-- [ ] Recarregar a página durante uma geração: o progresso reaparece.
-- [ ] O painel da tela inicial lista o job em andamento e **some** quando ele termina, sem histórico.
-- [ ] Toast de início ao disparar uma geração e toast de fim ao terminar, inclusive com o aluno em outra tela. Abrir o app com um job já rodando **não** dispara toast de início.
-- [ ] Toast de erro quando a geração falha (servidor iniciado sem o `claude` no `PATH`), com a mensagem do job.
-- [ ] A saída da skill traz `Pending status decision`; o diálogo abre; cada opção muda o status; fechar sem responder não muda nada.
-- [ ] Editar o `00-curriculum.md` com CRLF; a rota de status preserva CRLF.
-- [ ] Anotar o tempo real de uma aula e de um conjunto de exercícios, para confirmar se os 300 s bastam.
-
-Rodar antes de encerrar, como manda o CLAUDE.md:
-
-```sh
-# frontend (em apps/client)
-npm run typecheck && npm run lint && npm run check:i18n
-
-# Python (na raiz)
-uv run pytest
-uv run ruff check packages/course-parser apps/local-server && uv run ruff format --check packages/course-parser apps/local-server
-```
-
-### Passo 5 — Testes de concorrência
-
-Etapa própria, **depois** de toda a implementação (decisão do Samuel em 2026-10-25). Hoje
-a trava de um job por curso só tem testes de unidade (`JobStore` e rotas com CLI
-simulada). O roteiro:
-
-- duas gerações ao mesmo tempo no mesmo curso: uma `202`, a outra `409`;
-- duas gerações em cursos diferentes ao mesmo tempo: as duas seguem;
-- mudança de status durante uma geração (pela API direto, já que a UI bloqueia);
-- duas abas do app abertas, uma gerando e a outra tentando gerar ou mudar status;
-- edição do `00-curriculum.md` no Obsidian durante a escrita da skill;
-- reinício do servidor com um job em andamento (o job some; a geração pode ser repetida
-  sem corromper o currículo);
-- muitas requisições de `PATCH` de status em paralelo no mesmo arquivo.
-
-O critério é **nenhum arquivo corrompido e nenhum job preso em `running`**.
+O teste manual de ponta a ponta e os testes de concorrência não são código de feature, e
+sim validação do que as Features 6 e 7 entregaram. Passaram para
+[`005-revisao-final`](../005-revisao-final/plan.md), com o checklist e o roteiro completos
+e o critério de saída (nenhum arquivo corrompido, nenhum job preso em `running`).
 
 ## Como verificar a interface sem tocar no vault real
 
-Usado na Feature 6 e reaproveitável aqui:
+Usado na Feature 6, aqui e na revisão final:
 
 1. Copiar um curso para uma pasta temporária (por exemplo,
    `packages/course-parser/tests/fixtures/java-para-quem-programa`).
@@ -241,10 +204,37 @@ Usado na Feature 6 e reaproveitável aqui:
 4. Para um job real, esperar de 1 a 2 minutos e **não** deixar o servidor ser parado antes
    de o job acabar.
 
+## Registro da implementação (2026-10-25)
+
+- **Timeout (Passo 3):** Samuel escolheu a opção A. `CliTimeoutError` (subclasse de
+  `RuntimeError`) sai de `LocalProcess.run`; `_run_generation` confere `produced(curso)`
+  também nesse caminho. Sem arquivo, o erro é a mensagem do timeout mais "no lesson/exercises
+  for topic X was written". A resposta do agente se perde com o processo morto, então uma
+  aula concluída assim não tem `pending_decisions`.
+- **`Job.created_at`:** não estava no plano. O painel precisava do tempo decorrido e o
+  contrato não tinha timestamp. Campo novo, UTC, opcional no TS (tem valor padrão).
+- **`sonner` e `Dialog`:** o registro do shadcn não estava acessível no ambiente de
+  desenvolvimento, então `Sonner.tsx` e `Dialog.tsx` foram escritos à mão no formato do
+  shadcn (o `Sonner` usa o `ThemeContext` do projeto, sem `next-themes`). O pacote `sonner`
+  entrou por `npm install`. Se quiser, rode `npx shadcn@latest add sonner dialog --cwd
+  apps/client --diff` para comparar.
+- **Painel:** lê a lista de jobs **sem filtro** (a mesma consulta do observador) e filtra
+  `pending`/`running` no cliente, para não abrir uma segunda requisição.
+- **Diálogo:** os botões ficam inativos enquanto há job ativo no curso (mesma regra do
+  `StatusSelect`); fechar o diálogo descarta as perguntas restantes sem mudar status.
+- **`useGeneration`:** perdeu o efeito que invalidava o curso ao fim do job (passo 4 da
+  seção do Passo 1); isso agora é só do `useJobsWatcher`.
+- **Passos 4 e 5:** movidos em 2026-10-27 para a etapa `005-revisao-final`, que não é uma
+  feature. A Feature 7 fecha com o que foi conferido com a CLI simulada.
+- **Verificação feita:** `uv run pytest` (203 testes), `ruff`, `typecheck`, `lint`,
+  `check:i18n`; navegador (Playwright) contra o servidor real com a CLI substituída por uma
+  simulação lenta: toast de início, painel com tempo decorrido, toast de fim, painel
+  esvaziando, diálogo, ESC sem mudar status, "Concluí" mudando só a linha `status`, toast de
+  erro e recarga no meio de um job sem toast de início.
+
 ## Decisões em aberto
 
-1. **Comportamento no timeout depois de o arquivo escrito** (Passo 3): opções A, B ou C
-   acima.
+Nenhuma. A do Passo 3 foi tomada (opção A).
 
 ## Riscos
 

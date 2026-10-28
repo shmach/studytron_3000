@@ -1,7 +1,8 @@
 {
   "common": {
     "cancel": "Cancel",
-    "tryAgain": "Try again"
+    "tryAgain": "Try again",
+    "close": "Close"
   },
   "theme": {
     "label": "Change theme",
@@ -152,6 +153,45 @@
     "language": {
       "title": "Which language should the course be written in?",
       "description": "Technical terms may stay in the original."
+    }
+  },
+  "jobs": {
+    "panel": {
+      "openCourse": "Open course"
+    },
+    "kind": {
+      "course_creation": "Creating a course",
+      "lesson_generation": "Lesson {{topic}}",
+      "exercise_generation": "Exercises {{topic}}"
+    },
+    "toast": {
+      "open": "Open",
+      "started": {
+        "course_creation": "Creating the course…",
+        "lesson_generation": "Generating lesson {{topic}}…",
+        "exercise_generation": "Generating exercises {{topic}}…"
+      },
+      "done": {
+        "course_creation": "Course created",
+        "lesson_generation": "Lesson {{topic}} is ready",
+        "exercise_generation": "Exercises {{topic}} are ready"
+      },
+      "failed": {
+        "course_creation": "Could not create the course",
+        "lesson_generation": "Could not generate lesson {{topic}}",
+        "exercise_generation": "Could not generate exercises {{topic}}"
+      }
+    }
+  },
+  "pendingDecision": {
+    "title": "What about the topics you were studying?",
+    "description_one": "The new lesson is ready, but this topic is still marked as in progress. Tell us how it went.",
+    "description_other": "The new lesson is ready, but these topics are still marked as in progress. Tell us how each one went.",
+    "question": "Did you finish this topic?",
+    "option": {
+      "completed": "I finished it",
+      "review": "I want to review it",
+      "keep": "Still studying"
     }
   }
 }

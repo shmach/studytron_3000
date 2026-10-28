@@ -24,6 +24,7 @@ import { courseKeys } from '@app/api/queries';
 import { Input } from '@ui/components/ui/Input';
 import { useDebounce } from '@app/hooks/useDebounce';
 import { filterCourses } from '@app/lib/courseSearch';
+import { JobsPanel } from '@ui/components/JobsPanel';
 import { CourseQuestionnaireDialog } from '@ui/components/CourseQuestionnaireDialog';
 
 export function CoursesPage() {
@@ -40,7 +41,6 @@ export function CoursesPage() {
 
   useEffect(() => {
     if (!job) return;
-    // console.log(job);
 
     if (job.status === 'done') {
       // Void is used to "fire and forget" - not need to await a promise that we don't need to.
@@ -80,6 +80,8 @@ export function CoursesPage() {
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
+
+      <JobsPanel />
 
       <div className="min-w-full flex flex-col">
         {isPending && <CourseListSkeleton />}

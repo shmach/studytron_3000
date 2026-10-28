@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from local_server.app import app
 from local_server.routes import courses
 from local_server.services.job_store import JobKind
+from local_server.services.local_process import CliTimeoutError
 
 # Topic 1.1 already has a lesson in the fixture; 1.2 and 1.3 do not.
 TOPIC_WITH_LESSON = "1.1"
@@ -63,6 +64,25 @@ class TestGenerateLesson:
 
         assert job["status"] == "error"
         assert job["error"] == "claude timed out after 300s"
+
+    def test_a_timeout_after_the_lesson_was_written_is_done(self, client, fake_cli):
+        fake_cli(writes="lesson", raises=CliTimeoutError("claude timed out after 300s"))
+
+        job = _job(client, _post(client).json()["id"])
+
+        assert job["status"] == "done"
+        assert job["error"] is None
+        # The agent's answer died with the process, so there is nothing to ask the student.
+        assert job["pending_decisions"] == []
+
+    def test_a_timeout_with_no_lesson_written_is_an_error(self, client, fake_cli):
+        fake_cli(raises=CliTimeoutError("claude timed out after 300s"))
+
+        job = _job(client, _post(client).json()["id"])
+
+        assert job["status"] == "error"
+        assert "timed out after 300s" in job["error"]
+        assert f"no lesson for topic {TOPIC} was written" in job["error"]
 
     def test_fails_when_the_cli_reports_an_error(self, client, fake_cli):
         fake_cli(is_error=True, result="Rate limited")

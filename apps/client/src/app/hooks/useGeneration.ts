@@ -1,13 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
 
 import type { Job } from '@app/api/client';
-import {
-  courseKeys,
-  generateExercises,
-  generateLesson,
-  jobKeys,
-} from '@app/api/queries';
+import { generateExercises, generateLesson, jobKeys } from '@app/api/queries';
 import { useJobs } from '@app/hooks/useJobs';
 
 export type GenerationKind = 'lesson' | 'exercises';
@@ -31,15 +25,7 @@ export function useGeneration(slug: string, topicId: string) {
   const { data: courseJobs } = useJobs({ slug });
   const activeJob = courseJobs?.find(isActive);
 
-  // When the running job ends, whatever it wrote (course bundle, lesson, exercises) is stale.
-  const previousActiveId = useRef<string | undefined>(undefined);
-  useEffect(() => {
-    const previous = previousActiveId.current;
-    previousActiveId.current = activeJob?.id;
-    if (previous !== undefined && activeJob === undefined) {
-      void queryClient.invalidateQueries({ queryKey: courseKeys.detail(slug) });
-    }
-  }, [activeJob, queryClient, slug]);
+  // Refreshing the course when the job ends is done by `useJobsWatcher`, for every screen.
 
   const mutation = useMutation({
     mutationFn: (kind: GenerationKind) =>

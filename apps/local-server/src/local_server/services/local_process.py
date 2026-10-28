@@ -7,6 +7,18 @@ class InvalidPromptException(Exception):
     """Raised when no prompt is provided"""
 
 
+class CliTimeoutError(RuntimeError):
+    """Raised when the agent CLI is killed for running longer than `CLI_TIMEOUT_SECONDS`.
+
+    It is a `RuntimeError` on purpose: callers that only care about "the CLI failed" keep
+    working. Callers that can still use the work done before the timeout (the agent may have
+    written its file and only been slow to exit) catch this subclass first.
+    """
+
+
+CLI_TIMEOUT_SECONDS = 300
+
+
 def extract_result(stdout: str) -> str:
     """Return the agent's final text from the JSON printed by `claude -p --output-format json`.
 
@@ -55,10 +67,16 @@ class LocalProcess:
 
         try:
             result = await asyncio.to_thread(
-                subprocess.run, command, cwd=cwd, capture_output=True, timeout=300
+                subprocess.run,
+                command,
+                cwd=cwd,
+                capture_output=True,
+                timeout=CLI_TIMEOUT_SECONDS,
             )
-        except subprocess.TimeoutExpired:
-            raise RuntimeError(f"{self.tool} timed out after 300s")
+        except subprocess.TimeoutExpired as exc:
+            raise CliTimeoutError(
+                f"{self.tool} timed out after {CLI_TIMEOUT_SECONDS}s"
+            ) from exc
 
         if result.returncode == 0:
             return result.stdout.decode().strip()

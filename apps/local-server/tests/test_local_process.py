@@ -1,7 +1,14 @@
+import asyncio
 import json
+import subprocess
 
 import pytest
-from local_server.services.local_process import extract_result
+from local_server.services import local_process
+from local_server.services.local_process import (
+    CliTimeoutError,
+    LocalProcess,
+    extract_result,
+)
 
 # Same shape as the real output of `claude -p ... --output-format json`, trimmed to the
 # fields that matter here.
@@ -41,3 +48,17 @@ class TestExtractResult:
 
         with pytest.raises(RuntimeError, match="Credit balance is too low"):
             extract_result(json.dumps(payload))
+
+
+class TestRunTimeout:
+    def test_a_timeout_raises_the_dedicated_error(self, monkeypatch):
+        def hang(command, **kwargs):
+            raise subprocess.TimeoutExpired(command, kwargs["timeout"])
+
+        monkeypatch.setattr(local_process.subprocess, "run", hang)
+
+        with pytest.raises(CliTimeoutError, match="timed out after 300s") as caught:
+            asyncio.run(LocalProcess(prompt="hi").run(cwd="."))
+
+        # Callers that only know about `RuntimeError` must keep treating it as a CLI failure.
+        assert isinstance(caught.value, RuntimeError)

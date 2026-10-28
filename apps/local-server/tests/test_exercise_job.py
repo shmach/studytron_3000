@@ -2,6 +2,7 @@ from conftest import SLUG
 from fastapi.testclient import TestClient
 from local_server.routes import courses
 from local_server.services.job_store import JobKind
+from local_server.services.local_process import CliTimeoutError
 
 # In the fixture, topic 1.1 has a lesson and exercises; 1.2 and 1.3 have neither.
 TOPIC_WITH_EXERCISES = "1.1"
@@ -80,6 +81,30 @@ class TestGenerateExercises:
 
         assert job["status"] == "error"
         assert job["error"] == "claude timed out after 300s"
+
+    def test_a_timeout_after_the_exercises_were_written_is_done(
+        self, client, vault_dir, fake_cli
+    ):
+        _give_the_topic_a_lesson(vault_dir)
+        fake_cli(
+            writes="exercises", raises=CliTimeoutError("claude timed out after 300s")
+        )
+
+        job = _job(client, _post(client).json()["id"])
+
+        assert job["status"] == "done"
+        assert job["error"] is None
+
+    def test_a_timeout_with_no_exercises_written_is_an_error(
+        self, client, vault_dir, fake_cli
+    ):
+        _give_the_topic_a_lesson(vault_dir)
+        fake_cli(raises=CliTimeoutError("claude timed out after 300s"))
+
+        job = _job(client, _post(client).json()["id"])
+
+        assert job["status"] == "error"
+        assert f"no exercises for topic {TOPIC} was written" in job["error"]
 
     def test_an_unexpected_exception_does_not_leave_the_job_running(
         self, client, vault_dir, fake_cli

@@ -1,4 +1,5 @@
 import threading
+from datetime import UTC, datetime
 from enum import Enum
 from uuid import uuid4
 
@@ -34,6 +35,8 @@ class Job(BaseModel):
     # Generation jobs only (lesson or exercises).
     topic_id: str | None = None
     error: str | None = None
+    # When the job was created, in UTC. The app shows how long a running job has been going.
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     # Lesson generation only: topics the agent left `in_progress` because it could not ask
     # the student. The app asks, then answers through the status route. Empty otherwise.
     pending_decisions: list[PendingDecision] = []

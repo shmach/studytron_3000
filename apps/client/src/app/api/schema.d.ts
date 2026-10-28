@@ -299,6 +299,11 @@ export interface components {
       /** Error */
       error?: string | null;
       /**
+       * Created At
+       * Format: date-time
+       */
+      created_at?: string;
+      /**
        * Pending Decisions
        * @default []
        */
