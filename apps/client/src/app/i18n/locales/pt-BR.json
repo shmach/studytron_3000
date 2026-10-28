@@ -157,7 +157,6 @@
   },
   "jobs": {
     "panel": {
-      "title": "Em andamento",
       "openCourse": "Abrir curso"
     },
     "kind": {

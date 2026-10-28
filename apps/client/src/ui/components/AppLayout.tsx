@@ -31,7 +31,6 @@ export function AppLayout() {
     ]);
   }, []);
 
-  // Mounted here, not in a page, so it reports jobs whatever screen the student is on.
   useJobsWatcher({ onPendingDecisions: queuePendingDecisions });
 
   return (

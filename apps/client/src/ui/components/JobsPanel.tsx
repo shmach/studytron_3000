@@ -1,4 +1,3 @@
-import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
@@ -8,20 +7,9 @@ import { useCourses } from '@app/hooks/useCourses';
 import { useJobs } from '@app/hooks/useJobs';
 import { describeJob, isJobActive } from '@app/lib/jobs';
 import { coursePath } from '@app/lib/routes';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@ui/components/ui/Card';
+import { Card, CardContent } from '@ui/components/ui/Card';
 
-/**
- * Jobs running right now, of every course and kind. There is no history: a job leaves the
- * panel when it ends, and the toast says how it went. Hidden when nothing is running.
- */
 export function JobsPanel() {
-  const { t } = useTranslation();
-  // The unfiltered list is the one the toasts watch, so this shares its request.
   const { data: jobs } = useJobs();
   const { data: courses } = useCourses();
 
@@ -29,10 +17,7 @@ export function JobsPanel() {
   if (running.length === 0) return null;
 
   return (
-    <Card className="w-full" aria-live="polite">
-      <CardHeader>
-        <CardTitle className="text-base">{t('jobs.panel.title')}</CardTitle>
-      </CardHeader>
+    <Card className="w-full">
       <CardContent>
         <ul className="flex flex-col gap-3">
           {running.map((job) => (
@@ -59,10 +44,7 @@ function JobRow({
 
   return (
     <li className="flex items-center gap-3 text-sm">
-      <Loader2
-        className="text-muted-foreground size-4 shrink-0 animate-spin"
-        aria-hidden
-      />
+      <span className="h-3 w-3 bg-green-400/80 rounded-full animate-ping" />
       <div className="min-w-0 grow">
         <p className="font-medium">
           {t(`jobs.kind.${job.kind}` as const, { topic: job.topic_id ?? '' })}

@@ -41,7 +41,6 @@ export function CoursesPage() {
 
   useEffect(() => {
     if (!job) return;
-    // console.log(job);
 
     if (job.status === 'done') {
       // Void is used to "fire and forget" - not need to await a promise that we don't need to.

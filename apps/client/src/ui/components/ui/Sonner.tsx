@@ -2,10 +2,6 @@ import { Toaster as SonnerToaster, type ToasterProps } from 'sonner';
 
 import { useTheme } from '@app/context/ThemeContext';
 
-/**
- * The shadcn toaster, tied to the project's theme (light, dark or system) instead of
- * `next-themes`, which the project does not use.
- */
 function Toaster(props: ToasterProps) {
   const { theme } = useTheme();
 

@@ -157,7 +157,6 @@
   },
   "jobs": {
     "panel": {
-      "title": "Running now",
       "openCourse": "Open course"
     },
     "kind": {
