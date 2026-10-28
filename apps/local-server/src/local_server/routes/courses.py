@@ -172,7 +172,6 @@ async def _run_course_creation(job_id: str, prompt: str) -> None:
     try:
         local_process = LocalProcess(tool="claude", prompt=prompt)
         await local_process.run(cwd=env.VAULT_PATH)
-        # print(f"[create_course] CLI result: {result}") # TODO: apagar depois
     except (InvalidPromptException, RuntimeError) as exc:
         job_store.mark_error(job_id, str(exc))
         return
@@ -390,7 +389,6 @@ async def create_course(user_prompt: str, background_tasks: BackgroundTasks) -> 
     prompt = build_course_prompt(user_prompt)
 
     job = job_store.create()
-    print(f"job: {job}")
     background_tasks.add_task(_run_course_creation, job.id, prompt)
 
     return job
