@@ -182,3 +182,29 @@
     animation: none;
   }
 }
+
+/* Static 1px gradient line on the top or bottom edge, fading out at both ends. */
+.gradient-line-top::after,
+.gradient-line-bottom::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in oklab, var(--color-cyan-400) 70%, transparent) 25%,
+    color-mix(in oklab, var(--color-blue-500) 70%, transparent) 50%,
+    color-mix(in oklab, var(--color-violet-500) 70%, transparent) 75%,
+    transparent
+  );
+  pointer-events: none;
+}
+
+.gradient-line-top::after {
+  top: 0;
+}
+
+.gradient-line-bottom::after {
+  bottom: 0;
+}

@@ -36,7 +36,7 @@ export function AppLayout() {
 
   return (
     <div className="min-h-svh bg-background flex flex-col justify-center">
-      <header className="border-b">
+      <header className="gradient-line-bottom relative">
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4">
           <Link to="/" className="flex items-center gap-2 font-semibold">
             {/* Decorative: the brand name is rendered as text right beside it. */}

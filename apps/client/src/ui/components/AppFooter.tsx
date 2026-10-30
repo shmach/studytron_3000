@@ -21,7 +21,7 @@ export function AppFooter() {
   const { t } = useTranslation();
 
   return (
-    <footer className="bg-background/80 fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur">
+    <footer className="bg-background/80 gradient-line-top fixed inset-x-0 bottom-0 z-40 backdrop-blur">
       <div className="text-muted-foreground mx-auto flex h-11 max-w-5xl items-center justify-between gap-4 px-4 text-xs">
         <a
           href={REPO_URL}
