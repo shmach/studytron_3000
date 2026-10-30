@@ -17,6 +17,7 @@ import { dateFormatter } from '@app/lib/dateFormatter';
 import { exercisesPath, topicPath } from '@app/lib/routes';
 import { flattenTopics, getNeighbors } from '@app/lib/topic';
 import type { Neighbors } from '@app/lib/topic';
+import { AccentRule } from '@ui/components/AccentRule';
 import { ErrorState } from '@ui/components/ErrorState';
 import { Markdown } from '@ui/components/Markdown';
 import { GenerateButton } from '@ui/components/GenerateButton';
@@ -109,6 +110,7 @@ function LessonView({ slug, bundle, topic, neighbors }: LessonViewProps) {
             hasLesson={hasLesson}
           />
         </div>
+        <AccentRule />
       </header>
 
       <TopicDetails topic={topic} />
@@ -170,7 +172,7 @@ function TopicDetails({ topic }: { topic: Topic }) {
                   {subtopic.completed ? (
                     <>
                       <Check
-                        className="text-primary mt-0.5 size-4 shrink-0"
+                        className="mt-0.5 size-4 shrink-0 text-blue-500"
                         aria-hidden
                       />
                       <span className="sr-only">
@@ -259,7 +261,7 @@ function LessonNav({ slug, topicId, neighbors, hasExercises }: LessonNavProps) {
   const { prev, next } = neighbors;
 
   return (
-    <nav className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-t pt-6">
+    <nav className="gradient-line-top relative grid grid-cols-[1fr_auto_1fr] items-center gap-2 pt-6">
       {prev ? (
         <Button
           asChild

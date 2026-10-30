@@ -1,9 +1,10 @@
-import { BookOpen } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { Link, Outlet, ScrollRestoration } from 'react-router';
 
 import type { Job } from '@app/api/client';
 import { useJobsWatcher } from '@app/hooks/useJobsWatcher';
+import logoUrl from '/assets/logo.png';
+import { AppFooter } from '@ui/components/AppFooter';
 import { LanguageSelector } from '@ui/components/LanguageSelector';
 import {
   PendingStatusDialog,
@@ -35,11 +36,18 @@ export function AppLayout() {
 
   return (
     <div className="min-h-svh bg-background flex flex-col justify-center">
-      <header className="border-b">
+      <header className="gradient-line-bottom relative">
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4">
           <Link to="/" className="flex items-center gap-2 font-semibold">
-            <BookOpen className="size-5" />
-            StudyTRON 3000
+            {/* Decorative: the brand name is rendered as text right beside it. */}
+            <img src={logoUrl} alt="" className="h-8 w-auto" />
+            <span className="font-brand text-lg tracking-wider">
+              Study
+              <span className="bg-linear-to-r from-cyan-400 via-blue-500 to-violet-500 bg-clip-text text-transparent">
+                TRON
+              </span>{' '}
+              <span className="text-muted-foreground">3000</span>
+            </span>
           </Link>
           <div className="ml-auto flex items-center gap-1">
             <LanguageSelector />
@@ -47,9 +55,10 @@ export function AppLayout() {
           </div>
         </div>
       </header>
-      <main className="mx-auto flex w-full max-w-5xl grow flex-col px-4 py-8">
+      <main className="mx-auto flex w-full max-w-5xl grow flex-col px-4 pt-8 pb-20">
         <Outlet />
       </main>
+      <AppFooter />
       <ScrollRestoration />
       <Toaster />
       <PendingStatusDialog

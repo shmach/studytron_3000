@@ -10,6 +10,7 @@ import { useExerciseSet } from '@app/hooks/useExerciseSet';
 import { dateFormatter } from '@app/lib/dateFormatter';
 import { topicPath } from '@app/lib/routes';
 import { flattenTopics } from '@app/lib/topic';
+import { AccentRule } from '@ui/components/AccentRule';
 import { ErrorState } from '@ui/components/ErrorState';
 import { GenerateButton } from '@ui/components/GenerateButton';
 import { Markdown } from '@ui/components/Markdown';
@@ -79,6 +80,7 @@ function ExercisesHeader({
         </span>{' '}
         {t('exercises.title', { title: topic.title })}
       </h1>
+      <AccentRule />
     </header>
   );
 }

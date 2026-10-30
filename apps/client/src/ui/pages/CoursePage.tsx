@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 
 import type { CourseBundle } from '@app/api/client';
+import { AccentRule } from '@ui/components/AccentRule';
 import { DeleteCourseDialog } from '@ui/components/DeleteCourseDialog';
 import { ErrorState } from '@ui/components/ErrorState';
 import { StatusBadge } from '@ui/components/StatusBadge';
@@ -70,10 +71,15 @@ function CourseDetail({ bundle }: { bundle: CourseBundle }) {
             {course.course}
           </h1>
         </div>
+        <AccentRule />
         <p className="text-muted-foreground">{course.goal}</p>
         <div className="flex flex-wrap gap-2">
-          <Badge variant="secondary">{course.level}</Badge>
-          <Badge variant="outline">{course.depth}</Badge>
+          <Badge className="border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-300">
+            {course.level}
+          </Badge>
+          <Badge className="border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-300">
+            {course.depth}
+          </Badge>
           <Badge variant="outline">{course.language}</Badge>
           <Badge variant="outline">
             {t('course.created', { date: createdDate })}
