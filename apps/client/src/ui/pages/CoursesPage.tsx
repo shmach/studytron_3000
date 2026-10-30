@@ -240,7 +240,7 @@ function Stat({
   label: string;
 }) {
   return (
-    <div className="bg-muted/50 flex flex-col items-center gap-0.5 rounded-lg px-2 py-2 [&>svg]:size-4 [&>svg]:text-blue-500">
+    <div className="bg-muted/50 flex flex-col items-center gap-0.5 rounded-lg px-2 py-2 text-center [&>svg]:size-4 [&>svg]:text-blue-500">
       {icon}
       <dd className="text-foreground text-sm font-semibold">{value}</dd>
       <dt>{label}</dt>
