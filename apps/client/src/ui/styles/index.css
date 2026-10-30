@@ -135,3 +135,50 @@
 .dark .shiki span {
   color: var(--shiki-dark);
 }
+
+/* Subtle 1px ring with a short light beam that travels around it. */
+@property --beam-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background:
+    conic-gradient(
+      from var(--beam-angle),
+      transparent 0%,
+      transparent 91%,
+      var(--color-cyan-400) 95%,
+      var(--color-blue-500) 98%,
+      var(--color-violet-500) 100%
+    ),
+    linear-gradient(var(--border), var(--border));
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: beam-spin 5s linear infinite;
+}
+
+@keyframes beam-spin {
+  to {
+    --beam-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gradient-border::before {
+    animation: none;
+  }
+}

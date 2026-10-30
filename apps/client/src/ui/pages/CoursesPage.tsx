@@ -77,16 +77,27 @@ export function CoursesPage() {
 
   return (
     <div className="min-h-full w-full space-y-6 flex flex-col gap-8 grow justify-center items-center">
-      <h1 className="from-cyan-400 via-blue-500 to-violet-500 bg-linear-to-r bg-clip-text text-4xl font-bold text-center text-transparent m-0">
-        {t('courses.heading')}
-      </h1>
-      <div className="min-w-full bg-transparent dark:bg-input/30 shadow-sm py-2 px-4 rounded-lg flex justify-center items-center border dark:border-none m-0">
+      <h1 className="sr-only">{t('courses.heading')}</h1>
+      {/* Gradient border: see .gradient-border in index.css. */}
+      <div className="gradient-border min-w-full bg-transparent dark:bg-input/30 shadow-sm py-2 px-4 rounded-lg flex justify-center items-center m-0">
         <Search />
-        <Input
-          className="bg-transparent dark:bg-transparent border-none focus-visible:ring-0 shadow-none font-medium"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <div className="relative w-full">
+          <Input
+            aria-label={t('courses.heading')}
+            className="bg-transparent dark:bg-transparent border-none focus-visible:ring-0 shadow-none font-medium"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {/* ::placeholder can't use background-clip, so the gradient placeholder is an overlay. */}
+          {search === '' && (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 left-3 flex items-center truncate bg-linear-to-r from-cyan-400 via-blue-500 to-violet-500 bg-clip-text text-base font-bold text-transparent"
+            >
+              {t('courses.heading')}
+            </span>
+          )}
+        </div>
       </div>
 
       <JobsPanel />
