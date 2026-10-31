@@ -1,10 +1,20 @@
 import asyncio
-import json
+import shutil
 import subprocess
+
+from local_server.services.agents import AGENTS, AgentId
 
 
 class InvalidPromptException(Exception):
     """Raised when no prompt is provided"""
+
+
+class AgentNotInstalledError(RuntimeError):
+    """Raised when the agent's executable is not on the `PATH`.
+
+    A `RuntimeError` on purpose, like `CliTimeoutError`: callers that only care about "the CLI
+    failed" turn it into an error job without knowing about this class.
+    """
 
 
 class CliTimeoutError(RuntimeError):
@@ -19,44 +29,30 @@ class CliTimeoutError(RuntimeError):
 CLI_TIMEOUT_SECONDS = 300
 
 
-def extract_result(stdout: str) -> str:
-    """Return the agent's final text from the JSON printed by `claude -p --output-format json`.
-
-    The CLI prints one JSON object with `type: "result"`, an `is_error` flag and the final
-    answer in `result`.
-    """
-    try:
-        payload = json.loads(stdout)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError("claude printed output that is not JSON") from exc
-
-    result = payload.get("result") if isinstance(payload, dict) else None
-    if not isinstance(result, str):
-        # Bad output from the external tool, not a type bug of our caller: not a TypeError.
-        raise RuntimeError("claude output has no `result` text")  # noqa: TRY004
-    if payload.get("is_error"):
-        raise RuntimeError(f"claude reported an error: {result}")
-
-    return result
+def extract_result(stdout: str, tool: AgentId = "claude") -> str:
+    """Return the final text an agent printed in JSON mode (see `agents.py` for each format)."""
+    return AGENTS[tool].parse_result(stdout)
 
 
 class LocalProcess:
-    def __init__(self, tool: str = "claude", prompt: str | None = None):
+    def __init__(self, tool: AgentId = "claude", prompt: str | None = None):
+        if tool not in AGENTS:
+            raise ValueError(f"Unknown tool: {tool}")
         self.tool = tool
         self.prompt = prompt
 
-    def args_for_tool(self):
-        if self.tool == "claude":
-            return [
-                "claude",
-                "-p",
-                self.prompt,
-                "--output-format",
-                "json",
-                "--dangerously-skip-permissions",
-            ]
-
-        raise ValueError(f"Unknown tool: {self.tool}")
+    def args_for_tool(self) -> list[str]:
+        """The full command: the executable, resolved on the `PATH`, then the agent's flags."""
+        agent = AGENTS[self.tool]
+        # `which` finds the real file, including Windows `.exe`/`.cmd` shims, and tells us
+        # up front when the agent is missing instead of failing inside `subprocess.run`.
+        executable = shutil.which(agent.executable)
+        if executable is None:
+            raise AgentNotInstalledError(
+                f"{agent.display_name} is not installed: `{agent.executable}` was not found "
+                f"on the PATH. {agent.install_hint}"
+            )
+        return [executable, *agent.build_args(self.prompt or "")]
 
     async def run(self, cwd: str) -> str:
         """Run the agent CLI in `cwd` and return its raw stdout."""
