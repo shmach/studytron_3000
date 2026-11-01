@@ -1,7 +1,6 @@
 import json
 import shutil
 
-import pytest
 from conftest import FIXTURES_DIR, SLUG
 from fastapi.testclient import TestClient
 from local_server.app import app
@@ -162,11 +161,6 @@ class TestGenerateLesson:
 
 class TestCourseCreationStillWorks:
     """The job store was generalised for lessons; creating a course must behave as before."""
-
-    @pytest.fixture(autouse=True)
-    def _vault_env(self, vault_dir, monkeypatch):
-        # `_existing_slugs` reads the environment variable, not `courses.env`.
-        monkeypatch.setenv("VAULT_PATH", str(vault_dir))
 
     def test_job_finishes_with_the_new_slug(self, client, vault_dir, monkeypatch):
         async def fake_run(self, cwd):

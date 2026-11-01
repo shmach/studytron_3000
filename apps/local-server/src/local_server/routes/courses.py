@@ -18,7 +18,6 @@ from dotenv import load_dotenv
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 
-from local_server.config.env import Env
 from local_server.prompts import (
     build_course_prompt,
     build_exercises_prompt,
@@ -32,6 +31,7 @@ from local_server.services.local_process import (
     extract_result,
 )
 from local_server.services.pending_decisions import pending_decisions_from
+from local_server.services.settings_store import settings_store
 from local_server.utils.atomic_write import read_text_exact, write_text_atomic
 from local_server.utils.existing_slugs import _existing_slugs
 
@@ -40,8 +40,6 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/courses", tags=["courses"])
-
-env = Env()
 
 # Status updates read the curriculum, change one line and write it back. Without a lock, two
 # requests at the same time could both read the old text and the second write would undo the
@@ -53,14 +51,21 @@ class TopicStatusUpdate(BaseModel):
     status: TopicStatus
 
 
+def _vault_path_or_500() -> Path:
+    """The vault folder in use, or a 500 when neither the app nor `VAULT_PATH` set one."""
+    vault_path = settings_store.vault_path()
+    if not vault_path:
+        raise HTTPException(500, "VAULT_PATH is not configured")
+    return Path(vault_path)
+
+
 def _course_dir_or_404(slug: str) -> Path:
     """Map `slug` to its folder inside the vault, rejecting anything that could escape it."""
-    if not env.VAULT_PATH:
-        raise HTTPException(500, "VAULT_PATH is not configured")
+    vault_path = _vault_path_or_500()
     if slug in ("", ".", "..") or "/" in slug or "\\" in slug:
         raise HTTPException(404, "Course not found")
 
-    return Path(env.VAULT_PATH) / slug
+    return vault_path / slug
 
 
 def _load_course_or_404(slug: str) -> CourseBundle:
@@ -75,12 +80,11 @@ def _load_course_or_404(slug: str) -> CourseBundle:
 
 @router.get("", operation_id="list_courses")
 def list_courses() -> list[CourseBundle]:
-    if not env.VAULT_PATH:
-        raise HTTPException(500, "VAULT_PATH is not configured")
+    vault_path = _vault_path_or_500()
     try:
-        return vault.load_vault(Path(env.VAULT_PATH))
+        return vault.load_vault(vault_path)
     except FileNotFoundError as exc:
-        raise HTTPException(500, f"vault not found: {env.VAULT_PATH}") from exc
+        raise HTTPException(500, f"vault not found: {vault_path}") from exc
 
 
 @router.get("/{slug}", operation_id="get_course")
@@ -171,7 +175,7 @@ async def _run_course_creation(job_id: str, prompt: str) -> None:
 
     try:
         local_process = LocalProcess(tool="claude", prompt=prompt)
-        await local_process.run(cwd=env.VAULT_PATH)
+        await local_process.run(cwd=str(_vault_path_or_500()))
     except (InvalidPromptException, RuntimeError) as exc:
         job_store.mark_error(job_id, str(exc))
         return
@@ -218,7 +222,7 @@ async def _run_generation(
     timeout_error: CliTimeoutError | None = None
     try:
         local_process = LocalProcess(tool="claude", prompt=prompt)
-        stdout = await local_process.run(cwd=env.VAULT_PATH)
+        stdout = await local_process.run(cwd=str(_vault_path_or_500()))
         output = extract_result(stdout)
     except CliTimeoutError as exc:
         # The CLI can take minutes to exit after it has already written the file. The file is
@@ -383,8 +387,7 @@ async def create_course(user_prompt: str, background_tasks: BackgroundTasks) -> 
     if not user_prompt:
         raise HTTPException(400, "Prompt must have a content")
 
-    if not env.VAULT_PATH:
-        raise HTTPException(500, "VAULT PATH is not configured")
+    _vault_path_or_500()
 
     prompt = build_course_prompt(user_prompt)
 

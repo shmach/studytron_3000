@@ -233,3 +233,9 @@ uv run ruff check packages/course-parser apps/local-server && uv run ruff format
   `AgentNotInstalledError`. Formato de erro do `agy` confirmado: `status: "ERROR"` com o
   motivo em `error`, e código de saída 1. O `ruff format` do `apps/local-server` usa aspas
   duplas, apesar de o `CLAUDE.md` dizer aspas simples.
+- **Passo 2 (2026-10-31):** entregue. `services/settings_store.py` (`Settings`, `SettingsStore`,
+  singleton `settings_store`), arquivo em `platformdirs.user_config_dir("studytron")`. Questão
+  aberta 3 resolvida: `platformdirs` entrou como dependência. `courses.py`, `existing_slugs.py`
+  e `GET /vault/config` leem o vault do store (`VAULT_PATH` vira só o valor de reserva);
+  `config/env.py` foi removido por ter ficado sem uso. Nos testes, a fixture automática
+  `isolated_settings` aponta o store para um arquivo temporário e esquece `VAULT_PATH`.

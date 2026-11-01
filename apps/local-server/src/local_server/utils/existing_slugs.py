@@ -1,9 +1,10 @@
-import os
 from pathlib import Path
+
+from local_server.services.settings_store import settings_store
 
 
 def _existing_slugs() -> set[str]:
-    vault_path = os.getenv("VAULT_PATH") or None
+    vault_path = settings_store.vault_path()
 
     if not vault_path:
         return set()
