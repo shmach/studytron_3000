@@ -84,6 +84,10 @@ class JobStore:
                 return None
             return self.create(kind=kind, slug=slug, topic_id=topic_id)
 
+    def has_active(self) -> bool:
+        """Whether any job, of any course, is pending or running."""
+        return any(j.status in _ACTIVE for j in list(self._jobs.values()))
+
     def get(self, job_id: str) -> Job | None:
         return self._jobs.get(job_id)
 

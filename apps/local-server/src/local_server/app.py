@@ -12,7 +12,7 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from local_server.routes import courses, jobs, vault
+from local_server.routes import agents, courses, jobs, settings
 
 DEV_ORIGINS = [
     "http://localhost:3000",
@@ -32,7 +32,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router=vault.router)
+app.include_router(router=settings.router)
+app.include_router(router=agents.router)
 app.include_router(router=courses.router)
 app.include_router(router=jobs.router)
 

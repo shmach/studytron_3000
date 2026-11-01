@@ -239,3 +239,9 @@ uv run ruff check packages/course-parser apps/local-server && uv run ruff format
   e `GET /vault/config` leem o vault do store (`VAULT_PATH` vira só o valor de reserva);
   `config/env.py` foi removido por ter ficado sem uso. Nos testes, a fixture automática
   `isolated_settings` aponta o store para um arquivo temporário e esquece `VAULT_PATH`.
+- **Passo 3 (2026-11-01):** entregue. `routes/settings.py` (`GET` e `PATCH /settings`) e
+  `routes/agents.py` (`GET /agents`). `PATCH` valida o caminho do vault (absoluto, existe, é
+  pasta; `422` com o motivo) e recusa a troca de vault com `409` se há job ativo, via
+  `JobStore.has_active()`; trocar só o agente é permitido. A checagem de job ativo e a gravação
+  não são atômicas, aceitável para uso local. `GET /vault/config` e `routes/vault.py` foram
+  removidos. Tipos TS regerados.
