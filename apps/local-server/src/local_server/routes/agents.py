@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from local_server.services.agent_check import AgentCheck, check_agent
 from local_server.services.agents import AGENTS, AgentId
 
 router = APIRouter(prefix="/agents", tags=["agents"])
@@ -23,3 +24,13 @@ def list_agents() -> list[AgentInfo]:
         )
         for agent in AGENTS.values()
     ]
+
+
+@router.post("/{agent_id}/check", operation_id="check_agent")
+def check_agent_route(agent_id: AgentId) -> AgentCheck:
+    """Always `200`: a missing agent is the answer (`available=false`), not a failed request.
+
+    A plain `def`, so FastAPI runs it in a worker thread and the blocking `--version`
+    call does not stall the event loop.
+    """
+    return check_agent(agent_id)

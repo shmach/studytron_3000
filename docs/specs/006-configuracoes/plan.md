@@ -245,3 +245,9 @@ uv run ruff check packages/course-parser apps/local-server && uv run ruff format
   `JobStore.has_active()`; trocar só o agente é permitido. A checagem de job ativo e a gravação
   não são atômicas, aceitável para uso local. `GET /vault/config` e `routes/vault.py` foram
   removidos. Tipos TS regerados.
+- **Passo 4 (2026-11-01):** entregue. `services/agent_check.py` (`check_agent`, `AgentCheck`) e
+  `POST /agents/{agent_id}/check`, sempre `200`. `shutil.which` primeiro (sem processo), depois
+  `--version` com timeout de 5 s; executável ausente, timeout, falha ao iniciar e código de
+  saída diferente de zero viram `available=false` com a mensagem. Medido nesta máquina:
+  `claude` em ~0,05 s e `agy` em ~1,7 s (a CLI do Antigravity demora para iniciar, então a
+  tela deve mostrar o estado de carregando). Tipos TS regerados.

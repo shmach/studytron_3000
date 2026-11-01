@@ -91,6 +91,53 @@
         }
       }
     },
+    "/agents/{agent_id}/check": {
+      "post": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Check Agent Route",
+        "description": "Always `200`: a missing agent is the answer (`available=false`), not a failed request.\n\nA plain `def`, so FastAPI runs it in a worker thread and the blocking `--version`\ncall does not stall the event loop.",
+        "operationId": "check_agent",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "claude",
+                "antigravity"
+              ],
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentCheck"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/courses": {
       "get": {
         "tags": [
@@ -611,6 +658,41 @@
   },
   "components": {
     "schemas": {
+      "AgentCheck": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "available"
+        ],
+        "title": "AgentCheck"
+      },
       "AgentInfo": {
         "properties": {
           "id": {

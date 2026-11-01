@@ -39,6 +39,29 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/agents/{agent_id}/check': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Check Agent Route
+     * @description Always `200`: a missing agent is the answer (`available=false`), not a failed request.
+     *
+     *     A plain `def`, so FastAPI runs it in a worker thread and the blocking `--version`
+     *     call does not stall the event loop.
+     */
+    post: operations['check_agent'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/courses': {
     parameters: {
       query?: never;
@@ -205,6 +228,15 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** AgentCheck */
+    AgentCheck: {
+      /** Available */
+      available: boolean;
+      /** Version */
+      version?: string | null;
+      /** Error */
+      error?: string | null;
+    };
     /** AgentInfo */
     AgentInfo: {
       /**
@@ -552,6 +584,37 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['AgentInfo'][];
+        };
+      };
+    };
+  };
+  check_agent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        agent_id: 'claude' | 'antigravity';
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AgentCheck'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
     };

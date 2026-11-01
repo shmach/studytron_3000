@@ -25,6 +25,7 @@ skip the inline variable. Swagger UI lives at http://localhost:8000/docs.
 | `GET /settings` | the agent, the vault in use and the recent vaults |
 | `PATCH /settings` | changes the agent and/or the vault (422 if invalid, 409 while a job runs) |
 | `GET /agents` | the supported agents, with display name and install hint |
+| `POST /agents/{agent_id}/check` | `{available, version, error}`; always 200, runs `--version` (5 s timeout), spends no tokens |
 | `GET /courses` | every course as a `CourseBundle` |
 | `GET /courses/{slug}` | one `CourseBundle` (404 if the folder is missing) |
 | `GET /courses/{slug}/lessons/{topic_id}` | one `Lesson` |
