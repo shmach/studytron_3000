@@ -5,6 +5,8 @@ import { Link } from 'react-router';
 
 import { useSettings } from '@app/hooks/settings/useSettings';
 import { AgentSettings } from '@ui/components/AgentSettings';
+import { LanguageSettings } from '@ui/components/LanguageSettings';
+import { ThemeSettings } from '@ui/components/ThemeSettings';
 import { ErrorState } from '@ui/components/ErrorState';
 import { Button } from '@ui/components/ui/Button';
 
@@ -60,11 +62,15 @@ export function SettingsPage() {
       <SettingsSection
         title={t('settings.theme.title')}
         description={t('settings.theme.description')}
-      />
+      >
+        <ThemeSettings />
+      </SettingsSection>
       <SettingsSection
         title={t('settings.language.title')}
         description={t('settings.language.description')}
-      />
+      >
+        <LanguageSettings />
+      </SettingsSection>
       <SettingsSection
         title={t('settings.about.title')}
         description={t('settings.about.description')}

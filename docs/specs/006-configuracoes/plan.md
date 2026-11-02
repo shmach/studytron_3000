@@ -284,3 +284,8 @@ uv run ruff check packages/course-parser apps/local-server && uv run ruff format
   botão só chama `refetch()`. Sem refetch ao focar a janela, porque o `agy` leva ~2 s. Durante
   o teste aparece "Testando…", nunca o resultado de uma rodada anterior. Trocar o agente grava
   na hora (`PATCH /settings`); falha vira toast. Conferido no navegador pelo Samuel.
+- **Passo 8 (2026-11-02):** entregue. `ThemeSettings` (três botões lado a lado, claro, escuro e
+  sistema, num `radiogroup`; o escolhido fica preenchido) e `LanguageSettings` (dropdown que
+  mostra o idioma em uso), ambos nas seções da `SettingsPage`. Usam `useTheme` e
+  `i18n.changeLanguage`; nada vai ao servidor. Reaproveitam as chaves `theme.*` e `language.label`,
+  então não houve texto novo. Os seletores do header permanecem.
