@@ -45,7 +45,7 @@ export function AppLayout() {
           <Link to="/" className="flex items-center gap-2 font-semibold">
             {/* Decorative: the brand name is rendered as text right beside it. */}
             <img src={logoUrl} alt="" className="h-8 w-auto" />
-            <span className="font-brand text-lg tracking-wider">
+            <span className="hidden md:block font-brand text-lg tracking-wider">
               Study
               <span className="bg-linear-to-r from-cyan-400 via-blue-500 to-violet-500 bg-clip-text text-transparent">
                 TRON
