@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import type { Job } from '@app/api/client';
-import { useCourses } from '@app/hooks/useCourses';
-import { useJobs } from '@app/hooks/useJobs';
+import { useCourses } from '@app/hooks/courses/useCourses';
+import { useJobs } from '@app/hooks/jobs/useJobs';
 import { describeJob, isJobActive } from '@app/lib/jobs';
 import { coursePath } from '@app/lib/routes';
 import { Card, CardContent } from '@ui/components/ui/Card';

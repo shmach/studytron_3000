@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
-import { useSettings } from '@app/hooks/useSettings';
+import { useSettings } from '@app/hooks/settings/useSettings';
 import { ErrorState } from '@ui/components/ErrorState';
 import { Button } from '@ui/components/ui/Button';
 

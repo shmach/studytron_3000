@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 
 import { ApiError } from '@app/api/client';
 import type { TopicStatus } from '@app/api/client';
-import { useJobs } from '@app/hooks/useJobs';
-import { useUpdateTopicStatus } from '@app/hooks/useUpdateTopicStatus';
+import { useJobs } from '@app/hooks/jobs/useJobs';
+import { useUpdateTopicStatus } from '@app/hooks/courses/useUpdateTopicStatus';
 import { cn } from '@app/lib/utils';
 import { Button } from '@ui/components/ui/Button';
 import {

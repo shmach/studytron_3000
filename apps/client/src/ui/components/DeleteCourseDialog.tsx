@@ -2,7 +2,7 @@ import { useState, type MouseEvent } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Trans, useTranslation } from 'react-i18next';
 
-import { useDeleteCourse } from '@app/hooks/useDeleteCourse';
+import { useDeleteCourse } from '@app/hooks/courses/useDeleteCourse';
 import {
   AlertDialog,
   AlertDialogAction,

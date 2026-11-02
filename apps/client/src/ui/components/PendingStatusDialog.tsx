@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next';
 
 import { ApiError } from '@app/api/client';
 import type { TopicStatus } from '@app/api/client';
-import { useCourses } from '@app/hooks/useCourses';
-import { useJobs } from '@app/hooks/useJobs';
-import { useUpdateTopicStatus } from '@app/hooks/useUpdateTopicStatus';
+import { useCourses } from '@app/hooks/courses/useCourses';
+import { useJobs } from '@app/hooks/jobs/useJobs';
+import { useUpdateTopicStatus } from '@app/hooks/courses/useUpdateTopicStatus';
 import { isJobActive } from '@app/lib/jobs';
 import { Button } from '@ui/components/ui/Button';
 import {

@@ -4,8 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, Outlet, ScrollRestoration } from 'react-router';
 
 import type { Job } from '@app/api/client';
-import { useJobsWatcher } from '@app/hooks/useJobsWatcher';
-import { SETTINGS_PATH } from '@app/lib/routes';
+import { useJobsWatcher } from '@app/hooks/jobs/useJobsWatcher';
 import logoUrl from '/assets/logo.png';
 import { AppFooter } from '@ui/components/AppFooter';
 import { LanguageSelector } from '@ui/components/LanguageSelector';
@@ -63,7 +62,7 @@ export function AppLayout() {
               size="icon"
               aria-label={t('settings.open')}
             >
-              <Link to={SETTINGS_PATH}>
+              <Link to={'/settings'}>
                 <Settings />
               </Link>
             </Button>

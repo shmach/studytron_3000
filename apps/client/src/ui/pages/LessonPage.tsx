@@ -11,7 +11,7 @@ import { Link, useParams } from 'react-router';
 
 import { ApiError } from '@app/api/client';
 import type { CourseBundle, Topic } from '@app/api/client';
-import { useCourse } from '@app/hooks/useCourse';
+import { useCourse } from '@app/hooks/courses/useCourse';
 import { useLesson } from '@app/hooks/useLesson';
 import { dateFormatter } from '@app/lib/dateFormatter';
 import { exercisesPath, topicPath } from '@app/lib/routes';
