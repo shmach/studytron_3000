@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import { useSettings } from '@app/hooks/settings/useSettings';
+import { AgentSettings } from '@ui/components/AgentSettings';
 import { ErrorState } from '@ui/components/ErrorState';
 import { Button } from '@ui/components/ui/Button';
 
@@ -49,7 +50,9 @@ export function SettingsPage() {
       <SettingsSection
         title={t('settings.agent.title')}
         description={t('settings.agent.description')}
-      />
+      >
+        <AgentSettings />
+      </SettingsSection>
       <SettingsSection
         title={t('settings.vault.title')}
         description={t('settings.vault.description')}

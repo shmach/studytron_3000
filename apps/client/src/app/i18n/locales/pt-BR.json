@@ -41,7 +41,13 @@
     "back": "Voltar para os cursos",
     "agent": {
       "title": "Agente de código",
-      "description": "O agente que gera cursos, aulas e exercícios."
+      "description": "O agente que gera cursos, aulas e exercícios.",
+      "choose": "Escolher o agente de código",
+      "test": "Testar agente",
+      "testing": "Testando o agente…",
+      "found": "Agente encontrado.",
+      "foundWithVersion": "Agente encontrado (versão {{version}}).",
+      "skillTitle": "Instalar a skill course-builder"
     },
     "vault": {
       "title": "Pasta dos cursos",

@@ -41,7 +41,13 @@
     "back": "Back to courses",
     "agent": {
       "title": "Coding agent",
-      "description": "The agent that generates courses, lessons and exercises."
+      "description": "The agent that generates courses, lessons and exercises.",
+      "choose": "Choose the coding agent",
+      "test": "Test agent",
+      "testing": "Testing the agent…",
+      "found": "Agent found.",
+      "foundWithVersion": "Agent found (version {{version}}).",
+      "skillTitle": "Install the course-builder skill"
     },
     "vault": {
       "title": "Courses folder",

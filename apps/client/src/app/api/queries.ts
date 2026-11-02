@@ -196,6 +196,8 @@ export async function deleteCourse(slug: string) {
 export const settingsKeys = {
   all: ['settings'] as const,
   agents: () => [...settingsKeys.all, 'agents'] as const,
+  agentCheck: (agentId: AgentId) =>
+    [...settingsKeys.agents(), 'check', agentId] as const,
 };
 
 export const settingsQuery = () =>
@@ -226,3 +228,17 @@ export async function checkAgent(agentId: AgentId) {
     }),
   );
 }
+
+/**
+ * Whether an agent is installed. It is a query (not a mutation) so it runs by itself when the
+ * screen opens and whenever another agent is picked; the "Test agent" button just refetches.
+ * It does not refetch on window focus: the Antigravity CLI takes about 2 s to answer.
+ */
+export const agentCheckQuery = (agentId: AgentId) =>
+  queryOptions({
+    queryKey: settingsKeys.agentCheck(agentId),
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    retry: false,
+    queryFn: () => checkAgent(agentId),
+  });

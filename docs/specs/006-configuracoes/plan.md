@@ -276,4 +276,11 @@ uv run ruff check packages/course-parser apps/local-server && uv run ruff format
   `api/queries.ts`, `settingsQuery`, `agentsQuery` (`staleTime: Infinity`), `updateSettings` e
   `checkAgent`; hooks `useSettings`, `useAgents` e `useUpdateSettings` (grava a resposta no
   cache e invalida os cursos, pois outro vault tem outros cursos). Chaves `settings.*` em
-  `en.json` e `pt-BR.json`. Ainda não conferido no navegador.
+  `en.json` e `pt-BR.json`. Conferido no navegador pelo Samuel.
+- **Passo 7 (2026-11-02):** entregue. `AgentSettings` (dropdown dos agentes de `GET /agents`,
+  botão "Testar agente", resultado e as instruções de instalação da skill, `skill_install_hint`)
+  dentro da seção "Agente". O teste é uma **query** (`agentCheckQuery`, hook `useAgentCheck`),
+  não uma mutation: roda sozinha ao abrir a tela e ao trocar de agente (chave por agente), e o
+  botão só chama `refetch()`. Sem refetch ao focar a janela, porque o `agy` leva ~2 s. Durante
+  o teste aparece "Testando…", nunca o resultado de uma rodada anterior. Trocar o agente grava
+  na hora (`PATCH /settings`); falha vira toast. Conferido no navegador pelo Samuel.
