@@ -70,7 +70,8 @@
     },
     "about": {
       "title": "Sobre o projeto",
-      "description": "README, código-fonte e links."
+      "description": "Código-fonte e links.",
+      "repository": "Código-fonte"
     }
   },
   "courses": {

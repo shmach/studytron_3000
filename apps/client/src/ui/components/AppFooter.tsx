@@ -1,9 +1,5 @@
 import { useTranslation } from 'react-i18next';
 
-const REPO_URL = 'https://github.com/shmach/studytron_3000';
-const AUTHOR_URL = 'https://github.com/shmach';
-
-// lucide-react no longer ships brand icons, so the GitHub mark is inlined.
 function GithubMark({ className }: { className?: string }) {
   return (
     <svg
@@ -24,7 +20,7 @@ export function AppFooter() {
     <footer className="bg-background/80 gradient-line-top fixed inset-x-0 bottom-0 z-40 backdrop-blur">
       <div className="text-muted-foreground mx-auto flex h-11 max-w-5xl items-center justify-between gap-4 px-4 text-xs">
         <a
-          href={REPO_URL}
+          href={'https://github.com/shmach/studytron_3000'}
           target="_blank"
           rel="noopener noreferrer"
           className="hover:text-foreground flex items-center gap-1.5 transition-colors"
@@ -35,7 +31,7 @@ export function AppFooter() {
         <span>
           {t('footer.madeBy')}{' '}
           <a
-            href={AUTHOR_URL}
+            href={'https://github.com/shmach'}
             target="_blank"
             rel="noopener noreferrer"
             className="bg-linear-to-r from-cyan-400 via-blue-500 to-violet-500 bg-clip-text font-semibold text-transparent hover:opacity-80"

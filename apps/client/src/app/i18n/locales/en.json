@@ -70,7 +70,8 @@
     },
     "about": {
       "title": "About the project",
-      "description": "README, source code and links."
+      "description": "Source code and links.",
+      "repository": "Source code"
     }
   },
   "courses": {

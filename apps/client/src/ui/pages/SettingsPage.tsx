@@ -8,6 +8,7 @@ import { AgentSettings } from '@ui/components/AgentSettings';
 import { LanguageSettings } from '@ui/components/LanguageSettings';
 import { ThemeSettings } from '@ui/components/ThemeSettings';
 import { VaultSettings } from '@ui/components/VaultSettings';
+import { AboutSettings } from '@ui/components/AboutSettings';
 import { ErrorState } from '@ui/components/ErrorState';
 import { Button } from '@ui/components/ui/Button';
 
@@ -77,7 +78,9 @@ export function SettingsPage() {
       <SettingsSection
         title={t('settings.about.title')}
         description={t('settings.about.description')}
-      />
+      >
+        <AboutSettings />
+      </SettingsSection>
     </div>
   );
 }

@@ -295,3 +295,9 @@ uv run ruff check packages/course-parser apps/local-server && uv run ruff format
   true})`) o campo, o botão e a lista ficam desativados, com o motivo na tela, espelhando o
   `409` do servidor. O campo começa vazio (a pasta atual aparece acima), o que evita sincronizar
   estado com efeito. Ao trocar de pasta o `useUpdateSettings` já invalida a lista de cursos.
+- **Passo 10 (2026-11-02):** entregue, com escopo menor que o planejado. Criado o `README.md`
+  da raiz (em pt-BR: o que é, como funciona, como rodar, como instalar a skill por agente,
+  estrutura). `AboutSettings` mostra só o link do repositório (`rel="noopener noreferrer"`); **Mudança de rota:** a
+  rota `GET /project/readme` e o diálogo com o README foram feitos e depois removidos, porque
+  os links relativos do README (`docs/SPEC.md` etc.) davam "página não encontrada" dentro do
+  app. O README fica para quem abre o repositório.
