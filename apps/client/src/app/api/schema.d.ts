@@ -248,6 +248,8 @@ export interface components {
       display_name: string;
       /** Install Hint */
       install_hint: string;
+      /** Skill Install Hint */
+      skill_install_hint: string;
     };
     /** Attempt */
     Attempt: {

@@ -79,6 +79,9 @@ class Agent:
     display_name: str
     executable: str
     install_hint: str
+    # How to make the `course-builder` skill (the repository's `skill/` folder) visible to
+    # this agent. Each CLI looks for skills in its own place, so the steps differ.
+    skill_install_hint: str
     build_args: Callable[[str], list[str]]
     parse_result: Callable[[str], str]
 
@@ -89,6 +92,9 @@ AGENTS: dict[AgentId, Agent] = {
         display_name="Claude Code",
         executable="claude",
         install_hint="Install Claude Code: https://claude.com/claude-code",
+        skill_install_hint=(
+            "Copy the repository's `skill/` folder to `~/.claude/skills/course-builder`."
+        ),
         build_args=_print_mode_args,
         parse_result=parse_claude_result,
     ),
@@ -98,6 +104,13 @@ AGENTS: dict[AgentId, Agent] = {
         # The Antigravity CLI is installed as `agy`, not `antigravity`.
         executable="agy",
         install_hint="Install the Antigravity CLI (the `agy` command) and put it on your PATH",
+        skill_install_hint=(
+            "Antigravity does not read `~/.claude/skills`. Package the skill as a plugin:\n"
+            '1. Create a folder with a `plugin.json` containing `{"name": "course-builder"}`.\n'
+            "2. Copy the repository's `skill/` folder to `skills/course-builder` inside it.\n"
+            "3. Run `agy plugin install <that folder>`.\n"
+            "After changing the skill, install it again."
+        ),
         build_args=_print_mode_args,
         parse_result=parse_antigravity_result,
     ),

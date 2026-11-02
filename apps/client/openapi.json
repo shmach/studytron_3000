@@ -710,13 +710,18 @@
           "install_hint": {
             "type": "string",
             "title": "Install Hint"
+          },
+          "skill_install_hint": {
+            "type": "string",
+            "title": "Skill Install Hint"
           }
         },
         "type": "object",
         "required": [
           "id",
           "display_name",
-          "install_hint"
+          "install_hint",
+          "skill_install_hint"
         ],
         "title": "AgentInfo"
       },

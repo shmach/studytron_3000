@@ -23,12 +23,15 @@ from local_server.prompts import (
     build_exercises_prompt,
     build_lesson_prompt,
 )
+from local_server.services.agents import AgentId
 from local_server.services.job_store import Job, JobKind, job_store
 from local_server.services.local_process import (
+    AgentNotInstalledError,
     CliTimeoutError,
     InvalidPromptException,
     LocalProcess,
     extract_result,
+    resolve_executable,
 )
 from local_server.services.pending_decisions import pending_decisions_from
 from local_server.services.settings_store import settings_store
@@ -57,6 +60,20 @@ def _vault_path_or_500() -> Path:
     if not vault_path:
         raise HTTPException(500, "VAULT_PATH is not configured")
     return Path(vault_path)
+
+
+def _installed_agent_or_422() -> AgentId:
+    """The agent chosen in the settings, refusing the request when it is not installed.
+
+    Checked before the job exists: a job for a missing agent could only fail a moment later,
+    and the student would have to find that out in the job list instead of in the answer.
+    """
+    agent_id = settings_store.get().agent
+    try:
+        resolve_executable(agent_id)
+    except AgentNotInstalledError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    return agent_id
 
 
 def _course_dir_or_404(slug: str) -> Path:
@@ -169,12 +186,12 @@ def update_topic_status(slug: str, topic_id: str, body: TopicStatusUpdate) -> To
     return topic
 
 
-async def _run_course_creation(job_id: str, prompt: str) -> None:
+async def _run_course_creation(job_id: str, prompt: str, agent_id: AgentId) -> None:
     job_store.mark_running(job_id)
     before = _existing_slugs()
 
     try:
-        local_process = LocalProcess(tool="claude", prompt=prompt)
+        local_process = LocalProcess(tool=agent_id, prompt=prompt)
         await local_process.run(cwd=str(_vault_path_or_500()))
     except (InvalidPromptException, RuntimeError) as exc:
         job_store.mark_error(job_id, str(exc))
@@ -207,6 +224,7 @@ async def _run_generation(
     slug: str,
     topic_id: str,
     prompt: str,
+    agent_id: AgentId,
     artifact: str,
     produced: Callable[[CourseBundle], bool],
     collects_decisions: bool = False,
@@ -221,9 +239,9 @@ async def _run_generation(
 
     timeout_error: CliTimeoutError | None = None
     try:
-        local_process = LocalProcess(tool="claude", prompt=prompt)
+        local_process = LocalProcess(tool=agent_id, prompt=prompt)
         stdout = await local_process.run(cwd=str(_vault_path_or_500()))
-        output = extract_result(stdout)
+        output = extract_result(stdout, agent_id)
     except CliTimeoutError as exc:
         # The CLI can take minutes to exit after it has already written the file. The file is
         # the proof of the work, so keep going and check for it; the timeout only becomes the
@@ -296,6 +314,7 @@ def _start_generation(
     slug: str,
     topic_id: str,
     prompt: str,
+    agent_id: AgentId,
     artifact: str,
     produced: Callable[[CourseBundle], bool],
     collects_decisions: bool = False,
@@ -311,6 +330,7 @@ def _start_generation(
         slug,
         topic_id,
         prompt,
+        agent_id,
         artifact,
         produced,
         collects_decisions,
@@ -333,12 +353,15 @@ def generate_lesson(slug: str, topic_id: str, background_tasks: BackgroundTasks)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 
+    agent_id = _installed_agent_or_422()
+
     return _start_generation(
         background_tasks,
         kind=JobKind.LESSON_GENERATION,
         slug=slug,
         topic_id=topic_id,
         prompt=prompt,
+        agent_id=agent_id,
         artifact="lesson",
         produced=lambda course: any(
             lesson.topic == topic_id for lesson in course.lessons
@@ -371,12 +394,15 @@ def generate_exercises(
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 
+    agent_id = _installed_agent_or_422()
+
     return _start_generation(
         background_tasks,
         kind=JobKind.EXERCISE_GENERATION,
         slug=slug,
         topic_id=topic_id,
         prompt=prompt,
+        agent_id=agent_id,
         artifact="exercises",
         produced=lambda course: any(e.topic == topic_id for e in course.exercise_sets),
     )
@@ -390,9 +416,10 @@ async def create_course(user_prompt: str, background_tasks: BackgroundTasks) -> 
     _vault_path_or_500()
 
     prompt = build_course_prompt(user_prompt)
+    agent_id = _installed_agent_or_422()
 
     job = job_store.create()
-    background_tasks.add_task(_run_course_creation, job.id, prompt)
+    background_tasks.add_task(_run_course_creation, job.id, prompt, agent_id)
 
     return job
 

@@ -34,6 +34,23 @@ def extract_result(stdout: str, tool: AgentId = "claude") -> str:
     return AGENTS[tool].parse_result(stdout)
 
 
+def resolve_executable(tool: AgentId) -> str:
+    """Return the full path of the agent's executable, or raise `AgentNotInstalledError`.
+
+    `which` finds the real file, including Windows `.exe`/`.cmd` shims, and tells us up front
+    when the agent is missing instead of failing inside `subprocess.run`. Routes call it too,
+    to refuse a request before creating a job that could only fail.
+    """
+    agent = AGENTS[tool]
+    executable = shutil.which(agent.executable)
+    if executable is None:
+        raise AgentNotInstalledError(
+            f"{agent.display_name} is not installed: `{agent.executable}` was not found "
+            f"on the PATH. {agent.install_hint}"
+        )
+    return executable
+
+
 class LocalProcess:
     def __init__(self, tool: AgentId = "claude", prompt: str | None = None):
         if tool not in AGENTS:
@@ -43,16 +60,10 @@ class LocalProcess:
 
     def args_for_tool(self) -> list[str]:
         """The full command: the executable, resolved on the `PATH`, then the agent's flags."""
-        agent = AGENTS[self.tool]
-        # `which` finds the real file, including Windows `.exe`/`.cmd` shims, and tells us
-        # up front when the agent is missing instead of failing inside `subprocess.run`.
-        executable = shutil.which(agent.executable)
-        if executable is None:
-            raise AgentNotInstalledError(
-                f"{agent.display_name} is not installed: `{agent.executable}` was not found "
-                f"on the PATH. {agent.install_hint}"
-            )
-        return [executable, *agent.build_args(self.prompt or "")]
+        return [
+            resolve_executable(self.tool),
+            *AGENTS[self.tool].build_args(self.prompt or ""),
+        ]
 
     async def run(self, cwd: str) -> str:
         """Run the agent CLI in `cwd` and return its raw stdout."""

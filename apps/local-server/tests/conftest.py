@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from local_server.app import app
 from local_server.routes import courses, jobs
+from local_server.services import local_process
 from local_server.services.job_store import JobStore
 from local_server.services.settings_store import settings_store
 
@@ -26,6 +27,13 @@ def isolated_settings(tmp_path_factory, monkeypatch):
     )
     monkeypatch.delenv("VAULT_PATH", raising=False)
     return settings_store
+
+
+@pytest.fixture(autouse=True)
+def agents_installed(monkeypatch):
+    """Pretend every agent CLI is on the `PATH`, so no test depends on this machine's install.
+    A test of the "not installed" case replaces this with its own `which`."""
+    monkeypatch.setattr(local_process.shutil, "which", lambda name: f"/bin/{name}")
 
 
 @pytest.fixture

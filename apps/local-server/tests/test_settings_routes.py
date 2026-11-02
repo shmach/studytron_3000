@@ -125,6 +125,12 @@ class TestListAgents:
         assert agents["antigravity"]["display_name"] == "Antigravity"
         assert "agy" in agents["antigravity"]["install_hint"]
 
+    def test_each_agent_says_how_to_install_the_skill_its_own_way(self, client):
+        agents = {a["id"]: a for a in client.get("/agents").json()}
+
+        assert "~/.claude/skills" in agents["claude"]["skill_install_hint"]
+        assert "agy plugin install" in agents["antigravity"]["skill_install_hint"]
+
 
 def test_vault_config_route_is_gone(client):
     assert client.get("/vault/config").status_code == 404

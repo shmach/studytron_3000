@@ -251,3 +251,22 @@ uv run ruff check packages/course-parser apps/local-server && uv run ruff format
   saída diferente de zero viram `available=false` com a mensagem. Medido nesta máquina:
   `claude` em ~0,05 s e `agy` em ~1,7 s (a CLI do Antigravity demora para iniciar, então a
   tela deve mostrar o estado de carregando). Tipos TS regerados.
+- **Passo 5 (2026-11-02), código:** entregue. As duas chamadas ao agente em `courses.py` usam o
+  agente de `settings_store`, lido na hora do pedido e passado ao job (o mesmo agente roda e
+  tem o resultado lido). Gerar curso, aula ou exercícios com o agente ausente recusa com `422`
+  (mensagem de instalação) antes de criar o job; `resolve_executable` em `local_process.py`
+  serve a rota e o `LocalProcess`. `prompts.py` já era neutro (não cita Claude). A fixture
+  automática `agents_installed` tira dos testes a dependência do `PATH` da máquina.
+- **Questão aberta 1 resolvida:** o `agy` **não** lê `~/.claude/skills`. Também não leu um
+  `~/.gemini/config/skills.json` global nem uma pasta `~/.gemini/config/skills/` (junction).
+  O que funcionou foi empacotar a skill como plugin e instalar pelo próprio `agy`:
+  `plugin.json` (`{"name": "course-builder"}`) + `skills/course-builder/`, depois
+  `agy plugin install <pasta>`, que copia para `~/.gemini/config/plugins/course-builder`.
+  Isso é uma **segunda cópia** da skill: ao mudar a de `~/.claude/skills`, reinstalar.
+  Sem `--dangerously-skip-permissions`, o `agy` responde `SUCCESS` com `response` vazio e
+  `denied_actions`; o servidor sempre passa o flag, então não afeta o app.
+- **Passo 5, instruções da skill:** cada agente tem um `skill_install_hint` (em `agents.py`,
+  exposto por `GET /agents`) dizendo como instalar a skill do jeito dele: copiar `skill/` para
+  `~/.claude/skills/course-builder` no Claude Code; empacotar como plugin e rodar
+  `agy plugin install` no Antigravity. A tela (Passo 7) mostra o texto. A geração real pelo
+  `agy` num vault de teste já foi feita pelo Samuel, então o passo está concluído.
