@@ -1,6 +1,6 @@
 # Plan: Feature 8 — Tela de configurações
 
-> **Status: a fazer.** Plano escrito em 2026-10-31. Especificação de origem:
+> **Status: concluída, exceto o Passo 11 (link das redes), que fica para outro momento.** Plano escrito em 2026-10-31. Especificação de origem:
 > [`docs/SPEC.md`](../../SPEC.md), seção 9 (a entrada da Feature 8 entra no Passo 12).
 > Segue o formato de [`004-feedback-de-jobs`](../004-feedback-de-jobs/plan.md).
 
@@ -297,7 +297,14 @@ uv run ruff check packages/course-parser apps/local-server && uv run ruff format
   estado com efeito. Ao trocar de pasta o `useUpdateSettings` já invalida a lista de cursos.
 - **Passo 10 (2026-11-02):** entregue, com escopo menor que o planejado. Criado o `README.md`
   da raiz (em pt-BR: o que é, como funciona, como rodar, como instalar a skill por agente,
-  estrutura). `AboutSettings` mostra só o link do repositório (`rel="noopener noreferrer"`); **Mudança de rota:** a
-  rota `GET /project/readme` e o diálogo com o README foram feitos e depois removidos, porque
+  estrutura). `AboutSettings` mostra só o link do repositório (`rel="noopener noreferrer"`).
+  **Mudança de rota:** a rota `GET /project/readme` e o diálogo com o README foram feitos e depois removidos, porque
   os links relativos do README (`docs/SPEC.md` etc.) davam "página não encontrada" dentro do
   app. O README fica para quem abre o repositório.
+- **Passo 11:** adiado a pedido do Samuel; depende dos endereços das redes.
+- **Passo 12 (2026-11-02):** entregue. `docs/SPEC.md` atualizado: estrutura de `docs/specs/`
+  (seção 2); configurações, agentes, rotas novas, jobs e testes (seção 5); hooks, componentes,
+  rota `/settings`, camada de dados e fluxo (seção 6); como rodar (seção 8); Feature 8 no
+  Concluído e no roadmap (seção 9); pontos de atenção da feature (seção 10), trocando a nota
+  sobre `GET /vault/config`, que foi removida. `CLAUDE.md` não mudou: "Rodar tudo" e o `.env`
+  continuam valendo (o `VAULT_PATH` agora é só o valor de reserva).
