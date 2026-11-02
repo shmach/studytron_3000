@@ -10,3 +10,5 @@ export const topicPath = (slug: string, topicId: string) =>
 
 export const exercisesPath = (slug: string, topicId: string) =>
   `${topicPath(slug, topicId)}/exercises`;
+
+export const SETTINGS_PATH = '/settings';

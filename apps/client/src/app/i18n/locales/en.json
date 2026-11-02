@@ -35,6 +35,31 @@
     "title": "Page not found",
     "backToCourses": "Back to courses"
   },
+  "settings": {
+    "open": "Settings",
+    "title": "Settings",
+    "back": "Back to courses",
+    "agent": {
+      "title": "Coding agent",
+      "description": "The agent that generates courses, lessons and exercises."
+    },
+    "vault": {
+      "title": "Courses folder",
+      "description": "Where your courses are saved."
+    },
+    "theme": {
+      "title": "Theme",
+      "description": "Light, dark, or follow your system."
+    },
+    "language": {
+      "title": "Language",
+      "description": "The language of the app."
+    },
+    "about": {
+      "title": "About the project",
+      "description": "README, source code and links."
+    }
+  },
   "courses": {
     "heading": "What are we studying today, boss?",
     "notFoundTitle": "Course not found! 😢",

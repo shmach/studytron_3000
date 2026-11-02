@@ -35,6 +35,31 @@
     "title": "Página não encontrada",
     "backToCourses": "Voltar para os cursos"
   },
+  "settings": {
+    "open": "Configurações",
+    "title": "Configurações",
+    "back": "Voltar para os cursos",
+    "agent": {
+      "title": "Agente de código",
+      "description": "O agente que gera cursos, aulas e exercícios."
+    },
+    "vault": {
+      "title": "Pasta dos cursos",
+      "description": "Onde seus cursos são salvos."
+    },
+    "theme": {
+      "title": "Tema",
+      "description": "Claro, escuro ou o mesmo do sistema."
+    },
+    "language": {
+      "title": "Idioma",
+      "description": "O idioma do app."
+    },
+    "about": {
+      "title": "Sobre o projeto",
+      "description": "README, código-fonte e links."
+    }
+  },
   "courses": {
     "heading": "O que vai ser hoje chefe?",
     "notFoundTitle": "Curso não encontrado! 😢",

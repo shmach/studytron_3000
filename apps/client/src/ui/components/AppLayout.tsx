@@ -1,8 +1,11 @@
 import { useCallback, useState } from 'react';
+import { Settings } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Link, Outlet, ScrollRestoration } from 'react-router';
 
 import type { Job } from '@app/api/client';
 import { useJobsWatcher } from '@app/hooks/useJobsWatcher';
+import { SETTINGS_PATH } from '@app/lib/routes';
 import logoUrl from '/assets/logo.png';
 import { AppFooter } from '@ui/components/AppFooter';
 import { LanguageSelector } from '@ui/components/LanguageSelector';
@@ -11,9 +14,11 @@ import {
   type PendingDecisionItem,
 } from '@ui/components/PendingStatusDialog';
 import { ThemeSelector } from '@ui/components/ThemeSelector';
+import { Button } from '@ui/components/ui/Button';
 import { Toaster } from '@ui/components/ui/Sonner';
 
 export function AppLayout() {
+  const { t } = useTranslation();
   const [pendingDecisions, setPendingDecisions] = useState<
     PendingDecisionItem[]
   >([]);
@@ -52,6 +57,16 @@ export function AppLayout() {
           <div className="ml-auto flex items-center gap-1">
             <LanguageSelector />
             <ThemeSelector />
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              aria-label={t('settings.open')}
+            >
+              <Link to={SETTINGS_PATH}>
+                <Settings />
+              </Link>
+            </Button>
           </div>
         </div>
       </header>

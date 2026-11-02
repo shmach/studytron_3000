@@ -270,3 +270,10 @@ uv run ruff check packages/course-parser apps/local-server && uv run ruff format
   `~/.claude/skills/course-builder` no Claude Code; empacotar como plugin e rodar
   `agy plugin install` no Antigravity. A tela (Passo 7) mostra o texto. A geração real pelo
   `agy` num vault de teste já foi feita pelo Samuel, então o passo está concluído.
+- **Passo 6 (2026-11-02):** entregue. Rota `/settings` (com `lazy`), engrenagem no header e
+  `SettingsPage` com as cinco seções vazias (título e descrição) e link de volta. Tipos
+  `Settings`, `SettingsUpdate`, `AgentId`, `AgentInfo` e `AgentCheck` em `api/client.ts`; em
+  `api/queries.ts`, `settingsQuery`, `agentsQuery` (`staleTime: Infinity`), `updateSettings` e
+  `checkAgent`; hooks `useSettings`, `useAgents` e `useUpdateSettings` (grava a resposta no
+  cache e invalida os cursos, pois outro vault tem outros cursos). Chaves `settings.*` em
+  `en.json` e `pt-BR.json`. Ainda não conferido no navegador.
