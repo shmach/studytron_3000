@@ -289,3 +289,9 @@ uv run ruff check packages/course-parser apps/local-server && uv run ruff format
   mostra o idioma em uso), ambos nas seções da `SettingsPage`. Usam `useTheme` e
   `i18n.changeLanguage`; nada vai ao servidor. Reaproveitam as chaves `theme.*` e `language.label`,
   então não houve texto novo. Os seletores do header permanecem.
+- **Passo 9 (2026-11-02):** entregue. `VaultSettings`: mostra a pasta em uso, campo para colar o
+  caminho com "Salvar", erro do servidor (`422` com o motivo) logo abaixo e a lista de pastas
+  recentes (sem a atual), cada uma trocável com um clique. Com job ativo (`useJobs({active:
+  true})`) o campo, o botão e a lista ficam desativados, com o motivo na tela, espelhando o
+  `409` do servidor. O campo começa vazio (a pasta atual aparece acima), o que evita sincronizar
+  estado com efeito. Ao trocar de pasta o `useUpdateSettings` já invalida a lista de cursos.

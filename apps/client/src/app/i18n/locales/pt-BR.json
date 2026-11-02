@@ -51,7 +51,14 @@
     },
     "vault": {
       "title": "Pasta dos cursos",
-      "description": "Onde seus cursos são salvos."
+      "description": "Onde seus cursos são salvos.",
+      "current": "Em uso:",
+      "notSet": "nenhuma escolhida",
+      "inputLabel": "Caminho da pasta",
+      "placeholder": "Cole o caminho completo de uma pasta",
+      "save": "Salvar",
+      "recent": "Pastas recentes",
+      "jobRunning": "Uma geração está em andamento. Espere terminar para trocar a pasta."
     },
     "theme": {
       "title": "Tema",

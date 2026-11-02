@@ -7,6 +7,7 @@ import { useSettings } from '@app/hooks/settings/useSettings';
 import { AgentSettings } from '@ui/components/AgentSettings';
 import { LanguageSettings } from '@ui/components/LanguageSettings';
 import { ThemeSettings } from '@ui/components/ThemeSettings';
+import { VaultSettings } from '@ui/components/VaultSettings';
 import { ErrorState } from '@ui/components/ErrorState';
 import { Button } from '@ui/components/ui/Button';
 
@@ -58,7 +59,9 @@ export function SettingsPage() {
       <SettingsSection
         title={t('settings.vault.title')}
         description={t('settings.vault.description')}
-      />
+      >
+        <VaultSettings />
+      </SettingsSection>
       <SettingsSection
         title={t('settings.theme.title')}
         description={t('settings.theme.description')}

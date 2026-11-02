@@ -51,7 +51,14 @@
     },
     "vault": {
       "title": "Courses folder",
-      "description": "Where your courses are saved."
+      "description": "Where your courses are saved.",
+      "current": "In use:",
+      "notSet": "none chosen",
+      "inputLabel": "Folder path",
+      "placeholder": "Paste the full path of a folder",
+      "save": "Save",
+      "recent": "Recent folders",
+      "jobRunning": "A generation is running. Wait for it to finish to change the folder."
     },
     "theme": {
       "title": "Theme",
