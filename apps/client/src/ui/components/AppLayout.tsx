@@ -1,8 +1,10 @@
 import { useCallback, useState } from 'react';
+import { Settings } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Link, Outlet, ScrollRestoration } from 'react-router';
 
 import type { Job } from '@app/api/client';
-import { useJobsWatcher } from '@app/hooks/useJobsWatcher';
+import { useJobsWatcher } from '@app/hooks/jobs/useJobsWatcher';
 import logoUrl from '/assets/logo.png';
 import { AppFooter } from '@ui/components/AppFooter';
 import { LanguageSelector } from '@ui/components/LanguageSelector';
@@ -11,9 +13,11 @@ import {
   type PendingDecisionItem,
 } from '@ui/components/PendingStatusDialog';
 import { ThemeSelector } from '@ui/components/ThemeSelector';
+import { Button } from '@ui/components/ui/Button';
 import { Toaster } from '@ui/components/ui/Sonner';
 
 export function AppLayout() {
+  const { t } = useTranslation();
   const [pendingDecisions, setPendingDecisions] = useState<
     PendingDecisionItem[]
   >([]);
@@ -41,7 +45,7 @@ export function AppLayout() {
           <Link to="/" className="flex items-center gap-2 font-semibold">
             {/* Decorative: the brand name is rendered as text right beside it. */}
             <img src={logoUrl} alt="" className="h-8 w-auto" />
-            <span className="font-brand text-lg tracking-wider">
+            <span className="hidden md:block font-brand text-lg tracking-wider">
               Study
               <span className="bg-linear-to-r from-cyan-400 via-blue-500 to-violet-500 bg-clip-text text-transparent">
                 TRON
@@ -52,6 +56,16 @@ export function AppLayout() {
           <div className="ml-auto flex items-center gap-1">
             <LanguageSelector />
             <ThemeSelector />
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              aria-label={t('settings.open')}
+            >
+              <Link to={'/settings'}>
+                <Settings />
+              </Link>
+            </Button>
           </div>
         </div>
       </header>

@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from '@ui/components/ui/Card';
 import { Skeleton } from '@ui/components/ui/Skeleton';
-import { useCourses } from '@app/hooks/useCourses';
+import { useCourses } from '@app/hooks/courses/useCourses';
 import { computeProgress } from '@app/lib/progress';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -25,8 +25,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@ui/components/ui/Button';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCreateCourse } from '@app/hooks/useCreateCourse';
-import { useCourseJob } from '@app/hooks/useCourseJob';
+import { useCreateCourse } from '@app/hooks/courses/useCreateCourse';
+import { useCourseJob } from '@app/hooks/jobs/useCourseJob';
 import { courseKeys } from '@app/api/queries';
 import { dateFormatter } from '@app/lib/dateFormatter';
 import { Input } from '@ui/components/ui/Input';

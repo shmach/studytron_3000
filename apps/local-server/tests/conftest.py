@@ -6,7 +6,9 @@ import pytest
 from fastapi.testclient import TestClient
 from local_server.app import app
 from local_server.routes import courses, jobs
+from local_server.services import local_process
 from local_server.services.job_store import JobStore
+from local_server.services.settings_store import settings_store
 
 # The parser package already ships real courses as fixtures; reuse them instead of copying.
 FIXTURES_DIR = (
@@ -15,12 +17,30 @@ FIXTURES_DIR = (
 SLUG = "java-para-quem-programa"
 
 
+@pytest.fixture(autouse=True)
+def isolated_settings(tmp_path_factory, monkeypatch):
+    """Point the settings store at a throw-away file and forget `VAULT_PATH`, so no test can
+    read or write the real settings or the real vault. The file lives outside the test's
+    vault folder, which would otherwise list it among the courses."""
+    monkeypatch.setattr(
+        settings_store, "path", tmp_path_factory.mktemp("settings") / "settings.json"
+    )
+    monkeypatch.delenv("VAULT_PATH", raising=False)
+    return settings_store
+
+
+@pytest.fixture(autouse=True)
+def agents_installed(monkeypatch):
+    """Pretend every agent CLI is on the `PATH`, so no test depends on this machine's install.
+    A test of the "not installed" case replaces this with its own `which`."""
+    monkeypatch.setattr(local_process.shutil, "which", lambda name: f"/bin/{name}")
+
+
 @pytest.fixture
-def vault_dir(tmp_path, monkeypatch):
-    """A throw-away vault. `env.VAULT_PATH` is read at import time, so it is patched in place;
-    this also guarantees the tests never touch the real vault from `.env`."""
+def vault_dir(tmp_path, isolated_settings):
+    """A throw-away vault, chosen as the vault in use."""
     shutil.copytree(FIXTURES_DIR / SLUG, tmp_path / SLUG)
-    monkeypatch.setattr(courses.env, "VAULT_PATH", str(tmp_path))
+    isolated_settings.update(vault_path=str(tmp_path))
     return tmp_path
 
 

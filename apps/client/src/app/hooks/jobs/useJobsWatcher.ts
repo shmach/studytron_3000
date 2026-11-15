@@ -11,7 +11,7 @@ import {
   courseKeys,
   coursesListQuery,
 } from '@app/api/queries';
-import { useJobs } from '@app/hooks/useJobs';
+import { useJobs } from '@app/hooks/jobs/useJobs';
 import { describeJob, diffJobs, jobResultPath } from '@app/lib/jobs';
 
 /** Courses already in the query cache; toasts must not trigger requests of their own. */

@@ -1,7 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 
 import { api, ApiError } from './client';
-import type { TopicStatus } from './client';
+import type { AgentId, SettingsUpdate, TopicStatus } from './client';
 
 /**
  * Query key factory. Keeping keys in one place makes invalidation predictable
@@ -192,3 +192,53 @@ export async function deleteCourse(slug: string) {
   });
   if (!result.response.ok) throw toApiError(result);
 }
+
+export const settingsKeys = {
+  all: ['settings'] as const,
+  agents: () => [...settingsKeys.all, 'agents'] as const,
+  agentCheck: (agentId: AgentId) =>
+    [...settingsKeys.agents(), 'check', agentId] as const,
+};
+
+export const settingsQuery = () =>
+  queryOptions({
+    queryKey: settingsKeys.all,
+    queryFn: async ({ signal }) =>
+      unwrap(await api.GET('/settings', { signal })),
+  });
+
+/** The supported agents change only with a server release, so they are fetched once. */
+export const agentsQuery = () =>
+  queryOptions({
+    queryKey: settingsKeys.agents(),
+    staleTime: Infinity,
+    queryFn: async ({ signal }) => unwrap(await api.GET('/agents', { signal })),
+  });
+
+/** Errors: 422 (invalid vault path, with the reason), 409 (a job is running). */
+export async function updateSettings(body: SettingsUpdate) {
+  return unwrap(await api.PATCH('/settings', { body }));
+}
+
+/** Always answers 200: a missing agent is `available: false`, not an error. */
+export async function checkAgent(agentId: AgentId) {
+  return unwrap(
+    await api.POST('/agents/{agent_id}/check', {
+      params: { path: { agent_id: agentId } },
+    }),
+  );
+}
+
+/**
+ * Whether an agent is installed. It is a query (not a mutation) so it runs by itself when the
+ * screen opens and whenever another agent is picked; the "Test agent" button just refetches.
+ * It does not refetch on window focus: the Antigravity CLI takes about 2 s to answer.
+ */
+export const agentCheckQuery = (agentId: AgentId) =>
+  queryOptions({
+    queryKey: settingsKeys.agentCheck(agentId),
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    retry: false,
+    queryFn: () => checkAgent(agentId),
+  });

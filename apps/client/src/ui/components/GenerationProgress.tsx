@@ -1,7 +1,7 @@
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import type { GenerationKind } from '@app/hooks/useGeneration';
+import type { GenerationKind } from '@app/hooks/jobs/useGeneration';
 
 /**
  * Shown while the generation job runs. It keeps no result: when the job ends the component

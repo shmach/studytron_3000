@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import type { Job } from '@app/api/client';
 import { generateExercises, generateLesson, jobKeys } from '@app/api/queries';
-import { useJobs } from '@app/hooks/useJobs';
+import { useJobs } from '@app/hooks/jobs/useJobs';
 
 export type GenerationKind = 'lesson' | 'exercises';
 

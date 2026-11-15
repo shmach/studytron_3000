@@ -24,6 +24,12 @@ export const router = createBrowserRouter([
           Component: (await import('@ui/pages/ExercisesPage')).ExercisesPage,
         }),
       },
+      {
+        path: 'settings',
+        lazy: async () => ({
+          Component: (await import('@ui/pages/SettingsPage')).SettingsPage,
+        }),
+      },
       { path: '*', Component: NotFoundPage },
     ],
   },

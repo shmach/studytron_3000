@@ -4,17 +4,58 @@
  */
 
 export interface paths {
-  '/vault/config': {
+  '/settings': {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** Get Content Path */
-    get: operations['get_vault_config'];
+    /** Get Settings */
+    get: operations['get_settings'];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update Settings */
+    patch: operations['update_settings'];
+    trace?: never;
+  };
+  '/agents': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Agents */
+    get: operations['list_agents'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/agents/{agent_id}/check': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Check Agent Route
+     * @description Always `200`: a missing agent is the answer (`available=false`), not a failed request.
+     *
+     *     A plain `def`, so FastAPI runs it in a worker thread and the blocking `--version`
+     *     call does not stall the event loop.
+     */
+    post: operations['check_agent'];
     delete?: never;
     options?: never;
     head?: never;
@@ -187,6 +228,29 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** AgentCheck */
+    AgentCheck: {
+      /** Available */
+      available: boolean;
+      /** Version */
+      version?: string | null;
+      /** Error */
+      error?: string | null;
+    };
+    /** AgentInfo */
+    AgentInfo: {
+      /**
+       * Id
+       * @enum {string}
+       */
+      id: 'claude' | 'antigravity';
+      /** Display Name */
+      display_name: string;
+      /** Install Hint */
+      install_hint: string;
+      /** Skill Install Hint */
+      skill_install_hint: string;
+    };
     /** Attempt */
     Attempt: {
       /** Course */
@@ -356,6 +420,31 @@ export interface components {
       /** Title */
       title: string;
     };
+    /** SettingsResponse */
+    SettingsResponse: {
+      /**
+       * Agent
+       * @enum {string}
+       */
+      agent: 'claude' | 'antigravity';
+      /** Vault Path */
+      vault_path: string | null;
+      /** Recent Vault Paths */
+      recent_vault_paths: string[];
+    };
+    /**
+     * SettingsUpdate
+     * @description Every field is optional: only the ones sent are changed (`PATCH` semantics).
+     *
+     *     `agent` is a `Literal`, so FastAPI answers `422` for anything but a known agent. It is
+     *     never a free command string: the server runs it with permissions skipped.
+     */
+    SettingsUpdate: {
+      /** Agent */
+      agent?: ('claude' | 'antigravity') | null;
+      /** Vault Path */
+      vault_path?: string | null;
+    };
     /** Subtopic */
     Subtopic: {
       /** Id */
@@ -428,7 +517,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  get_vault_config: {
+  get_settings: {
     parameters: {
       query?: never;
       header?: never;
@@ -443,7 +532,91 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': string | null;
+          'application/json': components['schemas']['SettingsResponse'];
+        };
+      };
+    };
+  };
+  update_settings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SettingsUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SettingsResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_agents: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AgentInfo'][];
+        };
+      };
+    };
+  };
+  check_agent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        agent_id: 'claude' | 'antigravity';
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AgentCheck'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
     };

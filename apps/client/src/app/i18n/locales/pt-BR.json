@@ -35,6 +35,45 @@
     "title": "Página não encontrada",
     "backToCourses": "Voltar para os cursos"
   },
+  "settings": {
+    "open": "Configurações",
+    "title": "Configurações",
+    "back": "Voltar para os cursos",
+    "agent": {
+      "title": "Agente de código",
+      "description": "O agente que gera cursos, aulas e exercícios.",
+      "choose": "Escolher o agente de código",
+      "test": "Testar agente",
+      "testing": "Testando o agente…",
+      "found": "Agente encontrado.",
+      "foundWithVersion": "Agente encontrado (versão {{version}}).",
+      "skillTitle": "Instalar a skill course-builder"
+    },
+    "vault": {
+      "title": "Pasta dos cursos",
+      "description": "Onde seus cursos são salvos.",
+      "current": "Em uso:",
+      "notSet": "nenhuma escolhida",
+      "inputLabel": "Caminho da pasta",
+      "placeholder": "Cole o caminho completo de uma pasta",
+      "save": "Salvar",
+      "recent": "Pastas recentes",
+      "jobRunning": "Uma geração está em andamento. Espere terminar para trocar a pasta."
+    },
+    "theme": {
+      "title": "Tema",
+      "description": "Claro, escuro ou o mesmo do sistema."
+    },
+    "language": {
+      "title": "Idioma",
+      "description": "O idioma do app."
+    },
+    "about": {
+      "title": "Sobre o projeto",
+      "description": "Código-fonte e links.",
+      "repository": "Código-fonte"
+    }
+  },
   "courses": {
     "heading": "O que vai ser hoje chefe?",
     "notFoundTitle": "Curso não encontrado! 😢",

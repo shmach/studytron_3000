@@ -25,6 +25,11 @@ export type Attempt = components['schemas']['Attempt'];
 export type Job = components['schemas']['Job'];
 export type JobKind = components['schemas']['JobKind'];
 export type JobStatus = components['schemas']['JobStatus'];
+export type Settings = components['schemas']['SettingsResponse'];
+export type SettingsUpdate = components['schemas']['SettingsUpdate'];
+export type AgentId = Settings['agent'];
+export type AgentInfo = components['schemas']['AgentInfo'];
+export type AgentCheck = components['schemas']['AgentCheck'];
 export type PendingDecision = components['schemas']['PendingDecision'];
 
 export class ApiError extends Error {

@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
 
 import { ApiError } from '@app/api/client';
-import { useGeneration } from '@app/hooks/useGeneration';
-import type { GenerationKind } from '@app/hooks/useGeneration';
+import { useGeneration } from '@app/hooks/jobs/useGeneration';
+import type { GenerationKind } from '@app/hooks/jobs/useGeneration';
 import { GenerationProgress } from '@ui/components/GenerationProgress';
 import { Button } from '@ui/components/ui/Button';
 

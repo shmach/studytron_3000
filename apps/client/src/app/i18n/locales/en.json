@@ -35,6 +35,45 @@
     "title": "Page not found",
     "backToCourses": "Back to courses"
   },
+  "settings": {
+    "open": "Settings",
+    "title": "Settings",
+    "back": "Back to courses",
+    "agent": {
+      "title": "Coding agent",
+      "description": "The agent that generates courses, lessons and exercises.",
+      "choose": "Choose the coding agent",
+      "test": "Test agent",
+      "testing": "Testing the agent…",
+      "found": "Agent found.",
+      "foundWithVersion": "Agent found (version {{version}}).",
+      "skillTitle": "Install the course-builder skill"
+    },
+    "vault": {
+      "title": "Courses folder",
+      "description": "Where your courses are saved.",
+      "current": "In use:",
+      "notSet": "none chosen",
+      "inputLabel": "Folder path",
+      "placeholder": "Paste the full path of a folder",
+      "save": "Save",
+      "recent": "Recent folders",
+      "jobRunning": "A generation is running. Wait for it to finish to change the folder."
+    },
+    "theme": {
+      "title": "Theme",
+      "description": "Light, dark, or follow your system."
+    },
+    "language": {
+      "title": "Language",
+      "description": "The language of the app."
+    },
+    "about": {
+      "title": "About the project",
+      "description": "Source code and links.",
+      "repository": "Source code"
+    }
+  },
   "courses": {
     "heading": "What are we studying today, boss?",
     "notFoundTitle": "Course not found! 😢",

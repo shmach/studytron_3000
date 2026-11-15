@@ -65,6 +65,7 @@ studytron_3000/
     specs/003-progresso-do-aluno/ plano da Feature 6, progresso do aluno pelo app (encerrada; Passos 11 a 13 passaram para a Feature 7)
     specs/004-feedback-de-jobs/  plano da Feature 7, feedback de jobs e decisões pendentes (encerrada; teste manual e concorrência passaram para a revisão final)
     specs/005-revisao-final/     plano da revisão final das Features 6 e 7: teste manual com a CLI real e testes de concorrência (a fazer; não é feature)
+    specs/006-configuracoes/     plano da Feature 8, tela de configurações (agente, pasta dos cursos, tema, idioma; falta só o link das redes)
   run.sh                         sobe servidor + frontend juntos
   pyproject.toml                 workspace uv: packages/* e apps/local-server
   CLAUDE.md                      instruções para agentes de IA
@@ -242,27 +243,68 @@ FastAPI (`fastapi[standard]`) + `python-dotenv`, importa o `course-parser`.
 
 ### Configuração
 
+As configurações do **app** (não do estudo) ficam num arquivo JSON **fora do vault**, na pasta
+de configuração do usuário (`platformdirs.user_config_dir("studytron")/settings.json`, ex.:
+`%LOCALAPPDATA%\studytron` no Windows). O caminho do vault não poderia morar dentro do próprio
+vault, e configuração do app não é estado de estudo, então a regra "o vault é a única fonte de
+verdade" continua valendo. `SettingsStore` (`services/settings_store.py`) lê e grava esse
+arquivo por escrita atômica, com um `threading.Lock` no ciclo ler-alterar-gravar.
+
+| Campo | Padrão | Uso |
+| --- | --- | --- |
+| `agent` | `claude` | agente que gera curso, aula e exercícios (`claude` ou `antigravity`) |
+| `vault_path` | `null` | raiz dos cursos escolhida no app |
+| `recent_vault_paths` | `[]` | até 5 pastas usadas, a mais recente primeiro |
+
+Arquivo ausente ou corrompido cai nos padrões (com aviso no log), sem derrubar o servidor.
+
 | Variável | Uso |
 | --- | --- |
-| `VAULT_PATH` | caminho absoluto da raiz dos cursos; vem do ambiente ou de `apps/local-server/.env` |
+| `VAULT_PATH` | **valor de reserva** do vault: vale só enquanto nenhuma pasta foi escolhida no app; vem do ambiente ou de `apps/local-server/.env` |
 
-Centralizada na classe `Env` (`config/env.py`). Sem `VAULT_PATH`, rotas de curso
-respondem 500.
+O vault em uso é `settings_store.vault_path()`: o escolhido no app, senão `VAULT_PATH`. Sem
+nenhum dos dois, as rotas de curso respondem 500. (`config/env.py` e a classe `Env` foram
+removidas.)
+
+### Agentes
+
+`services/agents.py` é o registro dos agentes de código. Os dois recebem os mesmos flags
+(`-p <prompt> --output-format json --dangerously-skip-permissions`), mas cada um escreve a
+resposta de um jeito, então cada `Agent` traz seu executável, `build_args`, `parse_result`,
+nome, `install_hint` e `skill_install_hint`:
+
+| Agente | Executável | JSON de saída | Erro |
+| --- | --- | --- | --- |
+| `claude` (Claude Code) | `claude` | `{"result": "…", "is_error": false}` | `is_error: true` |
+| `antigravity` | `agy` (não `antigravity`) | `{"status": "SUCCESS", "response": "…"}` | `status: "ERROR"` com o motivo em `error`, código de saída 1 |
+
+`LocalProcess` resolve o executável com `resolve_executable` (`shutil.which`, que acha `.exe`
+e `.cmd` no Windows) e levanta `AgentNotInstalledError` se faltar. O agente é sempre um
+`Literal` na API, nunca um comando livre: o servidor o executa com permissões puladas.
+
+**A skill precisa estar visível a cada agente.** O Claude Code lê `~/.claude/skills`; o `agy`
+**não**: é preciso empacotar a skill como plugin e rodar `agy plugin install <pasta>` (uma
+segunda cópia, a reinstalar quando a skill mudar). Os textos de instalação vêm de
+`GET /agents` (`skill_install_hint`) e aparecem na tela de configurações; o app não verifica
+se a skill está instalada.
 
 ### Rotas
 
 | Método e rota | operation_id | Retorno / efeito |
 | --- | --- | --- |
-| `GET /vault/config` | `get_vault_config` | `VAULT_PATH` configurado (`str \| null`) |
+| `GET /settings` | `get_settings` | `{agent, vault_path, recent_vault_paths}`; `vault_path` é o vault em uso (pode vir de `VAULT_PATH`) |
+| `PATCH /settings` | `update_settings` | Campos opcionais `agent` e `vault_path`; devolve as configurações novas. `422` para agente desconhecido ou pasta inválida (relativa, inexistente ou que não é pasta, com o motivo); `409` ao **trocar o vault** com job ativo (trocar só o agente é permitido) |
+| `GET /agents` | `list_agents` | `AgentInfo[]`: `id`, `display_name`, `install_hint`, `skill_install_hint` |
+| `POST /agents/{agent_id}/check` | `check_agent` | `{available, version, error}`, **sempre `200`**: `shutil.which` e depois `<executável> --version` com timeout de 5 s, sem gastar token. Ausente, timeout, falha ao iniciar e saída diferente de zero viram `available=false` com a mensagem (e como instalar) |
 | `GET /courses` | `list_courses` | `CourseBundle[]` |
 | `GET /courses/{slug}` | `get_course` | `CourseBundle` (404 se não existe) |
 | `DELETE /courses/{slug}` | `delete_course` | 204; apaga a pasta do curso |
 | `GET /courses/{slug}/lessons/{topic_id}` | `get_lesson` | `Lesson` |
 | `GET /courses/{slug}/exercises/{topic_id}` | `get_exercise_set` | `ExerciseSet` |
 | `PATCH /courses/{slug}/topics/{topic_id}/status` | `update_topic_status` | `Topic` atualizado. Corpo `{"status": TopicStatus}`; altera só a linha `status` do `topic-meta`. `404` curso/tópico inexistente, `409` se `in_progress` e o tópico não tem aula, `422` status inválido |
-| `POST /courses/{slug}/topics/{topic_id}/lesson` | `generate_lesson` | `Job` (`202`). `404` curso/tópico, `409` se já tem aula ou há geração ativa no curso, `422` slug fora do formato do prompt |
+| `POST /courses/{slug}/topics/{topic_id}/lesson` | `generate_lesson` | `Job` (`202`). `404` curso/tópico, `409` se já tem aula ou há geração ativa no curso, `422` slug fora do formato do prompt **ou agente não instalado** |
 | `POST /courses/{slug}/topics/{topic_id}/exercises` | `generate_exercises` | `Job` (`202`). Mesmas recusas, e `409` também se o tópico **não tem aula** ou já tem exercícios |
-| `POST /courses?user_prompt=…` | `create_course` | `Job` (`user_prompt` é *query param*) |
+| `POST /courses?user_prompt=…` | `create_course` | `Job` (`user_prompt` é *query param*). `422` se o agente das configurações não está instalado |
 | `GET /courses/jobs/{job_id}` | `get_job` | `Job` (`404` se não existe) |
 | `GET /jobs?slug=…&active=…` | `list_jobs` | `Job[]`, do mais novo ao mais antigo, no máximo 50. `slug` filtra por curso; `active=true` só `pending`/`running`, `false` só os terminados |
 
@@ -282,12 +324,14 @@ O texto final da CLI fica em `Job.output`, **fora da API** (`exclude=True`).
 
 **Criação de curso**
 
-1. `POST /courses` valida o prompt e o `VAULT_PATH`, cria um job `pending` e
+1. `POST /courses` valida o prompt, o vault e o agente (`422` se não estiver instalado,
+   **antes** de criar o job, para ele não nascer só para falhar), cria um job `pending` e
    agenda `_run_course_creation`.
 2. A tarefa marca `running`, guarda o conjunto de pastas do vault e roda o CLI do
-   agente em modo headless (hoje só o Claude Code está implementado:
-   `claude -p <prompt> --output-format json --dangerously-skip-permissions`) com
-   `cwd=VAULT_PATH` (`LocalProcess.run`, via `asyncio.to_thread(subprocess.run)`,
+   agente escolhido nas configurações em modo headless (por exemplo
+   `claude -p <prompt> --output-format json --dangerously-skip-permissions`; o agente é lido
+   na hora do pedido e vale para o job inteiro) com
+   `cwd=` o vault em uso (`LocalProcess.run`, via `asyncio.to_thread(subprocess.run)`,
    timeout de 300 s).
 3. O prompt (`prompts.build_course_prompt`) embrulha o pedido do usuário
    instruindo a skill `course-builder` a operar de forma não interativa.
@@ -305,8 +349,8 @@ O texto final da CLI fica em `Job.output`, **fora da API** (`exclude=True`).
    skill): não perguntar, não mudar o status de tópicos `in_progress`. O prompt de
    aula pede ainda uma linha `Pending status decision: <id> <título>` por tópico
    que espera decisão do aluno.
-4. A saída da CLI é lida por `extract_result` (objeto JSON com `result` e
-   `is_error`). O job só vira `done` se o curso recarregado **tiver o arquivo
+4. A saída da CLI é lida pelo `parse_result` do agente (ver "Agentes"; `extract_result`
+   escolhe o leitor). O job só vira `done` se o curso recarregado **tiver o arquivo
    esperado** (a aula ou os exercícios do tópico); o relato do agente não basta.
    Se a CLI estoura o timeout (`CliTimeoutError`, subclasse de `RuntimeError`), o
    servidor confere o arquivo do mesmo jeito: existindo, o job vira `done` (com um
@@ -342,10 +386,13 @@ CORS liberado para `http://localhost:3000` e `http://localhost:5173`, métodos
 
 `apps/local-server/tests/` (`uv run pytest` na raiz): `test_status_route`,
 `test_lesson_job`, `test_exercise_job`, `test_jobs_list`, `test_pending_decisions`,
-`test_prompts`, `test_local_process` (inclui o timeout). Usam `TestClient`, um vault temporário
+`test_prompts`, `test_local_process` (inclui o timeout), `test_settings_store`,
+`test_settings_routes`, `test_agent_check`, `test_agent_selection`. Usam `TestClient`, um vault temporário
 copiado das fixtures do `course-parser` e uma CLI simulada (`fake_cli` no
-`conftest.py`): nenhum teste chama o agente de verdade, e nenhum toca o vault do
-`.env`.
+`conftest.py`): nenhum teste chama o agente de verdade, e nenhum toca o vault do `.env`
+nem as configurações reais. Duas fixtures automáticas garantem isso: `isolated_settings`
+aponta o `SettingsStore` para um arquivo temporário e esquece `VAULT_PATH`; `agents_installed`
+finge todos os agentes no `PATH`, para a suíte não depender da máquina.
 
 ### Contrato OpenAPI
 
@@ -370,8 +417,10 @@ src/
   app/
     api/ client.ts queries.ts schema.d.ts(gerado)
     context/ThemeContext.tsx
-    hooks/   useCourses useCourse useCreateCourse useCourseJob useDeleteCourse useDebounce useIsMobile
-             useLesson useExerciseSet useJobs useJobsWatcher useUpdateTopicStatus useGeneration
+    hooks/   courses/ (useCourses useCourse useCreateCourse useDeleteCourse useUpdateTopicStatus)
+             jobs/ (useJobs useJobsWatcher useCourseJob useGeneration)
+             settings/ (useSettings useUpdateSettings useAgents useAgentCheck)
+             useLesson useExerciseSet useDebounce useIsMobile
     i18n/    index.ts i18next.d.ts locales/{en,pt-BR}.json
     lib/     progress.ts courseSearch.ts query-client.ts routes.ts topic.ts jobs.ts utils.ts
   ui/
@@ -379,11 +428,12 @@ src/
                  DeleteCourseDialog, ErrorState, StatusBadge, StatusSelect, Markdown,
                  NotGeneratedCard, GenerateButton, GenerationProgress, BodySkeleton,
                  JobsPanel, PendingStatusDialog,
+                 AgentSettings, VaultSettings, ThemeSettings, LanguageSettings, AboutSettings,
                  trail/ (Trail, ModuleSection, TopicCard)
     components/ui/  primitivas shadcn (AlertDialog, Dialog, DropdownMenu, Input, Textarea,
                     Sonner, badge, button, card, skeleton, questionnaire)
     utils/       statusStyle.ts
-    pages/       CoursesPage, CoursePage, LessonPage, ExercisesPage, NotFoundPage
+    pages/       CoursesPage, CoursePage, LessonPage, ExercisesPage, SettingsPage, NotFoundPage
     styles/index.css
 ```
 
@@ -399,9 +449,10 @@ src/
 | `/courses/:slug` | `CoursePage` | metadados, progresso, visão geral, trilha do currículo (módulos → tópicos coloridos por status, com indicadores de aula e exercícios), exclusão |
 | `/courses/:slug/topics/:topicId` | `LessonPage` | aula em Markdown, detalhes do tópico, seletor de status, anterior/próximo, botão para gerar a aula e, quando só ela existe, os exercícios (carregada com `lazy`) |
 | `/courses/:slug/topics/:topicId/exercises` | `ExercisesPage` | exercícios em Markdown (somente leitura), botão para gerá-los (inativo sem aula) (carregada com `lazy`) |
+| `/settings` | `SettingsPage` | cinco seções: agente (escolha, teste e instruções da skill), pasta dos cursos, tema, idioma e link do repositório (carregada com `lazy`) |
 | `*` | `NotFoundPage` | 404 |
 
-Todas dentro de `AppLayout` (header com seletores de idioma e tema + `<Outlet/>`, o `Toaster`, o observador de jobs e o diálogo de decisão pendente).
+Todas dentro de `AppLayout` (header com seletores de idioma e tema, a engrenagem das configurações + `<Outlet/>`, o `Toaster`, o observador de jobs e o diálogo de decisão pendente).
 
 ### 6.3 Camada de dados
 
@@ -416,6 +467,12 @@ Todas dentro de `AppLayout` (header com seletores de idioma e tema + `<Outlet/>`
   repete a cada 2 s **só enquanto algum job da resposta está rodando**; sem job
   ativo, só ao focar a janela), `createCourseJob`, `generateLesson`,
   `generateExercises`, `updateTopicStatus`, `deleteCourse` (204 sem corpo).
+- Configurações: `settingsQuery` e `agentsQuery` (`staleTime: Infinity`), `updateSettings` e
+  `checkAgent`. O teste do agente é uma **query** por agente (`agentCheckQuery`), não uma
+  mutation: roda ao abrir a tela e ao trocar de agente, e o botão "Testar agente" só
+  chama `refetch()`; sem refetch ao focar a janela, porque o `agy` leva ~2 s.
+  `useUpdateSettings` grava a resposta no cache e invalida os cursos (outro vault, outros
+  cursos).
 - Hooks de escrita: `useUpdateTopicStatus` (invalida o curso com `exact: true` e a
   lista de cursos, sem refazer aula e exercícios) e `useGeneration` (inicia a
   geração e acompanha os jobs do curso para travar os botões).
@@ -442,6 +499,10 @@ Todas dentro de `AppLayout` (header com seletores de idioma e tema + `<Outlet/>`
 - **Gerar aula ou exercícios:** `GenerateButton` nos cartões "ainda não gerado".
   Com o job do tópico rodando mostra o `GenerationProgress`; com outra geração
   rodando no curso, fica inativo. Ao fim do job a tela atualiza sozinha.
+- **Configurar o app:** engrenagem no header → `/settings`. Trocar o agente grava na hora e
+  dispara o teste; a pasta dos cursos é colada num campo (o navegador não entrega o caminho
+  real de uma pasta) e validada pelo servidor, com a lista das recentes; ambas ficam
+  inativas enquanto há job ativo. Tema e idioma continuam no navegador (`localStorage`).
 - **Progresso exibido:** `% = completed / total tópicos`; badges por status e
   presença de aula/exercícios por tópico.
 
@@ -509,6 +570,9 @@ hook de commit roda `prettier --write` e devolve o formato do projeto.
 Tudo junto (bash): `./run.sh` — sobe `fastapi dev apps/local-server/main.py` em
 `:8000` e `npm run dev` do client (exige `apps/client/node_modules`).
 
+A pasta dos cursos e o agente também podem ser escolhidos na tela de configurações
+(`/settings`); `VAULT_PATH` vira só o valor de reserva.
+
 Separado:
 
 ```sh
@@ -535,6 +599,7 @@ cd apps/client && npm install && npm run dev                                # Vi
 | Página de aula | Feature 5 (parcial): `LessonPage` com Markdown + Shiki, detalhes do tópico, navegação anterior/próximo, estados de carregamento/erro/aula não gerada; carregada com `lazy` no router. Página de exercícios somente leitura e indicadores de aula/exercícios nos cards. Links do Markdown e LaTeX adiados |
 | Progresso do aluno pelo app | Feature 6 (encerrada): seletor de status na `LessonPage`; botões para gerar aula e exercícios, com progresso do job; `PATCH` de status, rotas de geração, `GET /jobs` e `pending_decisions` no servidor. Painel de jobs, toasts e diálogo de decisão ficaram para a Feature 7 |
 | Feedback de jobs | Feature 7 (encerrada): `JobsPanel` na tela inicial, toasts de início e fim, `PendingStatusDialog`, `Job.created_at` e aceite do arquivo gravado quando a CLI estoura o timeout. A validação com a CLI real e a concorrência estão na revisão final |
+| Tela de configurações | Feature 8 (Passo 11 pendente): escolha do agente (Claude Code ou Antigravity) com teste de instalação, pasta dos cursos, tema, idioma e link do repositório; a geração usa o agente escolhido. Falta o link das redes |
 | Criar/excluir curso pela UI | questionário → job → polling |
 | i18n EN + pt-BR | plano `001` concluído |
 | Tema claro/escuro/sistema | |
@@ -674,6 +739,25 @@ prontos. Plano e passos em `docs/specs/004-feedback-de-jobs/plan.md`.
 - [x] Timeout **depois** de escrever o arquivo: decidido (opção A) e implementado; o job
       vira `done` se o arquivo existe. Ver "Jobs".
 
+#### Feature 8 — Tela de configurações — Passo 11 pendente
+
+Antes, o app só gerava com o Claude Code (fixo no código) e o vault vinha só do `.env`. Agora o
+aluno escolhe o agente, confere que ele existe e muda a pasta dos cursos pela interface.
+Plano e passos em `docs/specs/006-configuracoes/plan.md`.
+
+- [x] **Servidor:** registro de agentes com leitor de resultado por agente, arquivo de
+      configurações fora do vault, `GET`/`PATCH /settings`, `GET /agents`,
+      `POST /agents/{agent_id}/check` e geração com o agente escolhido (recusa com `422`
+      antes de criar o job se ele não está instalado).
+- [x] **Tela `/settings`:** agente (dropdown, teste e instruções de instalação da skill),
+      pasta dos cursos (campo, recentes, trava com job ativo), tema (três botões), idioma e
+      link do repositório.
+- [x] `README.md` na raiz do repositório.
+- [ ] **Passo 11 — link das redes do autor:** fica para quando os endereços forem informados.
+- Fora do escopo: escolher o modelo dentro do agente (o `agy models` mostra que dá), instalar
+  o agente ou a skill pelo app, outros agentes, configurações por curso, seletor nativo de
+  pastas.
+
 #### Revisão final (não é feature)
 
 Etapa de validação das Features 6 e 7, sem código novo: o que só a CLI real e o uso
@@ -727,7 +811,7 @@ simultâneo mostram. Um bug achado aqui vira correção avulsa. Checklist e rote
 ## 10. Pontos de atenção conhecidos
 
 - Criação de curso e geração de aula e de exercícios usam
-  `--dangerously-skip-permissions` e executam o CLI do agente (hoje `claude`) no
+  `--dangerously-skip-permissions` e executam o CLI do agente (`claude` ou `agy`, o escolhido nas configurações) no
   vault; adequado apenas para uso local/de confiança.
 - `JobStore` em memória e detecção do slug por diff de pastas na criação de curso
   (vulnerável a criações simultâneas e a reinício do servidor). Os jobs de geração
@@ -742,7 +826,16 @@ simultâneo mostram. Um bug achado aqui vira correção avulsa. Checklist e rote
   esbarrar em limites de URL).
 - Resquícios de debug: `print` em `routes/courses.py`, `console.log(job)` e
   `TODO` de exibir erro de job em `CoursesPage.tsx`.
-- `GET /vault/config` não é consumido pelo frontend.
+- `PATCH /settings` deixa quem fala com o servidor apontar o `cwd` do agente (que roda com
+  `--dangerously-skip-permissions`) para qualquer pasta. O CORS limita a origens locais e o
+  app é de uso local; para o SaaS isso precisa de outro desenho.
+- As configurações vivem fora do vault e fora do Git: quem troca de máquina recomeça nos
+  padrões. A checagem de job ativo do `PATCH /settings` e a gravação não são atômicas
+  (aceitável para um usuário local).
+- A skill do Antigravity é uma cópia (plugin instalado com `agy plugin install`): ao mudar
+  `skill/`, é preciso reinstalar. O app só mostra as instruções, não verifica a instalação.
+- Sem `--dangerously-skip-permissions`, o `agy` responde `SUCCESS` com `response` vazio e
+  `denied_actions`; o servidor sempre passa o flag, então não afeta o app.
 - READMEs de `apps/client` e `apps/local-server` estão defasados (layout de
   `src/`, tabela de rotas, porta do Vite).
 - `.specify/` (spec-kit) aparece deletado na árvore de trabalho (mudança ainda

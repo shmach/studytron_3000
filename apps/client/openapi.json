@@ -6,28 +6,131 @@
     "version": "0.1.0"
   },
   "paths": {
-    "/vault/config": {
+    "/settings": {
       "get": {
         "tags": [
-          "vault"
+          "settings"
         ],
-        "summary": "Get Content Path",
-        "operationId": "get_vault_config",
+        "summary": "Get Settings",
+        "operationId": "get_settings",
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "title": "Response Get Vault Config"
+                  "$ref": "#/components/schemas/SettingsResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Update Settings",
+        "operationId": "update_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents": {
+      "get": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "List Agents",
+        "operationId": "list_agents",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AgentInfo"
+                  },
+                  "type": "array",
+                  "title": "Response List Agents"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents/{agent_id}/check": {
+      "post": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Check Agent Route",
+        "description": "Always `200`: a missing agent is the answer (`available=false`), not a failed request.\n\nA plain `def`, so FastAPI runs it in a worker thread and the blocking `--version`\ncall does not stall the event loop.",
+        "operationId": "check_agent",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "claude",
+                "antigravity"
+              ],
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentCheck"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -555,6 +658,73 @@
   },
   "components": {
     "schemas": {
+      "AgentCheck": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "available"
+        ],
+        "title": "AgentCheck"
+      },
+      "AgentInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "claude",
+              "antigravity"
+            ],
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "install_hint": {
+            "type": "string",
+            "title": "Install Hint"
+          },
+          "skill_install_hint": {
+            "type": "string",
+            "title": "Skill Install Hint"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "install_hint",
+          "skill_install_hint"
+        ],
+        "title": "AgentInfo"
+      },
       "Attempt": {
         "properties": {
           "course": {
@@ -930,6 +1100,76 @@
         ],
         "title": "PendingDecision",
         "description": "A topic that is still `in_progress` and needs the student to say what happened to it."
+      },
+      "SettingsResponse": {
+        "properties": {
+          "agent": {
+            "type": "string",
+            "enum": [
+              "claude",
+              "antigravity"
+            ],
+            "title": "Agent"
+          },
+          "vault_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vault Path"
+          },
+          "recent_vault_paths": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Recent Vault Paths"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent",
+          "vault_path",
+          "recent_vault_paths"
+        ],
+        "title": "SettingsResponse"
+      },
+      "SettingsUpdate": {
+        "properties": {
+          "agent": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "claude",
+                  "antigravity"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent"
+          },
+          "vault_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vault Path"
+          }
+        },
+        "type": "object",
+        "title": "SettingsUpdate",
+        "description": "Every field is optional: only the ones sent are changed (`PATCH` semantics).\n\n`agent` is a `Literal`, so FastAPI answers `422` for anything but a known agent. It is\nnever a free command string: the server runs it with permissions skipped."
       },
       "Subtopic": {
         "properties": {

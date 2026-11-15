@@ -17,7 +17,7 @@ import {
   CardTitle,
 } from '@ui/components/ui/Card';
 import { Skeleton } from '@ui/components/ui/Skeleton';
-import { useCourse } from '@app/hooks/useCourse';
+import { useCourse } from '@app/hooks/courses/useCourse';
 import { computeProgress } from '@app/lib/progress';
 import { ProgressBar } from '@ui/pages/CoursesPage';
 import { Trail } from '@ui/components/trail/Trail';
